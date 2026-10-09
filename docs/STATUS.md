@@ -1,20 +1,20 @@
 # Oryveta current status
 
-Checked 2026-10-09.
+Checked 2026-10-09. Separate merged behavior, pending changes and deployment limitations.
 
-| Capability | State |
+| Capability | Verified state |
 | --- | --- |
-| Public GitHub repository | Live at https://github.com/suhasaitham22/Oryveta; licensing, docs, and preview skeleton committed |
-| Product identity | Oryveta, Soft Modern minimalist UI |
-| Product experiences | Start New and Evolve |
-| Functional MVP source | Published on feature branch `feat/functional-mvp-foundation` for review; not yet merged into main |
-| Local tests | 33 passed on updated checkout; Python compilation and frontend JavaScript syntax check passed; GitHub CI pending |
-| Live frontend preview | Assigned https://oryveta.vercel.app; Vercel production deployment READY (public HTTP fetch unverified) |
-| GitHub OAuth | Initial implementation locally; live credentials and backend integration absent |
-| SQLite local API and job worker | Implemented locally, not operated as a 24/7 cloud service |
-| Autonomous agent-generated bug fixes/PRs | Not implemented |
-| Rust supervisor, Cloudflare D1 | Planned, not implemented |
-| Remote Kaggle wins or benchmark leadership | Not demonstrated |
-| Supabase/Vercel deployment | Vercel static website preview deployed; no Supabase database provisioned for Oryveta |
+| GitHub repository | https://github.com/suhasaitham22/Oryveta — functional MVP merged into `main` via PR #1; CI fix merged via PR #2 |
+| CI on main | Latest completed run succeeded: https://github.com/suhasaitham22/Oryveta/actions/runs/38002056824 |
+| Follow-up CI hardening | Proposed on `hardening/ci-quality-security`; not merged; remote checks must pass before promotion |
+| Local hardening tests | 61 passed on Python 3.13, 84.55% branch-aware coverage; does not substitute for remote CI |
+| Product identity and journeys | Oryveta; Soft Modern; Start New and Evolve |
+| Start New | Local runnable starter scaffolds and ZIP export; not custom autonomous software generation |
+| Evolve | Local public GitHub/ZIP snapshot import and heuristic analysis; not autonomous fixes or PRs |
+| GitHub OAuth | Implemented locally with test credentials/mocks; live identity configuration and GitHub App not deployed |
+| SQLite API and worker | Single-host local MVP; not a 24/7 remote or tenant-isolated service |
+| Public Vercel frontend | https://oryveta.vercel.app alias assigned; interactive static preview only |
+| Rust supervisor, Cloudflare D1, Supabase | Planned/optional, not deployed for Oryveta |
+| Kaggle competition wins / external coding benchmarks | Not demonstrated |
 
-**Next step:** review/merge the functional MVP pull request after GitHub CI passes; then connect authenticated cloud control-plane components and implement a genuinely agent-authored, independently verified Evolve bug-fixing PR. Do not confuse local test success with cloud deployment or GitHub CI success.
+**Next:** require green matrix/security/container checks and code review, merge the hardening PR, configure GitHub branch protection, then implement one independently verified Evolve patch loop with an isolated sandbox. See [QUALITY.md](QUALITY.md).

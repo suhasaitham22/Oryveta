@@ -85,67 +85,106 @@ def _bounded_download(client: httpx.Client, url: str) -> bytes:
 
 
 def snapshot_zip(root: Path, payload: bytes) -> int:
+    """Validate the entire ZIP before creating files, then extract within limits.
+
+    We never execute imported content. Non-regular files, duplicate destinations,
+    path traversal and file/directory collisions are rejected up front.
+    """
     if len(payload) > MAX_ARCHIVE:
         raise InvalidRepository("Archive exceeds 12 MB")
     try:
         handle = zipfile.ZipFile(io.BytesIO(payload))
-    except (zipfile.BadZipFile, ValueError) as e:
-        raise InvalidRepository("Invalid ZIP archive") from e
-    root = root.resolve()
-    root.mkdir(parents=True, exist_ok=False)
-    members = handle.infolist()
-    if len(members) > MAX_ENTRIES:
-        raise InvalidRepository("Archive contains too many files")
-    total = 0
-    saved = 0
-    # A GitHub ZIP has an enclosing root directory; detect only when all entries share it.
-    paths = [PurePosixPath(m.filename) for m in members if m.filename and not m.is_dir()]
-    first = {p.parts[0] for p in paths if p.parts}
-    strip_root = len(first) == 1 and any(len(p.parts) > 1 for p in paths)
-    seen: set[str] = set()
-    for member in members:
-        if member.is_dir():
-            continue
-        if (member.external_attr >> 16) & 0o170000 == stat.S_IFLNK:
-            raise InvalidRepository("Symlink entries are not allowed")
-        parts = PurePosixPath(member.filename).parts
-        if not parts or any(part in {".", ".."} for part in parts) or member.filename.startswith("/") or "\\" in member.filename:
-            raise InvalidRepository("Unsafe archive path")
-        if strip_root:
-            parts = parts[1:]
-        if not parts or any(part in {".git", "node_modules", ".venv", "__pycache__"} for part in parts):
-            continue
-        normalized = "/".join(parts).casefold()
-        if normalized in seen:
-            raise InvalidRepository("Archive contains duplicate destination paths")
-        seen.add(normalized)
-        total += member.file_size
-        if total > MAX_UNPACKED or member.file_size > 3 * 1024 * 1024:
-            raise InvalidRepository("Expanded archive exceeds limits")
-        dest = root.joinpath(*parts).resolve()
-        if not dest.is_relative_to(root):
-            raise InvalidRepository("Archive escapes project workspace")
-        dest.parent.mkdir(parents=True, exist_ok=True)
-        with handle.open(member) as source, dest.open("wb") as target:
-            copied = 0
-            while part := source.read(64 * 1024):
-                copied += len(part)
-                if copied > member.file_size or copied > 3 * 1024 * 1024:
-                    raise InvalidRepository("Archive file exceeds limits")
-                target.write(part)
-            if copied != member.file_size:
-                raise InvalidRepository("Archive file length mismatch")
-        saved += 1
-    if not saved:
-        raise InvalidRepository("No project files found in the archive")
-    return saved
+    except (zipfile.BadZipFile, ValueError) as exc:
+        raise InvalidRepository("Invalid ZIP archive") from exc
+
+    with handle:
+        members = handle.infolist()
+        if len(members) > MAX_ENTRIES:
+            raise InvalidRepository("Archive contains too many files")
+
+        file_paths = [PurePosixPath(m.filename) for m in members if m.filename and not m.is_dir()]
+        first = {p.parts[0] for p in file_paths if p.parts}
+        strip_root = len(first) == 1 and any(len(p.parts) > 1 for p in file_paths)
+        planned: list[tuple[zipfile.ZipInfo, tuple[str, ...]]] = []
+        seen: set[str] = set()
+        total = 0
+
+        for member in members:
+            raw = member.filename
+            components = raw.rstrip("/").split("/")
+            if (not raw or raw.startswith("/") or "\\" in raw
+                    or any(part in {"", ".", ".."} or ":" in part for part in components)):
+                raise InvalidRepository("Unsafe archive path")
+            mode = stat.S_IFMT(member.external_attr >> 16)
+            if mode not in {0, stat.S_IFREG, stat.S_IFDIR}:
+                raise InvalidRepository("Special file entries are not allowed")
+            if member.is_dir():
+                continue
+            if mode == stat.S_IFDIR:
+                raise InvalidRepository("Invalid directory entry")
+            parts = tuple(components[1:] if strip_root else components)
+            if not parts or any(part in {".git", "node_modules", ".venv", "__pycache__"} for part in parts):
+                continue
+            key = "/".join(parts).casefold()
+            if key in seen:
+                raise InvalidRepository("Archive contains duplicate destination paths")
+            seen.add(key)
+            total += member.file_size
+            if member.file_size > 3 * 1024 * 1024 or total > MAX_UNPACKED:
+                raise InvalidRepository("Expanded archive exceeds limits")
+            planned.append((member, parts))
+
+        if not planned:
+            raise InvalidRepository("No project files found in the archive")
+        # A file must not also be an ancestor of another file, case-insensitively.
+        for key in seen:
+            prefix = key.split("/")
+            if any("/".join(prefix[:i]) in seen for i in range(1, len(prefix))):
+                raise InvalidRepository("Archive has file/directory path collisions")
+
+        root = root.resolve()
+        root.mkdir(parents=True, exist_ok=False)
+        try:
+            for member, parts in planned:
+                dest = root.joinpath(*parts)
+                if not dest.resolve().is_relative_to(root):
+                    raise InvalidRepository("Archive escapes project workspace")
+                dest.parent.mkdir(parents=True, exist_ok=True)
+                with handle.open(member) as source, dest.open("xb") as target:
+                    copied = 0
+                    while part := source.read(64 * 1024):
+                        copied += len(part)
+                        if copied > member.file_size or copied > 3 * 1024 * 1024:
+                            raise InvalidRepository("Archive file exceeds limits")
+                        target.write(part)
+                    if copied != member.file_size:
+                        raise InvalidRepository("Archive file length mismatch")
+        except (zipfile.BadZipFile, RuntimeError) as exc:
+            raise InvalidRepository("Corrupt or encrypted ZIP archive") from exc
+        return len(planned)
 
 
 def create_archive(root: Path) -> bytes:
-    """Export user workspace as a portable source ZIP."""
+    """Export a workspace ZIP, refusing oversized exports before buffering files."""
+    root = root.resolve()
+    planned: list[Path] = []
+    total = 0
+    for item in sorted(root.rglob("*")):
+        relative = item.relative_to(root)
+        if any(part in {".git", "node_modules", ".venv"} for part in relative.parts):
+            continue
+        if item.is_symlink() or not item.is_file():
+            continue
+        if not item.resolve().is_relative_to(root):
+            raise InvalidRepository("Project export contains an unsafe path")
+        total += item.stat().st_size
+        if total > MAX_UNPACKED or len(planned) >= MAX_ENTRIES:
+            raise InvalidRepository("Project export exceeds 32 MB or 1800 files")
+        planned.append(item)
     output = io.BytesIO()
     with zipfile.ZipFile(output, "w", compression=zipfile.ZIP_DEFLATED) as archive:
-        for item in sorted(root.rglob("*")):
-            if item.is_file() and not item.is_symlink() and not any(p in {".git", "node_modules", ".venv"} for p in item.relative_to(root).parts):
-                archive.write(item, item.relative_to(root).as_posix())
+        for item in planned:
+            archive.write(item, item.relative_to(root).as_posix())
+    if output.tell() > MAX_UNPACKED:
+        raise InvalidRepository("Project export exceeds 32 MB")
     return output.getvalue()
