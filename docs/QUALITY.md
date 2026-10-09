@@ -41,3 +41,9 @@ Repository **Settings → Branches / Rulesets** should protect `main` by requiri
 - No evidence of autonomous coding performance or Kaggle leaderboard success.
 
 Do not enable arbitrary repository execution or offer consultancy-grade SLA until these gaps have been addressed and tested. See [AUTH-SECURITY.md](AUTH-SECURITY.md) and [OPERATIONS.md](OPERATIONS.md).
+
+## Preflight before opening PRs
+
+For CI/workflow changes, push to a `ci/preflight-*` branch and verify the **same complete workflow** (static, Python 3.11–3.13, security and Docker) is green before opening a PR. Then review the PR's checks again; green preflight is evidence, not a guarantee against infrastructure outages or future dependency advisories. Keep PRs draft until required checks pass. Security scanning must fail on real vulnerabilities and may not be disabled merely to make CI green.
+
+Dependency auditing runs against a fully pinned snapshot of the actual installed distributions, excluding the local unpublished `oryveta` wheel. This avoids a scanner failure on a distribution that has no public vulnerability index record while preserving audits for runtime and scanner dependencies. GitHub Actions are pinned to reviewed commit SHAs.
