@@ -16,7 +16,8 @@
 
 | Document | Covers |
 | --- | --- |
-| [IMPLEMENTATION.md](IMPLEMENTATION.md) | Source layout, local setup, test coverage and current security limitations |\n| [ARCHITECTURE.md](ARCHITECTURE.md) | Control/intelligence/execution planes, technology selections, current vs target stack |
+| [IMPLEMENTATION.md](IMPLEMENTATION.md) | Source layout, local setup, test coverage and current security limitations |
+| [ARCHITECTURE.md](ARCHITECTURE.md) | Control/intelligence/execution planes, technology selections, current vs target stack |
 | [DATABASE.md](DATABASE.md) | SQLite, D1, optional PostgreSQL/Supabase, schema ownership and artifacts |
 | [AUTH-SECURITY.md](AUTH-SECURITY.md) | GitHub OAuth vs GitHub App, roles, sandbox/prompt injection, approvals |
 | [API.md](API.md) | Local MVP versus planned API contracts |
@@ -24,6 +25,7 @@
 | [EVALUATION.md](EVALUATION.md) | Internal Arena, Kaggle, unbiased benchmarks, self-learning and hypothesis graph |
 | [INFRASTRUCTURE.md](INFRASTRUCTURE.md) | GitHub, Vercel, Cloudflare, Supabase, remote 24/7 workers and free-tier constraints |
 | [OPERATIONS.md](OPERATIONS.md) | CI/CD, observability, lease/recovery, incidents and backups |
+| [QUALITY.md](QUALITY.md) | Enforced CI matrix, security scans, branch coverage, packaging and Docker smoke |
 
 ## Delivery and governance
 

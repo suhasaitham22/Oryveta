@@ -4,7 +4,7 @@
 
 ### [Live website preview → https://oryveta.vercel.app](https://oryveta.vercel.app)
 
-> **Documentation:** [Complete product and technical decisions](docs/INDEX.md) · [Architecture](docs/ARCHITECTURE.md) · [UI design](docs/DESIGN-SYSTEM.md) · [Roadmap](docs/ROADMAP.md) · [Verified status](docs/STATUS.md)
+> **Documentation:** [Complete product and technical decisions](docs/INDEX.md) · [Architecture](docs/ARCHITECTURE.md) · [UI design](docs/DESIGN-SYSTEM.md) · [Roadmap](docs/ROADMAP.md) · [Verified status](docs/STATUS.md) · [Quality gates](docs/QUALITY.md)
 
 > **Preview only:** This deployment demonstrates the responsive Start New and Evolve UI. It does **not** yet offer live GitHub OAuth, repository generation, source analysis or autonomous coding. The local MVP API has not been deployed or wired to the site.
 
@@ -17,7 +17,7 @@ Kaggle and related benchmarks are **internal evaluation scenarios**, not a third
 
 ## Status
 
-**Early development.** A local MVP has been built with a responsive Soft Modern interface, Python/FastAPI + SQLite API, starter repository scaffolding, snapshot-based source analysis, tests, and local background worker. The functional local MVP source, tests, Docker Compose and CI are now included in the `feat/functional-mvp-foundation` pull-request branch. The public website remains a separate static preview. The public repository now contains Apache-2.0 licensing, documentation, an interactive **static frontend preview**, and basic preview CI. Vercel serves that frontend at **https://oryveta.vercel.app**; it is **not** an operational authenticated or autonomous engineering service. Autonomous bug-fixing PRs, Rust migrations, fully agent-built applications, hardened tenant isolation, and 24/7 hosted execution are planned—not completed.
+**Early development.** The functional Python/FastAPI + SQLite MVP, tests, background worker, Docker Compose and initial CI are now merged into `main`. The latest completed `main` CI run passed on 2026-10-09. A follow-up hardening PR adds Python 3.11/3.12/3.13 test coverage gates, dependency/security checks, container smoke tests and worker/ZIP security regressions. The public Vercel site remains a **static UI preview**, not a hosted API. Autonomous bug-fixing PRs, Rust migrations, agent-built applications, hardened tenant isolation and 24/7 hosted execution are **not yet implemented**.
 
 See [current status](docs/STATUS.md) and [open-source policy](docs/OPEN-SOURCE.md).
 
@@ -44,7 +44,7 @@ uvicorn oryveta_api.main:app --host 127.0.0.1 --port 8000
 python -m oryveta_engine.worker
 ```
 
-Open http://127.0.0.1:8000. Local demo sign-in is restricted to localhost; it is **not permitted** on the public Vercel site. Alternatively, use `docker compose up --build` with real GitHub OAuth credentials configured. To validate changes run `pytest -q`, `ruff check apps/api engine tests`, and `node --check apps/web/app.js`.
+Open http://127.0.0.1:8000. Local demo sign-in is restricted to localhost; it is **not permitted** on the public Vercel site. Alternatively, use `docker compose up --build` with real GitHub OAuth credentials configured. To validate changes run `pytest -q --cov=oryveta_api --cov=oryveta_engine --cov-branch --cov-fail-under=84`, `ruff check apps/api engine tests`, and `node --check apps/web/app.js`. See [CI and quality gates](docs/QUALITY.md).
 
 For service boundaries, limitations, and deployment considerations see [implementation guide](docs/IMPLEMENTATION.md).
 

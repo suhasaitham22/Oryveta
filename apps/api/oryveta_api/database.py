@@ -57,6 +57,9 @@ class Database:
         self.path = path
         Path(path).parent.mkdir(parents=True, exist_ok=True)
         with self.connect() as conn:
+            # WAL is a database-wide setting. Apply it once at initialization,
+            # not on every request/worker connection (which can take a write lock).
+            conn.execute("PRAGMA journal_mode=WAL")
             conn.executescript(DDL)
             # Non-destructive upgrade for earlier local previews.
             cols = {x["name"] for x in conn.execute("PRAGMA table_info(projects)")}
@@ -74,7 +77,6 @@ class Database:
         conn.row_factory = sqlite3.Row
         conn.execute("PRAGMA foreign_keys=ON")
         conn.execute("PRAGMA busy_timeout=15000")
-        conn.execute("PRAGMA journal_mode=WAL")
         try:
             yield conn
         finally:

@@ -61,7 +61,10 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             "style-src 'self'; script-src 'self'; connect-src 'self'; "
             "font-src 'self'; object-src 'none'; frame-ancestors 'none'; base-uri 'none'"
         )
-        response.headers["Cache-Control"] = "no-store" if request.url.path.startswith("/api/") else "public, max-age=120"
+        response.headers["Cache-Control"] = (
+            "no-store" if request.url.path.startswith(("/api/", "/auth/"))
+            else "public, max-age=120"
+        )
         return response
 
     @app.get("/api/health")
@@ -300,9 +303,10 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         root = project_dir(user["id"], project_id)
         if not root.is_dir():
             raise HTTPException(404, "Project source files are not available")
-        archive = create_archive(root)
-        if len(archive) > 32 * 1024 * 1024:
-            raise HTTPException(413, "Project export exceeds 32 MB")
+        try:
+            archive = create_archive(root)
+        except InvalidRepository as err:
+            raise HTTPException(413, str(err)) from err
         return Response(content=archive, media_type="application/zip",
                         headers={"Content-Disposition": "attachment; filename=oryveta-project.zip"})
 
