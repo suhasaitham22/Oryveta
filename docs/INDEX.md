@@ -22,6 +22,7 @@
 | [AUTH-SECURITY.md](AUTH-SECURITY.md) | GitHub OAuth vs GitHub App, roles, sandbox/prompt injection, approvals |
 | [API.md](API.md) | Local MVP versus planned API contracts |
 | [AGENT-HARNESS.md](AGENT-HARNESS.md) | Context compiler, models, router, tools, worker, verified patch loop and Rust options |
+| [EVOLVE-PATCH-PREVIEW.md](EVOLVE-PATCH-PREVIEW.md) | Read-only patch proposal, bounded diffs, stale-source checks and review gates |
 | [EVALUATION.md](EVALUATION.md) | Internal Arena, Kaggle, unbiased benchmarks, self-learning and hypothesis graph |
 | [INFRASTRUCTURE.md](INFRASTRUCTURE.md) | GitHub, Vercel, Cloudflare, Supabase, remote 24/7 workers and free-tier constraints |
 | [OPERATIONS.md](OPERATIONS.md) | CI/CD, observability, lease/recovery, incidents and backups |
