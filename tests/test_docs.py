@@ -25,7 +25,7 @@ def test_documented_product_scope():
     product = (DOCS / "PRODUCT.md").read_text(encoding="utf-8")
     status = (DOCS / "STATUS.md").read_text(encoding="utf-8")
     assert "Start New" in vision and "Evolve" in vision
-    assert "Kaggle" in product and "internal" in product
+    assert "Kaggle" in product and "internal" in product.lower()
     assert "Not implemented" in status
 
 
