@@ -2,6 +2,10 @@
 
 **Build thoughtfully. Evolve continuously.**
 
+### [Live website preview → https://oryveta.vercel.app](https://oryveta.vercel.app)
+
+> **Preview only:** This deployment demonstrates the responsive Start New and Evolve UI. It does **not** yet offer live GitHub OAuth, repository generation, source analysis or autonomous coding. The local MVP API has not been deployed or wired to the site.
+
 Oryveta is an open-source autonomous software engineering workspace with two product journeys:
 
 - **Start New:** turn a project brief into a real software repository, then iteratively develop, test, review, and deploy it.
@@ -11,7 +15,7 @@ Kaggle and related benchmarks are **internal evaluation scenarios**, not a third
 
 ## Status
 
-**Early development.** A local MVP has been built with a responsive Soft Modern interface, Python/FastAPI + SQLite API, starter repository scaffolding, snapshot-based source analysis, tests, and local background worker. The complete local implementation is being transferred into this public repository. This remote repository currently contains project licensing and documentation; it is **not yet a deployed service**. Autonomous bug-fixing PRs, Rust migrations, fully agent-built applications, hardened tenant isolation, and 24/7 hosted execution are planned—not completed.
+**Early development.** A local MVP has been built with a responsive Soft Modern interface, Python/FastAPI + SQLite API, starter repository scaffolding, snapshot-based source analysis, tests, and local background worker. The complete local implementation is being transferred into this public repository. The public repository now contains Apache-2.0 licensing, documentation, an interactive **static frontend preview**, and basic preview CI. Vercel serves that frontend at **https://oryveta.vercel.app**; it is **not** an operational authenticated or autonomous engineering service. Autonomous bug-fixing PRs, Rust migrations, fully agent-built applications, hardened tenant isolation, and 24/7 hosted execution are planned—not completed.
 
 See [current status](docs/STATUS.md) and [open-source policy](docs/OPEN-SOURCE.md).
 

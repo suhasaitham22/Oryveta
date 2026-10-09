@@ -27,6 +27,6 @@ jobs:
           for phrase in ['Start New', 'Evolve Existing', 'Interactive product preview', 'No sign-in required']:
               assert phrase in site, phrase
           assert '<script src="https://' not in site
-          assert 'GitHub sign-in' in site
+          assert 'GitHub authentication' in site, 'Authentication limitation must be disclosed'
           print('Static preview checks passed')
           PY
