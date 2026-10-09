@@ -17,4 +17,6 @@ Checked 2026-10-09. Separate merged behavior, pending changes and deployment lim
 | Rust supervisor, Cloudflare D1, Supabase | Planned/optional, not deployed for Oryveta |
 | Kaggle competition wins / external coding benchmarks | Not demonstrated |
 
+**Not implemented:** autonomous bug-fixing, private GitHub App access, multi-tenant sandboxing and hosted 24/7 execution.
+
 **Next:** require green matrix/security/container checks and code review, merge the hardening PR, configure GitHub branch protection, then implement one independently verified Evolve patch loop with an isolated sandbox. See [QUALITY.md](QUALITY.md).

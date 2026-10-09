@@ -7,7 +7,7 @@
 1. **Static checks:** Ruff Python lint, Python compilation, JavaScript syntax, dependency consistency.
 2. **Compatibility matrix:** tests on Python **3.11, 3.12 and 3.13** (all supported by the project).
 3. **Coverage:** branch-aware coverage of both the API and engine; **84% minimum** initially. Raise the gate as tests expand. Coverage is a floor, not a proof of correctness.
-4. **Security:** `pip-audit --strict` for installed dependency advisories and Bandit for medium-or-higher severity findings. Review results rather than suppressing alerts without evidence.
+4. **Security:** `pip-audit --strict --skip-editable` for installed dependency advisories and Bandit for medium-or-higher severity findings. Review results rather than suppressing alerts without evidence.
 5. **Packaging:** build an installable wheel and import the installed packages.
 6. **Container:** build the Docker image, verify the API imports and process runs without root privileges; validate Compose configuration.
 7. **Documentation:** keep `docs/STATUS.md`, architecture decisions and user-facing limitations current when behavior changes.
