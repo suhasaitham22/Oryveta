@@ -4,6 +4,8 @@
 
 ### [Live website preview → https://oryveta.vercel.app](https://oryveta.vercel.app)
 
+> **Documentation:** [Complete product and technical decisions](docs/INDEX.md) · [Architecture](docs/ARCHITECTURE.md) · [UI design](docs/DESIGN-SYSTEM.md) · [Roadmap](docs/ROADMAP.md) · [Verified status](docs/STATUS.md)
+
 > **Preview only:** This deployment demonstrates the responsive Start New and Evolve UI. It does **not** yet offer live GitHub OAuth, repository generation, source analysis or autonomous coding. The local MVP API has not been deployed or wired to the site.
 
 Oryveta is an open-source autonomous software engineering workspace with two product journeys:
