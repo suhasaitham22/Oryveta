@@ -18,6 +18,7 @@
 | --- | --- |
 | [IMPLEMENTATION.md](IMPLEMENTATION.md) | Source layout, local setup, test coverage and current security limitations |
 | [ARCHITECTURE.md](ARCHITECTURE.md) | Control/intelligence/execution planes, technology selections, current vs target stack |
+| [ENTERPRISE-FOUNDATIONS.md](ENTERPRISE-FOUNDATIONS.md) | Enterprise AI invariants, task safety, quotas, evaluation gates and scale triggers |
 | [DATABASE.md](DATABASE.md) | SQLite, D1, optional PostgreSQL/Supabase, schema ownership and artifacts |
 | [AUTH-SECURITY.md](AUTH-SECURITY.md) | GitHub OAuth vs GitHub App, roles, sandbox/prompt injection, approvals |
 | [API.md](API.md) | Local MVP versus planned API contracts |

@@ -1,22 +1,18 @@
-# Oryveta current status
+# Oryveta implementation status
 
-Checked 2026-10-09. Separate merged behavior, pending changes and deployment limitations.
+Checked 2026-10-09. Distinguish merged behavior, proposed changes and production gaps.
 
-| Capability | Verified state |
+| Capability | State |
 | --- | --- |
-| GitHub repository | https://github.com/suhasaitham22/Oryveta — functional MVP merged into `main` via PR #1; CI fix merged via PR #2 |
-| CI on main | Latest completed run succeeded: https://github.com/suhasaitham22/Oryveta/actions/runs/38002056824 |
-| Follow-up CI hardening | Proposed on `hardening/ci-quality-security`; not merged; remote checks must pass before promotion |
-| Local hardening tests | 61 passed on Python 3.13, 84.55% branch-aware coverage; does not substitute for remote CI |
-| Product identity and journeys | Oryveta; Soft Modern; Start New and Evolve |
-| Start New | Local runnable starter scaffolds and ZIP export; not custom autonomous software generation |
-| Evolve | Local public GitHub/ZIP snapshot import and heuristic analysis; not autonomous fixes or PRs |
-| GitHub OAuth | Implemented locally with test credentials/mocks; live identity configuration and GitHub App not deployed |
-| SQLite API and worker | Single-host local MVP; not a 24/7 remote or tenant-isolated service |
-| Public Vercel frontend | https://oryveta.vercel.app alias assigned; interactive static preview only |
-| Rust supervisor, Cloudflare D1, Supabase | Planned/optional, not deployed for Oryveta |
-| Kaggle competition wins / external coding benchmarks | Not demonstrated |
+| GitHub + CI | [Source](https://github.com/suhasaitham22/Oryveta); CI stabilization merged in PR #7, Evolve read-only patch preview merged in PR #8 |
+| Start New | Runnable starter scaffolds and ZIP export; not autonomous implementation of custom business requirements |
+| Evolve | Public GitHub/ZIP import, static findings, read-only patch previews; not autonomous bug fixes or PRs |
+| Identity | GitHub OAuth code + local demo; live hosted OAuth is not configured |
+| Hosted site | `oryveta.vercel.app` is a static preview, not a deployed worker/API |
+| Jobs | SQLite single-host queue with fenced retries; heartbeat, owner-scoped status/cancel and admission quotas proposed in this enterprise-foundations milestone |
+| Security | CSRF, owner isolation, bounded archives, patch preview tests; no untrusted code execution or multi-tenant sandbox |
+| AI | No production model integration, cost budget, independent runtime verifier or proof receipts |
 
-**Not implemented:** autonomous bug-fixing, private GitHub App access, multi-tenant sandboxing and hosted 24/7 execution.
+**Not implemented:** autonomous coding, private GitHub App access, isolated code execution, distributed job orchestration, enterprise multi-tenancy, or 24/7 hosted worker.
 
-**Next:** require green matrix/security/container checks and code review, merge the hardening PR, configure GitHub branch protection, then implement one independently verified Evolve patch loop with an isolated sandbox. See [QUALITY.md](QUALITY.md).
+See [ENTERPRISE-FOUNDATIONS.md](ENTERPRISE-FOUNDATIONS.md) for design invariants and measurable release gates. Proposed changes must pass remote CI and merge before being labeled implemented.
