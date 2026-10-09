@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import threading
 import time
 import traceback
 import uuid
@@ -60,6 +61,30 @@ class Worker:
             job["lease_token"] = token
             return job
 
+    def renew_lease(self, job: dict) -> bool:
+        """Extend only an unexpired lease owned by this exact worker token."""
+        now = time.time()
+        with self.db.connect() as conn:
+            updated = conn.execute(
+                """UPDATE jobs SET lease_until=?,updated_at=?
+                   WHERE id=? AND status='running' AND lease_token=? AND lease_until>=?""",
+                (now + LEASE_SECONDS, now, job["id"], job["lease_token"], now),
+            )
+        return updated.rowcount == 1
+
+    def _heartbeat(self, job: dict, stopped: threading.Event) -> None:
+        # Each heartbeat opens a new connection: SQLite connections are not
+        # shared between worker and heartbeat threads.
+        while not stopped.wait(max(0.05, LEASE_SECONDS / 3)):
+            try:
+                if not self.renew_lease(job):
+                    return  # Cancellation, expiry or takeover fenced the worker.
+            except Exception:
+                # A transient DB error must not bypass the fencing check at
+                # completion. Avoid logging task contents or credentials.
+                print("Oryveta worker heartbeat failed", flush=True)
+                return
+
     def _finish(self, job: dict, result: dict) -> bool:
         """Atomically fence result, analysis and project status behind the lease."""
         now = time.time()
@@ -103,14 +128,21 @@ class Worker:
         if job is None:
             return False
         self.db.add_event(job["user_id"], "job_started", f"Started {job['kind']}", job["id"])
+        stopped = threading.Event()
+        heartbeat = threading.Thread(target=self._heartbeat, args=(job, stopped), daemon=True)
+        heartbeat.start()
         try:
-            if job["kind"] == "analyze":
-                root = Path(self.workspace_root) / job["user_id"] / job["project_id"]
-                if not root.is_dir():
-                    raise FileNotFoundError("Project workspace missing")
-                result = analyze_repository(root)
-            else:
-                result = run_benchmark(job["challenge"], job["seed"])
+            try:
+                if job["kind"] == "analyze":
+                    root = Path(self.workspace_root) / job["user_id"] / job["project_id"]
+                    if not root.is_dir():
+                        raise FileNotFoundError("Project workspace missing")
+                    result = analyze_repository(root)
+                else:
+                    result = run_benchmark(job["challenge"], job["seed"])
+            finally:
+                stopped.set()
+                heartbeat.join()
             if self._finish(job, result):
                 self.db.add_event(
                     job["user_id"], "job_completed",

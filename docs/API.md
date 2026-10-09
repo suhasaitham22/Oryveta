@@ -4,9 +4,16 @@
 
 The deployed preview is a static site. Navigation and project brief drafting run in the browser, with no live server calls for Oryveta project creation or Evolve analysis. Do not document a static form submit as a real backend success.
 
-## Local MVP (not yet deployed or copied to the remote repository)
+## Current GitHub API implementation (local/self-hosted; not deployed on the static preview)
 
-The earlier local FastAPI source supports health/config, GitHub identity OAuth callback, local-only demo auth, logout, current user/session, owner-scoped projects, scaffold generation, bounded repository ZIP or public GitHub imports, analysis jobs, status/events and artifact export. This API requires live code verification and real credentials before hosted use.
+The published FastAPI source supports health/config, GitHub identity OAuth callback, local-only demo auth, logout, current user/session, owner-scoped projects, scaffold generation, bounded repository ZIP or public GitHub imports, analysis jobs, status/events and artifact export. This API requires live code verification and real credentials before hosted use.
+
+## Current job control API (single-host)
+
+- `GET /api/jobs/{job_id}` — authenticated owner-only job status, sanitized to omit lease tokens and internal result blobs.
+- `POST /api/jobs/{job_id}/cancel` — authenticated owner-only, CSRF-protected cancellation; `200` for queued/running and already-canceled tasks, `409` for succeeded/failed tasks, `404` for non-owned IDs.
+- New job admission is capped at eight queued/running tasks per authenticated user, atomically enforced in SQLite; over-limit requests return `429` with `Retry-After: 30`. Matching idempotency-key benchmark retries are replayed without consuming extra capacity.
+- Worker lease heartbeats keep long-running tasks eligible to commit, while canceled or stolen leases cannot publish results. Running CPU work is **not** forcibly terminated by this endpoint; killable sandboxes are still required before executing imported code.
 
 ## Target versioned HTTP resources
 

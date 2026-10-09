@@ -26,6 +26,7 @@ from .config import Settings
 from .database import Database
 
 WEB_DIR = Path(__file__).resolve().parents[2] / "web"
+MAX_ACTIVE_JOBS_PER_USER = 8  # Single-host fair-use admission limit.
 
 
 class ProjectInput(BaseModel):
@@ -212,13 +213,30 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             raise HTTPException(404, "Project not found")
         return dict(row)
 
+    def check_job_capacity(conn, user_id: str) -> None:
+        # Call only after BEGIN IMMEDIATE: count and insertion must be atomic.
+        active = conn.execute(
+            "SELECT COUNT(*) FROM jobs WHERE user_id=? AND status IN ('queued','running')",
+            (user_id,),
+        ).fetchone()[0]
+        if active >= MAX_ACTIVE_JOBS_PER_USER:
+            raise HTTPException(
+                429, "Too many active jobs; wait for completion or cancel a job",
+                headers={"Retry-After": "30"},
+            )
+
     def create_analysis_job(user_id: str, project_id: str) -> str:
         job_id = app.state.db.new_id()
         now = time.time()
         with app.state.db.connect() as conn:
+            conn.execute("BEGIN IMMEDIATE")
+            check_job_capacity(conn, user_id)
             conn.execute("""INSERT INTO jobs(id,user_id,project_id,kind,status,created_at,updated_at)
                 VALUES(?,?,?,'analyze','queued',?,?)""", (job_id, user_id, project_id, now, now))
-        app.state.db.add_event(user_id, "analysis_queued", "Repository analysis queued", job_id)
+            conn.execute("""INSERT INTO events(user_id,job_id,kind,detail,created_at)
+                VALUES(?,?,'analysis_queued','Repository analysis queued',?)""",
+                (user_id, job_id, now))
+            conn.commit()
         return job_id
 
     @app.post("/api/projects", status_code=201)
@@ -260,11 +278,23 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         root.parent.mkdir(parents=True, exist_ok=True)
         try:
             count = snapshot_zip(root, archive)
+            # Import admission is atomic: never leave a project row orphaned
+            # if the per-account job quota rejects its initial analysis.
+            job_id = app.state.db.new_id()
+            now = time.time()
             with app.state.db.connect() as conn:
+                conn.execute("BEGIN IMMEDIATE")
+                check_job_capacity(conn, user["id"])
                 conn.execute("""INSERT INTO projects(id,user_id,name,brief,blueprint,status,origin,source_url,created_at)
                     VALUES(?,?,?,'Imported repository','imported','analyzing','import',?,?)""",
-                    (project_id, user["id"], name[:90], source_url, time.time()))
-            job_id = create_analysis_job(user["id"], project_id)
+                    (project_id, user["id"], name[:90], source_url, now))
+                conn.execute("""INSERT INTO jobs(id,user_id,project_id,kind,status,created_at,updated_at)
+                    VALUES(?,?,?,'analyze','queued',?,?)""",
+                    (job_id, user["id"], project_id, now, now))
+                conn.execute("""INSERT INTO events(user_id,job_id,kind,detail,created_at)
+                    VALUES(?,?,'analysis_queued','Repository analysis queued',?)""",
+                    (user["id"], job_id, now))
+                conn.commit()
         except InvalidRepository as err:
             shutil.rmtree(root, ignore_errors=True)
             raise HTTPException(422, str(err)) from err
@@ -371,15 +401,69 @@ def create_app(settings: Settings | None = None) -> FastAPI:
                     ):
                         raise HTTPException(409, "Idempotency key was used for another request")
                     return {"id": existing["id"], "status": existing["status"], "replayed": True}
+            check_job_capacity(conn, user["id"])
             job_id = db.new_id()
             now = time.time()
             conn.execute("""INSERT INTO jobs
                 (id,user_id,kind,challenge,seed,status,idempotency_key,created_at,updated_at)
                 VALUES(?,?,'benchmark',?,?,'queued',?,?,?)""",
                 (job_id, user["id"], data.challenge, data.seed, idem or None, now, now))
+            conn.execute("""INSERT INTO events(user_id,job_id,kind,detail,created_at)
+                VALUES(?,?,'benchmark_queued',?,?)""",
+                (user["id"], job_id, f"Queued {data.challenge} benchmark", now))
             conn.commit()
-        db.add_event(user["id"], "benchmark_queued", f"Queued {data.challenge} benchmark", job_id)
         return {"id": job_id, "status": "queued", "replayed": False}
+
+    @app.get("/api/jobs/{job_id}")
+    def job_status(job_id: str, user=Depends(current_user)):
+        with app.state.db.connect() as conn:
+            row = conn.execute(
+                """SELECT id,project_id,kind,status,attempts,error,created_at,updated_at
+                   FROM jobs WHERE id=? AND user_id=?""", (job_id, user["id"]),
+            ).fetchone()
+        if row is None:
+            raise HTTPException(404, "Job not found")
+        # Lease tokens, provider details and internal result blobs are private.
+        return dict(row)
+
+    @app.post("/api/jobs/{job_id}/cancel")
+    def cancel_job(job_id: str, user=Depends(current_user), _=Depends(require_csrf)):
+        db = app.state.db
+        with db.connect() as conn:
+            conn.execute("BEGIN IMMEDIATE")
+            row = conn.execute(
+                "SELECT id,status,project_id FROM jobs WHERE id=? AND user_id=?",
+                (job_id, user["id"]),
+            ).fetchone()
+            if row is None:
+                raise HTTPException(404, "Job not found")
+            if row["status"] == "canceled":
+                conn.commit()
+                return {"id": job_id, "status": "canceled", "replayed": True}
+            if row["status"] not in {"queued", "running"}:
+                raise HTTPException(409, "Job has already reached a terminal state")
+            conn.execute(
+                """UPDATE jobs SET status='canceled',lease_token=NULL,lease_until=NULL,
+                   updated_at=? WHERE id=? AND user_id=?""",
+                (time.time(), job_id, user["id"]),
+            )
+            if row["project_id"]:
+                # Avoid a permanently 'analyzing' imported project when its
+                # only active analysis job is canceled.
+                conn.execute(
+                    """UPDATE projects SET status='analysis_canceled'
+                       WHERE id=? AND user_id=? AND status='analyzing'
+                       AND NOT EXISTS (
+                         SELECT 1 FROM jobs WHERE project_id=? AND kind='analyze'
+                         AND status IN ('queued','running'))""",
+                    (row["project_id"], user["id"], row["project_id"]),
+                )
+            conn.execute("""INSERT INTO events(user_id,job_id,kind,detail,created_at)
+                VALUES(?,?,'job_canceled','Job canceled by owner',?)""",
+                (user["id"], job_id, time.time()))
+            conn.commit()
+        return {"id": job_id, "status": "canceled", "replayed": False,
+                "note": "Active computation may continue until its worker returns; results are fenced."}
 
     @app.get("/api/activity")
     def activity(user=Depends(current_user)):
