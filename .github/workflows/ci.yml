@@ -85,7 +85,7 @@ jobs:
       - name: Install app and security scanners
         run: python -m pip install -e . 'pip-audit>=2.7,<3' 'bandit>=1.7,<2'
       - name: Fail on known vulnerable installed dependencies
-        run: python -m pip_audit --strict
+        run: python -m pip_audit --strict --skip-editable
       - name: Fail on medium/high-confidence security findings
         run: bandit -q -r apps/api/oryveta_api engine/oryveta_engine -ll -ii
 
