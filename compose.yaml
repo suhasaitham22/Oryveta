@@ -1,0 +1,27 @@
+# Single-host demo deployment; add HTTPS ingress and secret management before public use.
+services:
+  api:
+    build: .
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:8000:8000"
+    environment:
+      ORYVETA_BASE_URL: ${ORYVETA_BASE_URL:-http://127.0.0.1:8000}
+      ORYVETA_COOKIE_SECURE: ${ORYVETA_COOKIE_SECURE:-false}
+      ORYVETA_GITHUB_CLIENT_ID: ${ORYVETA_GITHUB_CLIENT_ID:-}
+      ORYVETA_GITHUB_CLIENT_SECRET: ${ORYVETA_GITHUB_CLIENT_SECRET:-}
+      ORYVETA_LOCAL_DEMO: "false"
+    volumes:
+      - oryveta_data:/data
+  worker:
+    build: .
+    restart: unless-stopped
+    command: ["python", "-m", "oryveta_engine.worker"]
+    environment:
+      ORYVETA_BASE_URL: ${ORYVETA_BASE_URL:-http://127.0.0.1:8000}
+      ORYVETA_COOKIE_SECURE: ${ORYVETA_COOKIE_SECURE:-false}
+      ORYVETA_LOCAL_DEMO: "false"
+    volumes:
+      - oryveta_data:/data
+volumes:
+  oryveta_data:
