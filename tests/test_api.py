@@ -63,7 +63,8 @@ def test_import_scan_and_data_isolation(signed_in):
 def test_import_unsafe_archive_rejected(signed_in):
     client,headers=signed_in
     b=io.BytesIO()
-    with zipfile.ZipFile(b,'w') as z:z.writestr('../evil.py','print(1)')
+    with zipfile.ZipFile(b, 'w') as z:
+        z.writestr('../evil.py', 'print(1)')
     resp=client.post('/api/projects/import/zip',headers={**headers,'Content-Type':'application/zip'},content=b.getvalue())
     assert resp.status_code==422
 
