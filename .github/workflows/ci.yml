@@ -89,7 +89,8 @@ jobs:
           # Audit the resolved, installed dependency versions, not the local
           # unpublished Oryveta distribution (which has no PyPI advisory ID).
           # Never silently ignore a known vulnerability or scanner failure.
-          python -m pip freeze | grep -v '^oryveta==' > /tmp/oryveta-audit.txt
+          python -m pip freeze | grep -viE '^oryveta([[:space:]]|=|@)' > /tmp/oryveta-audit.txt
+          ! grep -qiE '^oryveta([[:space:]]|=|@)' /tmp/oryveta-audit.txt
           python -m pip_audit --strict --no-deps -r /tmp/oryveta-audit.txt
       - name: Fail on medium/high-confidence security findings
         run: bandit -q -r apps/api/oryveta_api engine/oryveta_engine -ll -ii
