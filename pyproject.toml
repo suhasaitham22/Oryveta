@@ -1,0 +1,30 @@
+[project]
+name = "oryveta"
+version = "0.1.0"
+description = "Open source, evidence-driven autonomous engineering platform"
+requires-python = ">=3.11"
+dependencies = ["fastapi>=0.110,<1", "uvicorn>=0.29,<1", "httpx>=0.27,<1", "scikit-learn>=1.4,<2"]
+
+[project.optional-dependencies]
+dev = ["pytest>=8,<10", "ruff>=0.6,<1"]
+
+[tool.pytest.ini_options]
+pythonpath = ["apps/api", "engine"]
+testpaths = ["tests"]
+
+[tool.ruff]
+line-length = 100
+
+[tool.ruff.lint]
+select = ["E4", "E7", "E9", "F"]
+
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+packages = ["oryveta_api", "oryveta_engine"]
+
+[tool.setuptools.package-dir]
+oryveta_api = "apps/api/oryveta_api"
+oryveta_engine = "engine/oryveta_engine"

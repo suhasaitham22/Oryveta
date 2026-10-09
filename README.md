@@ -17,7 +17,7 @@ Kaggle and related benchmarks are **internal evaluation scenarios**, not a third
 
 ## Status
 
-**Early development.** A local MVP has been built with a responsive Soft Modern interface, Python/FastAPI + SQLite API, starter repository scaffolding, snapshot-based source analysis, tests, and local background worker. The complete local implementation is being transferred into this public repository. The public repository now contains Apache-2.0 licensing, documentation, an interactive **static frontend preview**, and basic preview CI. Vercel serves that frontend at **https://oryveta.vercel.app**; it is **not** an operational authenticated or autonomous engineering service. Autonomous bug-fixing PRs, Rust migrations, fully agent-built applications, hardened tenant isolation, and 24/7 hosted execution are planned—not completed.
+**Early development.** A local MVP has been built with a responsive Soft Modern interface, Python/FastAPI + SQLite API, starter repository scaffolding, snapshot-based source analysis, tests, and local background worker. The functional local MVP source, tests, Docker Compose and CI are now included in the `feat/functional-mvp-foundation` pull-request branch. The public website remains a separate static preview. The public repository now contains Apache-2.0 licensing, documentation, an interactive **static frontend preview**, and basic preview CI. Vercel serves that frontend at **https://oryveta.vercel.app**; it is **not** an operational authenticated or autonomous engineering service. Autonomous bug-fixing PRs, Rust migrations, fully agent-built applications, hardened tenant isolation, and 24/7 hosted execution are planned—not completed.
 
 See [current status](docs/STATUS.md) and [open-source policy](docs/OPEN-SOURCE.md).
 
@@ -29,6 +29,24 @@ See [current status](docs/STATUS.md) and [open-source policy](docs/OPEN-SOURCE.m
 4. Use Kaggle and software benchmarks to evaluate genuine results with reproducible artifacts.
 5. Never claim benchmark wins, production reliability, or completed work without evidence.
 6. Keep free and open-source operation possible with bring-your-own-compute.
+
+## Functional MVP — run locally
+
+The production-style foundation is intentionally a **single-host MVP**, not a multi-tenant cloud service. It runs locally with Python 3.11+, FastAPI, SQLite, and a separate durable worker. It can create runnable starter repositories, import authorized ZIP/public GitHub snapshots, perform heuristic static analysis, export projects and run reproducible *starter* ML evaluations.
+
+```bash
+python -m venv .venv
+source .venv/bin/activate
+pip install -e '.[dev]'
+export ORYVETA_LOCAL_DEMO=true
+uvicorn oryveta_api.main:app --host 127.0.0.1 --port 8000
+# In another terminal, with the same environment:
+python -m oryveta_engine.worker
+```
+
+Open http://127.0.0.1:8000. Local demo sign-in is restricted to localhost; it is **not permitted** on the public Vercel site. Alternatively, use `docker compose up --build` with real GitHub OAuth credentials configured. To validate changes run `pytest -q`, `ruff check apps/api engine tests`, and `node --check apps/web/app.js`.
+
+For service boundaries, limitations, and deployment considerations see [implementation guide](docs/IMPLEMENTATION.md).
 
 ## Copyright and license
 
