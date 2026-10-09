@@ -16,6 +16,7 @@ from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
 from oryveta_engine.benchmarks import CHALLENGES
+from oryveta_engine.patches import InvalidPatch, StalePatch, preview_patch
 from oryveta_engine.scaffold import BLUEPRINTS, generate_files, write_scaffold
 from oryveta_engine.repositories import (InvalidRepository, create_archive,
     fetch_public_github_repo, snapshot_zip, parse_github_url)
@@ -35,6 +36,12 @@ class ProjectInput(BaseModel):
 
 class ImportInput(BaseModel):
     url: str = Field(min_length=23, max_length=260)
+
+
+class PatchPreviewInput(BaseModel):
+    path: str = Field(min_length=1, max_length=240)
+    expected_sha256: str = Field(min_length=64, max_length=64)
+    replacement: str = Field(max_length=128 * 1024)
 
 
 class ArenaInput(BaseModel):
@@ -309,6 +316,20 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             raise HTTPException(413, str(err)) from err
         return Response(content=archive, media_type="application/zip",
                         headers={"Content-Disposition": "attachment; filename=oryveta-project.zip"})
+
+    @app.post("/api/projects/{project_id}/patch-preview")
+    def create_patch_preview(project_id: str, data: PatchPreviewInput,
+                             user=Depends(current_user), _=Depends(require_csrf)):
+        # No source writes, imports or test execution; separate human approval
+        # and isolated verification are mandatory before future application.
+        owned_project(project_id, user)
+        try:
+            return preview_patch(project_dir(user["id"], project_id),
+                                 data.path, data.expected_sha256, data.replacement)
+        except StalePatch as exc:
+            raise HTTPException(409, str(exc)) from exc
+        except (InvalidPatch, OSError) as exc:
+            raise HTTPException(422, str(exc)) from exc
 
     @app.post("/api/projects/{project_id}/analyze", status_code=202)
     def queue_analysis(project_id: str, user=Depends(current_user), _=Depends(require_csrf)):
