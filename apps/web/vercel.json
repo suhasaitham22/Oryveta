@@ -1,0 +1,13 @@
+{
+  "version": 2,
+  "rewrites": [
+    {
+      "source": "/static/app.js",
+      "destination": "/app.js"
+    },
+    {
+      "source": "/static/styles.css",
+      "destination": "/styles.css"
+    }
+  ]
+}
