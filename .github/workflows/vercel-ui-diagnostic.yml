@@ -1,0 +1,26 @@
+name: Vercel UI HTTP diagnosis
+on:
+  push:
+    branches: ['ci/preflight-vercel-ui-recovery']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  inspect:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Check live HTTP response and UI marker
+        shell: bash
+        run: |
+          set -uo pipefail
+          for url in "https://oryveta.vercel.app/" "https://oryveta.vercel.app/index.html" "https://oryveta-jsqp7rnft-ayu-link.vercel.app/"; do
+            echo "::group::GET $url"
+            curl --max-time 20 -sSL -D /tmp/hdr -o /tmp/body -w 'http_status=%{http_code} content_type=%{content_type} effective_url=%{url_effective} bytes=%{size_download}\n' "$url" || true
+            grep -iE '^(HTTP/|content-type:|location:|x-vercel-id:)' /tmp/hdr || true
+            echo "first_240_bytes:"
+            head -c 240 /tmp/body | tr '\n' ' ' || true
+            echo
+            if grep -qi 'Oryveta' /tmp/body; then echo 'Oryveta UI marker present'; else echo 'Oryveta UI marker MISSING'; fi
+            echo "::endgroup::"
+          done
