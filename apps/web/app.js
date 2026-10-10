@@ -3,8 +3,8 @@
 const $ = (selector) => document.querySelector(selector);
 const icon = (name, cls = '') => `<svg class="icon ${cls}" aria-hidden="true"><use href="#i-${name}"></use></svg>`;
 const esc = (value) => String(value ?? '').replace(/[&<>"']/g, (c) => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-const state = {user:null,csrf:'',projects:[],overview:{},activity:[],current:'home',project:null,importMode:'github',modelStatus:'disabled',modelName:null,aiBudget:null,preview:false};
-const titles = {home:'Overview',new:'Start New',evolve:'Evolve',projects:'Projects',activity:'Activity',detail:'Project'};
+const state = {user:null,csrf:'',projects:[],overview:{},activity:[],current:'home',project:null,importMode:'github',modelStatus:'disabled',modelName:null,aiBudget:null,preview:false,cloud:false,workspaces:[],activeWorkspaceId:null};
+const titles = {home:'Overview',workspace:'Workspace',new:'Start New',evolve:'Evolve',projects:'Projects',activity:'Activity',detail:'Project'};
 function toast(message, error = false){const box=$('#toast');box.textContent=message;box.className=`toast${error?' error':''}`;clearTimeout(toast.timer);toast.timer=setTimeout(()=>box.classList.add('hidden'),4700)}
 async function api(path,{method='GET',data,headers={},body}={}){
  const opts={method,credentials:'same-origin',headers:{...headers}};
@@ -23,8 +23,36 @@ function projectRows(limit=100){const rows=state.projects.slice(0,limit);return 
 function activityRows(limit=100){const items=state.activity.slice(0,limit);return items.length?items.map(a=>`<div class="activity-row"><span class="action-icon" style="margin:0;height:31px;width:31px">${icon('activity')}</span><div class="project-text"><b>${esc(a.detail)}</b><small>${esc(a.kind)} · ${new Date(a.created_at*1000).toLocaleString()}</small></div></div>`).join(''):empty('A clear slate','Your engineering activity will appear here.');}
 const guide=(title,steps)=>`<aside class="card aside-guide"><h3 class="guide-header">${title}</h3>${steps.map((s,i)=>`<div class="guide-step"><span class="step-no">0${i+1}</span><div><b>${s[0]}</b><p>${s[1]}</p></div></div>`).join('')}<div class="divider"></div><div class="notice">${icon('shield')} Every meaningful change should be supported by tests and review evidence.</div></aside>`;
 const pages={
+ workspace(){
+  const active=state.workspaces.find(w=>w.id===state.activeWorkspaceId)||null;
+  if(!state.cloud)return pageHeader('WORKSPACE','Your company starts here.','Sign in with GitHub to create a private, persistent engineering workspace.')+
+   '<section class="card panel"><h2>Private by default</h2><p class="form-intro">A real workspace belongs to an authenticated account. Preview mode does not create an account, store projects or grant repository access.</p><button class="btn" id="workspace-signin" type="button">Return to sign in '+icon('arrow')+'</button></section>';
+  if(!state.workspaces.length)return `${pageHeader('YOUR FIRST WORKSPACE','A home for everything you build.','Give your team a name and a clear space to create, evolve and verify software.')}
+   <div class="workspace-setup"><section class="card form-card"><span class="workspace-badge">01 / Set up your space</span><h2 style="margin-top:19px">Create your workspace</h2><p class="form-intro">Start solo. Your workspace is private until you explicitly invite others in a future release.</p>
+   <form id="workspace-create"><div class="field"><label for="workspace-name">Workspace name</label><input id="workspace-name" name="name" required minlength="2" maxlength="80" autocomplete="organization" placeholder="e.g. Acme Engineering"></div>
+   <div class="field"><label for="workspace-slug">Workspace identifier</label><input id="workspace-slug" name="slug" required minlength="3" maxlength="40" pattern="[a-z][a-z0-9-]{2,39}" placeholder="acme-engineering"><span class="field-hint">Lowercase letters, numbers and hyphens. Used for organization, not a public URL.</span></div>
+   <div class="field"><label for="workspace-description">What are you building? <span class="field-hint">(optional)</span></label><textarea id="workspace-description" name="description" maxlength="500" placeholder="Your team's mission or current product focus..."></textarea></div>
+   <button type="submit" class="btn" id="workspace-create-button">Create workspace ${icon('arrow')}</button></form></section>
+   <aside class="workspace-side"><h3>Built for serious engineering.</h3><p>One private home for projects, work history and the people who will build them with you.</p>
+   <div class="workspace-side-point">${icon('shield')} <span>Isolated data boundaries, not just a filtered dashboard.</span></div>
+   <div class="workspace-side-point">${icon('git')} <span>Connect repositories separately, with explicit consent.</span></div>
+   <div class="workspace-side-point">${icon('check')} <span>Designed for reviews, approvals and traceable results.</span></div>
+   <p class="workspace-muted">Team invitations, billing and cloud agent execution are coming later.</p></aside></div>`;
+  return `${pageHeader('WORKSPACE','Your engineering home.','Choose a workspace, manage its identity and see what is ready for your team.')}
+  <div class="section-title"><h2>My workspaces</h2><span class="workspace-badge">${state.workspaces.length} ${state.workspaces.length===1?'workspace':'workspaces'}</span></div>
+  <div class="workspace-grid">${state.workspaces.map(w=>`<button type="button" class="workspace-card ${w.id===state.activeWorkspaceId?'selected':''}" data-workspace="${esc(w.id)}"><strong>◈ &nbsp; ${esc(w.name)}</strong><small>${esc(w.slug)} · ${w.created_by===state.user.id?'Owner':'Member'}</small><span class="workspace-badge">${w.id===state.activeWorkspaceId?'✓ Active workspace':'Switch workspace'}</span></button>`).join('')}</div>
+  <div class="workspace-detail-grid"><section class="card"><h2>Workspace details</h2><p>These settings belong to this workspace. Changes are saved securely and restricted by your role.</p>
+  <form id="workspace-update"><div class="field"><label for="workspace-edit-name">Workspace name</label><input id="workspace-edit-name" name="name" minlength="2" maxlength="80" required value="${esc(active?.name||'')}" ${active?.created_by===state.user.id?'':'disabled'}></div>
+  <div class="field"><label for="workspace-edit-slug">Identifier</label><input id="workspace-edit-slug" readonly value="${esc(active?.slug||'')}"><span class="field-hint">Workspace identifiers cannot be changed in this release.</span></div>
+  <div class="field"><label for="workspace-edit-description">Description</label><textarea id="workspace-edit-description" name="description" maxlength="500" ${active?.created_by===state.user.id?'':'disabled'}>${esc(active?.description||'')}</textarea></div>
+  ${active?.created_by===state.user.id?`<button class="btn" id="workspace-save-button" type="submit">Save changes ${icon('check')}</button>`:'<span class="workspace-muted">Only the workspace owner can edit these details.</span>'}</form></section>
+  <aside class="card"><h2>Access & ownership</h2><p>Access is managed at the data layer, with a foundation for team roles.</p>
+  <div class="workspace-identity"><strong>${esc(state.user.display_name)}</strong><small>${esc(state.user.email||'Signed in with GitHub')}</small><span class="workspace-badge" style="margin-top:12px">${active?.created_by===state.user.id?'Workspace owner':'Member'}</span></div>
+  <div class="workspace-separator"></div><h2>Team collaboration</h2><p>Invitations, reviewer access and granular permissions will be added after the authentication and RLS gates are verified.</p><span class="workspace-badge">Planned · Not yet available</span>
+  <div class="workspace-separator"></div><h2>Connected repositories</h2><p>GitHub sign-in does not grant access to repositories. A separate GitHub App connection will be required.</p><span class="workspace-badge">Not connected</span></aside></div>`;
+ },
  home(){const o=state.overview;return `${pageHeader('YOUR WORKSPACE','Good software gets better.','Two ways to make progress. Build a new product or evolve what you already have.')}
- ${state.preview?'<div class="notice notice-warning">This is the public UI preview. Live GitHub login, projects and Ollama inference require the self-hosted API. Explore the layout below; no operations will be saved.</div>':''}
+ ${state.preview?`<div class="notice notice-warning">${state.cloud?'You are signed in. Your workspace details are stored securely, but project generation, repository imports and AI execution still require the separate hosted engineering API.':'You are exploring the public preview. No account, project or activity data will be saved. Sign in to create a persistent workspace.'}</div>`:''}
  <div class="kpi-grid">${[['Projects',o.projects||0,'In your workspace'],['Active jobs',o.active_jobs||0,'Background work'],['Evaluations',o.verified_runs||0,'Completed benchmark runs'],['Activity',state.activity.length,'Recent events']].map(k=>`<div class="card kpi"><div class="kpi-label">${k[0]}</div><div class="kpi-val">${k[1]}</div><div class="kpi-meta">${k[2]}</div></div>`).join('')}</div>
  <div class="section-title"><h2>Where would you like to begin?</h2><span class="pill">Your next move</span></div>
  <div class="action-grid"><button class="action-card" data-page="new"><span class="action-icon">${icon('sparkles')}</span><h3>Start New</h3><p>Describe a product, choose a stack and create a runnable repository with tests and CI. Keep shaping it from there.</p><div class="action-arrow">${icon('arrow')}</div></button><button class="action-card" data-page="evolve"><span class="action-icon alt">${icon('git')}</span><h3>Evolve Existing</h3><p>Import a repository to examine bugs, dead-code candidates, security smells and modernization opportunities.</p><div class="action-arrow">${icon('arrow')}</div></button></div>
@@ -79,18 +107,102 @@ async function navigate(page,projectId){state.current=page;if(page==='detail'){s
 async function submitNew(form){if(state.preview)throw new Error('Static preview only — start the local API to create projects');const btn=$('#create-button');btn.disabled=true;try{const result=await api('/api/projects',{method:'POST',data:{name:form.elements.name.value.trim(),brief:form.elements.brief.value.trim(),blueprint:form.elements.blueprint.value}});toast('Starter repository created');await navigate('detail',result.id)}finally{btn.disabled=false}}
 async function submitGitHub(){if(state.preview)throw new Error('Static preview only — run the local API to import repositories');const btn=$('#import-button');btn.disabled=true;try{const url=$('#repository-url').value.trim();const result=await api('/api/projects/import/github',{method:'POST',data:{url}});toast('Repository imported. Analysis queued.');await navigate('detail',result.id)}finally{btn.disabled=false}}
 async function submitZip(){if(state.preview)throw new Error('Static preview only — run the local API to import repositories');const btn=$('#import-button');btn.disabled=true;try{const file=$('#zip-file').files[0];if(!file||file.size>12*1024*1024)throw new Error('Choose a ZIP smaller than 12 MB');const name=$('#zip-name').value.trim();const result=await api('/api/projects/import/zip',{method:'POST',body:file,headers:{'Content-Type':'application/zip','X-Project-Name':name}});toast('Repository imported. Analysis queued.');await navigate('detail',result.id)}finally{btn.disabled=false}}
-async function init(){try{const config=await api('/api/config');if(!config||config.name!=='Oryveta'||typeof config.github_auth_enabled!=='boolean')throw new Error('Hosted API unavailable');if(config.local_demo_enabled)$('#demo-login').classList.remove('hidden');if(!config.github_auth_enabled)$('#github-login').classList.add('hidden');try{state.user=await api('/api/me');state.csrf=state.user.csrf_token;$('#app').classList.remove('hidden');$('#profile-name').textContent=state.user.display_name;$('#avatar').textContent=state.user.display_name[0]?.toUpperCase()||'O';$('#avatar-top').textContent=state.user.display_name[0]?.toUpperCase()||'O';await load();await refreshAiStatus();await navigate('home')}catch(e){$('#login').classList.remove('hidden');if(!config.github_auth_enabled){$('#login-warning').textContent=config.local_demo_enabled?'GitHub OAuth has not been configured. Local demo mode is available.':'GitHub OAuth is not configured. An administrator must set the GitHub OAuth credentials.';$('#login-warning').classList.remove('hidden')}}}catch(e){
+async function showWorkspace(){
+ state.workspaces=await window.OryvetaCloudAuth.workspaces();
+ const preferred=sessionStorage.getItem('oryveta.active-workspace');
+ state.activeWorkspaceId=state.workspaces.find(w=>w.id===preferred)?.id||state.workspaces[0]?.id||null;
+ updateWorkspaceChrome();
+}
+function updateWorkspaceChrome(){
+ const selected=state.workspaces.find(w=>w.id===state.activeWorkspaceId);
+ $('#workspace-switch-name').textContent=selected?.name||'Set up workspace';
+ $('#workspace-mode').textContent=state.cloud?'Authenticated workspace':'Read-only product preview';
+ $('#app-mode').textContent=state.cloud?'Workspace':'Preview';
+}
+async function enterApp(page){
+ $('#login').classList.add('hidden');$('#app').classList.remove('hidden');
+ $('#profile-name').textContent=state.user.display_name||'User';
+ const initial=(state.user.display_name||'O')[0].toUpperCase();
+ $('#avatar').textContent=initial;$('#avatar-top').textContent=initial;
+ $('#logout').classList.toggle('hidden',!state.cloud&&!state.csrf);
+ updateWorkspaceChrome();
+ await navigate(page);
+}
+function showHostedLogin(configured,error){
+ $('#app').classList.add('hidden');$('#login').classList.remove('hidden');
+ $('#preview-login').classList.remove('hidden');
+ const github=$('#github-login');
+ github.classList.toggle('hidden',!configured);
+ $('#login-warning').classList.toggle('hidden',!error&&!configured);
+ $('#login-warning').textContent=error||(!configured?'GitHub sign-in is being configured. You can explore the product preview without an account.':'');
+}
+async function initHosted(){
+ const auth=window.OryvetaCloudAuth;
+ if(auth?.configured()){
+  try{
+   const user=await auth.identity();
+   if(user){
+    state.cloud=true;state.preview=true;
+    state.user={
+      id:user.id,
+      display_name:user.user_metadata?.full_name||user.user_metadata?.user_name||user.email||'Member',
+      email:user.email||''
+    };
+    await showWorkspace();
+    await enterApp(state.workspaces.length?'home':'workspace');
+   }else showHostedLogin(true,'');
+  }catch(error){showHostedLogin(true,error.message);}
+ }else showHostedLogin(false,'');
+}
+async function init(){
  if(window.location.hostname.endsWith('.vercel.app') || new URLSearchParams(window.location.search).get('preview')==='1'){
-  state.preview=true;state.user={display_name:'Preview'};state.modelStatus='disabled';
-  $('#app').classList.remove('hidden');$('#login').classList.add('hidden');
-  $('#profile-name').textContent='Preview';$('#avatar').textContent='P';$('#avatar-top').textContent='P';
-  $('#logout').classList.add('hidden');
-  await navigate('home');
- }else{$('#login').classList.remove('hidden');toast(e.message,true)}
-}}
-document.addEventListener('click',async(event)=>{const node=event.target.closest('[data-page],[data-project],[data-tab],[data-download],[data-run-scan],[data-refresh-ai]');if(!node)return;try{if(node.hasAttribute('data-refresh-ai'))await refreshAiStatus();else if(node.dataset.page)await navigate(node.dataset.page);else if(node.dataset.project)await navigate('detail',node.dataset.project);else if(node.dataset.tab){state.importMode=node.dataset.tab;await navigate('evolve')}else if(node.dataset.download){const response=await api(`/api/projects/${encodeURIComponent(node.dataset.download)}/export`);const blob=await response.blob();const url=URL.createObjectURL(blob);const link=document.createElement('a');link.href=url;link.download='oryveta-project.zip';document.body.append(link);link.click();link.remove();setTimeout(()=>URL.revokeObjectURL(url),1000)}else if(node.dataset.runScan){await api(`/api/projects/${encodeURIComponent(node.dataset.runScan)}/analyze`,{method:'POST'});toast('Analysis job queued')}}catch(e){toast(e.message,true)}});
-document.addEventListener('submit',async(event)=>{if(!['new-form','github-import','zip-import','ai-form'].includes(event.target.id))return;event.preventDefault();try{if(event.target.id==='ai-form')await submitAi(event.target);else if(event.target.id==='new-form')await submitNew(event.target);else if(event.target.id==='github-import')await submitGitHub();else await submitZip()}catch(e){toast(e.message,true)}});
+  await initHosted();return;
+ }
+ try{const config=await api('/api/config');if(!config||config.name!=='Oryveta'||typeof config.github_auth_enabled!=='boolean')throw new Error('Hosted API unavailable');if(config.local_demo_enabled)$('#demo-login').classList.remove('hidden');if(!config.github_auth_enabled)$('#github-login').classList.add('hidden');try{state.user=await api('/api/me');state.csrf=state.user.csrf_token;$('#app').classList.remove('hidden');$('#profile-name').textContent=state.user.display_name;$('#avatar').textContent=state.user.display_name[0]?.toUpperCase()||'O';$('#avatar-top').textContent=state.user.display_name[0]?.toUpperCase()||'O';await load();await refreshAiStatus();await navigate('home')}catch(e){$('#login').classList.remove('hidden');if(!config.github_auth_enabled){$('#login-warning').textContent=config.local_demo_enabled?'GitHub OAuth has not been configured. Local demo mode is available.':'GitHub OAuth is not configured. An administrator must set the GitHub OAuth credentials.';$('#login-warning').classList.remove('hidden')}}}catch(e){$('#login').classList.remove('hidden');toast(e.message,true)}
+}
+document.addEventListener('click',async(event)=>{const node=event.target.closest('[data-page],[data-project],[data-tab],[data-download],[data-run-scan],[data-refresh-ai],[data-workspace]');if(!node)return;try{if(node.hasAttribute('data-refresh-ai'))await refreshAiStatus();else if(node.dataset.workspace){if(!state.workspaces.some(w=>w.id===node.dataset.workspace))throw new Error('Workspace unavailable');state.activeWorkspaceId=node.dataset.workspace;sessionStorage.setItem('oryveta.active-workspace',state.activeWorkspaceId);updateWorkspaceChrome();await navigate('workspace');}else if(node.dataset.page)await navigate(node.dataset.page);else if(node.dataset.project)await navigate('detail',node.dataset.project);else if(node.dataset.tab){state.importMode=node.dataset.tab;await navigate('evolve')}else if(node.dataset.download){const response=await api(`/api/projects/${encodeURIComponent(node.dataset.download)}/export`);const blob=await response.blob();const url=URL.createObjectURL(blob);const link=document.createElement('a');link.href=url;link.download='oryveta-project.zip';document.body.append(link);link.click();link.remove();setTimeout(()=>URL.revokeObjectURL(url),1000)}else if(node.dataset.runScan){await api(`/api/projects/${encodeURIComponent(node.dataset.runScan)}/analyze`,{method:'POST'});toast('Analysis job queued')}}catch(e){toast(e.message,true)}});
+document.addEventListener('submit',async(event)=>{if(!['new-form','github-import','zip-import','ai-form','workspace-create','workspace-update'].includes(event.target.id))return;event.preventDefault();try{if(event.target.id==='workspace-create')await createWorkspace(event.target);else if(event.target.id==='workspace-update')await updateWorkspace(event.target);else if(event.target.id==='ai-form')await submitAi(event.target);else if(event.target.id==='new-form')await submitNew(event.target);else if(event.target.id==='github-import')await submitGitHub();else await submitZip()}catch(e){toast(e.message,true)}});
 $('#demo-login').addEventListener('click',async()=>{try{await api('/auth/local-demo',{method:'POST'});window.location.reload()}catch(e){toast(e.message,true)}});
-$('#logout').addEventListener('click',async()=>{try{await api('/auth/logout',{method:'POST'});window.location.reload()}catch(e){toast(e.message,true)}});
+$('#logout').addEventListener('click',async()=>{try{if(state.cloud)await window.OryvetaCloudAuth.signOut();else await api('/auth/logout',{method:'POST'});window.location.assign('/')}catch(e){toast(e.message,true)}});
+function workspaceInput(form){
+ const name=form.elements.name.value.trim();
+ const description=form.elements.description.value.trim();
+ if(name.length<2||name.length>80)throw new Error('Workspace name must be 2–80 characters');
+ if(description.length>500)throw new Error('Description must be 500 characters or less');
+ return {name,description};
+}
+async function createWorkspace(form){
+ if(!state.cloud)throw new Error('Sign in to create a workspace');
+ const input=workspaceInput(form);
+ const slug=form.elements.slug.value.trim().toLowerCase();
+ if(!/^[a-z][a-z0-9-]{2,39}$/.test(slug))throw new Error('Identifier must start with a letter and use lowercase letters, numbers or hyphens');
+ const button=$('#workspace-create-button');button.disabled=true;
+ try{
+  const created=await window.OryvetaCloudAuth.createWorkspace({...input,slug});
+  await showWorkspace();state.activeWorkspaceId=created.id;
+  sessionStorage.setItem('oryveta.active-workspace',created.id);
+  updateWorkspaceChrome();toast('Workspace created. Welcome to Oryveta.');await navigate('workspace');
+ }finally{button.disabled=false}
+}
+async function updateWorkspace(form){
+ if(!state.cloud||!state.activeWorkspaceId)throw new Error('Workspace unavailable');
+ const button=$('#workspace-save-button');button.disabled=true;
+ try{
+  await window.OryvetaCloudAuth.updateWorkspace(state.activeWorkspaceId,workspaceInput(form));
+  await showWorkspace();toast('Workspace details saved');await navigate('workspace');
+ }finally{button.disabled=false}
+}
+document.addEventListener('click',async event=>{
+ if(event.target.closest('#preview-login')){
+  state.preview=true;state.cloud=false;state.modelStatus='disabled';state.user={display_name:'Preview'};
+  await enterApp('home');
+ }else if(event.target.closest('#workspace-signin')){
+  state.preview=false;state.cloud=false;showHostedLogin(window.OryvetaCloudAuth?.configured(), '');
+ }else if(event.target.closest('#workspace-switch'))await navigate('workspace');
+ else if(event.target.closest('#github-login')&&window.location.hostname.endsWith('.vercel.app')){
+  event.preventDefault();
+  try{await window.OryvetaCloudAuth.signIn()}catch(error){toast(error.message,true)}
+ }
+});
 $('#mobile-menu').addEventListener('click',()=>document.body.classList.toggle('mobile-nav-open'));
 init();
