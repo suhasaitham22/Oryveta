@@ -30,7 +30,7 @@ def test_identity_not_equal_repository_access():
 
 def test_no_service_role_or_demo_auth_in_hosted_client():
     assert "service_role" not in AUTH.lower()
-    assert "secret" not in (ROOT / "apps" / "web" / "cloud-config.js").read_text().lower().split("window.ORYVETA_CLOUD", 1)[-1]
+    assert "secret" not in (ROOT / "apps" / "web" / "cloud-config.js").read_text().lower().split("window.oryveta_cloud", 1)[-1]
     assert "Explore product preview" in HTML
     assert "workspace-create" in JS
     assert "workspace-update" in JS
