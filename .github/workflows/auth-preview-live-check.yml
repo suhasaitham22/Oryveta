@@ -12,7 +12,7 @@ jobs:
       - name: Check deployed sign-in HTML and assets
         run: |
           set -euo pipefail
-          ROOT=https://oryveta-ejwayn9i1-ayu-link.vercel.app
+          ROOT=https://oryveta.vercel.app
           curl --max-time 20 -fsSL "$ROOT/" -o /tmp/index.html
           grep -q 'id="github-login"' /tmp/index.html
           grep -q 'id="preview-login"' /tmp/index.html
@@ -29,7 +29,7 @@ jobs:
         run: |
           python - <<'PY'
           from playwright.sync_api import sync_playwright
-          url="https://oryveta-ejwayn9i1-ayu-link.vercel.app/"
+          url="https://oryveta.vercel.app/"
           with sync_playwright() as p:
               browser=p.chromium.launch(headless=True)
               for label,viewport in (("desktop",{"width":1440,"height":900}),("mobile",{"width":390,"height":844})):
