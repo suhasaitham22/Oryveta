@@ -21,6 +21,7 @@
 | [ENTERPRISE-FOUNDATIONS.md](ENTERPRISE-FOUNDATIONS.md) | Enterprise AI invariants, task safety, quotas, evaluation gates and scale triggers |
 | [DATABASE.md](DATABASE.md) | SQLite, D1, optional PostgreSQL/Supabase, schema ownership and artifacts |
 | [AUTH-SECURITY.md](AUTH-SECURITY.md) | GitHub OAuth vs GitHub App, roles, sandbox/prompt injection, approvals |
+| [IDENTITY-WORKSPACES.md](IDENTITY-WORKSPACES.md) | Hosted sign-in, workspace onboarding, RLS boundaries, setup and launch gates |
 | [API.md](API.md) | Local MVP versus planned API contracts |
 | [AGENT-HARNESS.md](AGENT-HARNESS.md) | Context compiler, models, router, tools, worker, verified patch loop and Rust options |
 | [MODEL-GATEWAY.md](MODEL-GATEWAY.md) | Opt-in local Ollama model adapter, strict request contract, owner-scoped daily token budget |

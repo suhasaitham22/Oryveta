@@ -204,5 +204,15 @@ document.addEventListener('click',async event=>{
   try{await window.OryvetaCloudAuth.signIn()}catch(error){toast(error.message,true)}
  }
 });
+document.addEventListener('input',event=>{
+ if(event.target.id==='workspace-slug')event.target.dataset.edited='true';
+ if(event.target.id==='workspace-name'){
+  const slug=$('#workspace-slug');
+  if(slug&&!slug.dataset.edited){
+   slug.value=event.target.value.trim().toLowerCase().normalize('NFKD')
+     .replace(/[\\u0300-\\u036f]/g,'').replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,'').slice(0,40);
+  }
+ }
+});
 $('#mobile-menu').addEventListener('click',()=>document.body.classList.toggle('mobile-nav-open'));
 init();
