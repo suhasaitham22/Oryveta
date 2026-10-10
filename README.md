@@ -4,7 +4,7 @@
 
 ### [Open Oryveta — https://oryveta.vercel.app](https://oryveta.vercel.app)
 
-**Deployment:** [Vercel production](https://oryveta.vercel.app) automatically deploys from the GitHub `main` branch. This is a **static UI preview**, not an Ollama server or a hosted FastAPI service. The Ollama feature below works in the self-hosted API.
+**Deployment:** [Vercel production](https://oryveta.vercel.app) automatically deploys from the GitHub `main` branch. This is a **navigable static UI preview** (no writes or live inference), not an Ollama server or a hosted FastAPI service. The Ollama feature below works in the self-hosted API.
 
 > **Documentation:** [Complete product and technical decisions](docs/INDEX.md) · [Architecture](docs/ARCHITECTURE.md) · [UI design](docs/DESIGN-SYSTEM.md) · [Roadmap](docs/ROADMAP.md) · [Verified status](docs/STATUS.md) · [Quality gates](docs/QUALITY.md)
 
