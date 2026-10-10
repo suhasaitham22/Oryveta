@@ -8,19 +8,52 @@ permissions:
 jobs:
   inspect:
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 12
     steps:
-      - name: Check live HTTP response and UI marker
+      - name: Inspect production and candidate preview
         shell: bash
         run: |
           set -uo pipefail
-          for url in "https://oryveta.vercel.app/" "https://oryveta.vercel.app/index.html" "https://oryveta-jsqp7rnft-ayu-link.vercel.app/"; do
+          for url in "https://oryveta.vercel.app/" "https://oryveta-g2lx7sxij-ayu-link.vercel.app/" "https://oryveta-g2lx7sxij-ayu-link.vercel.app/static/app.js" "https://oryveta-g2lx7sxij-ayu-link.vercel.app/static/styles.css"; do
             echo "::group::GET $url"
             curl --max-time 20 -sSL -D /tmp/hdr -o /tmp/body -w 'http_status=%{http_code} content_type=%{content_type} effective_url=%{url_effective} bytes=%{size_download}\n' "$url" || true
             grep -iE '^(HTTP/|content-type:|location:|x-vercel-id:)' /tmp/hdr || true
-            echo "first_240_bytes:"
-            head -c 240 /tmp/body | tr '\n' ' ' || true
+            echo "first_100_bytes:"
+            head -c 100 /tmp/body | tr '\n' ' ' || true
             echo
-            if grep -qi 'Oryveta' /tmp/body; then echo 'Oryveta UI marker present'; else echo 'Oryveta UI marker MISSING'; fi
             echo "::endgroup::"
           done
+      - name: Install browser test tooling
+        run: |
+          python -m pip install 'playwright==1.55.0'
+          python -m playwright install chromium
+      - name: Test desktop and mobile render and navigation
+        env:
+          ORYVETA_UI_URL: https://oryveta-g2lx7sxij-ayu-link.vercel.app/
+        run: |
+          python - <<'PY'
+          import os
+          from playwright.sync_api import sync_playwright
+          with sync_playwright() as p:
+              browser = p.chromium.launch(headless=True)
+              for label, size in (("desktop", {"width": 1440, "height": 900}), ("mobile", {"width": 390, "height": 844})):
+                  page = browser.new_page(viewport=size)
+                  errors = []
+                  page.on("pageerror", lambda err: errors.append(str(err)))
+                  response = page.goto(os.environ["ORYVETA_UI_URL"], wait_until="networkidle", timeout=45000)
+                  assert response.status == 200, (label, response.status)
+                  assert page.locator("#app").is_visible(), (label, page.locator("body").inner_text()[:600])
+                  assert page.locator("#page").is_visible(), label
+                  assert page.locator("#page h1").count() > 0, label
+                  assert page.locator(".sidebar").count() == 1, label
+                  assert page.evaluate("getComputedStyle(document.body).fontFamily") != "", label
+                  assert not errors, (label, errors)
+                  if label == "desktop":
+                      page.locator('#nav [data-page="new"]').click()
+                      assert page.locator("#page").get_by_text("Start New").count() > 0
+                      page.locator('#nav [data-page="evolve"]').click()
+                      assert page.locator("#page").get_by_text("Evolve").count() > 0
+                  print(f"PASS {label}: visible UI, navigation, no JavaScript exceptions")
+                  page.close()
+              browser.close()
+          PY
