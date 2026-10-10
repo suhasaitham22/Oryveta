@@ -37,6 +37,10 @@ Do not configure Ollama on an internet-exposed address. Docker Compose users can
 - Reservation records contain IDs, account, UTC day, status, token counts and timestamps, **not** prompts, responses or provider credentials.
 - The 30-second asyncio deadline limits request lifetime. It does not terminate computation already in progress on the Ollama server.
 
+## Optional Evolve patch proposals
+
+The authenticated `POST /api/projects/{id}/ai-patch-preview` endpoint takes a client-supplied file, digest and instruction. It generates a **read-only** replacement suggestion, rechecks the baseline and returns a diff marked `review_required`. It uses the same token budget as ordinary text generation. The API never executes the model's code or writes files.
+
 ## What is not yet implemented
 
 Agent tool calling, repository modification, prompt injection defense for retrieved code, independent verification, GPU isolation, provider-agnostic streaming, durable idempotency for model calls, model cancellation, production usage billing and per-organization policy are still future milestones.

@@ -71,9 +71,10 @@ Scale only when evidence demands it: shared SQL for multi-host writes, a durable
 
 1. Job quotas, heartbeat, cancellation, owner isolation and atomic activity (**this change**).
 2. Provider-neutral, text-only local model interface and durable per-account token budgets (**this change**). Tool permission policy, per-task compute budgets and a killable executor are still pending.
-3. Disposable, killable sandboxes and egress controls.
-4. Independent verifier and content-addressed proof receipts.
-5. GitHub App with explicit approval and idempotent PR publication.
-6. Tracing, disaster recovery drills and load tests; distribute workers only when needed.
+3. AI-assisted, read-only Evolve patch proposals using the existing hash/syntax preview and local model budget (**this change**). No code is executed.
+4. Disposable, killable sandboxes and egress controls.
+5. Independent verifier and content-addressed proof receipts.
+6. GitHub App with explicit approval and idempotent PR publication.
+7. Tracing, disaster recovery drills and load tests; distribute workers only when needed.
 
 See [QUALITY.md](QUALITY.md), [SECURITY.md](SECURITY.md), [ROADMAP.md](ROADMAP.md) and [OPERATIONS.md](OPERATIONS.md).
