@@ -10,14 +10,13 @@ import json
 import threading
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
-import httpx
 import pytest
 from fastapi.testclient import TestClient
 
 from oryveta_api.config import Settings
 from oryveta_api.main import create_app
 from oryveta_engine.model_runtime import (
-    MAX_PROVIDER_RESPONSE_BYTES, OllamaProvider, ProviderContractError,
+    MAX_PROVIDER_RESPONSE_BYTES, OllamaProvider,
 )
 
 
