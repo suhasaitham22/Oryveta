@@ -210,7 +210,7 @@ document.addEventListener('input',event=>{
   const slug=$('#workspace-slug');
   if(slug&&!slug.dataset.edited){
    slug.value=event.target.value.trim().toLowerCase().normalize('NFKD')
-     .replace(/[\\u0300-\\u036f]/g,'').replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,'').slice(0,40);
+     .replace(/\p{M}/gu,'').replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,'').slice(0,40);
   }
  }
 });
