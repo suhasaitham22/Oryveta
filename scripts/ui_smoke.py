@@ -65,6 +65,10 @@ def run() -> None:
                     assert page.locator("#nav").is_visible()
                 page.locator('#nav [data-page="new"]').click()
                 assert page.locator("#page h1").inner_text() == "From idea to repository."
+                if label == "mobile":
+                    # Navigation intentionally closes the mobile drawer after selection.
+                    page.locator("#mobile-menu").click()
+                    assert page.locator("#nav").is_visible()
                 page.locator('#nav [data-page="evolve"]').click()
                 assert page.locator("#page h1").inner_text() == "Great software never stands still."
                 assert not errors, (label, errors)
