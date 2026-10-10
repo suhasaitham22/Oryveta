@@ -2,7 +2,7 @@
 
 ## Scope
 
-The `preview/` directory is a **standalone static site**, intentionally separate from the Python API and Rust/Python agent execution. The preview is **not an authenticated or autonomous service**. It shows two product journeys: Start New and Evolve. Kaggle is an internal benchmark, not a top-level UI journey.
+The production Vercel project at https://oryveta.vercel.app now serves the **current application frontend from `apps/web/`**. The older `preview/` directory remains an archived, standalone prototype and must not be used as Vercel's project root. The hosted frontend is intentionally separate from the Python API and agent execution. The preview is **not an authenticated or autonomous service**. It shows two product journeys: Start New and Evolve. Kaggle is an internal benchmark, not a top-level UI journey.
 
 ### Run locally
 
@@ -15,7 +15,9 @@ Visit http://127.0.0.1:4173. The static app has no npm dependencies. Its generat
 
 ### Deployment
 
-The static entrypoint is `preview/index.html`. Configure a static hosting platform with the `preview` directory as its source root, or upload `index.html` as the deployment root. Avoid changing or publishing the local demo login intended strictly for localhost.
+Configure Vercel project `oryveta` with **Root Directory: `apps/web`**, Framework Preset: Other. The entrypoint is `apps/web/index.html`. The committed `apps/web/vercel.json` rewrites `/static/app.js` and `/static/styles.css` to the same-directory assets; FastAPI uses the original `/static/` routes when self-hosted. The frontend detects unavailable API routes on Vercel and renders a read-only preview rather than leaving a blank login screen. The `Browser UI smoke` GitHub Actions workflow tests actual desktop and mobile rendering and navigation in Chromium.
+
+**Do not configure Vercel Root Directory as `preview`.** That would silently publish the obsolete prototype while all modern frontend changes remain invisible. Avoid changing or publishing the local demo login intended strictly for localhost.
 
 The hosted static preview must not be labeled production-ready; it offers no GitHub OAuth, multi-tenant persistence or cloud agent worker. The cost of any hosting provider depends on account plan and usage. Do not assume unlimited free commercial usage on Vercel Hobby.
 

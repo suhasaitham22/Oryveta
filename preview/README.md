@@ -2,7 +2,7 @@
 
 ## Scope
 
-The `preview/` directory is a **standalone static site**, intentionally separate from the Python API and Rust/Python agent execution. The preview is **not an authenticated or autonomous service**. It shows two product journeys: Start New and Evolve. Kaggle is an internal benchmark, not a top-level UI journey.
+The `preview/` directory is a **legacy standalone static prototype**. The current Vercel deployment serves `apps/web/`, not this directory. This prototype remains for historical reference and is intentionally separate from the Python API and agent execution. The preview is **not an authenticated or autonomous service**. It shows two product journeys: Start New and Evolve. Kaggle is an internal benchmark, not a top-level UI journey.
 
 ### Run locally
 
@@ -15,7 +15,7 @@ Visit http://127.0.0.1:4173. The static app has no npm dependencies. Its generat
 
 ### Deployment
 
-The static entrypoint is `preview/index.html`. Configure a static hosting platform with the `preview` directory as its source root, or upload `index.html` as the deployment root. Avoid changing or publishing the local demo login intended strictly for localhost.
+**Do not deploy this directory for the current application.** Vercel Root Directory must be `apps/web`, which serves the actual application UI. See [current deployment guide](../docs/DEPLOYMENT-PREVIEW.md). Avoid changing or publishing the local demo login intended strictly for localhost.
 
 The hosted static preview must not be labeled production-ready; it offers no GitHub OAuth, multi-tenant persistence or cloud agent worker. The cost of any hosting provider depends on account plan and usage. Do not assume unlimited free commercial usage on Vercel Hobby.
 
