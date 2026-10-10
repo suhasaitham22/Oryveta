@@ -2,7 +2,7 @@
 
 ## GitHub login is not GitHub repository access
 
-**GitHub OAuth** (via Better Auth in the proposed cloud stack, FastAPI OAuth in local prototype) authenticates an identity with minimal scopes. A **separate GitHub App** with per-repository permissions grants source access, webhook events and approved PR operations. Starting a new app without GitHub repo access should still be possible.
+**GitHub OAuth** (Supabase Auth PKCE for the hosted frontend when configured, FastAPI OAuth in local prototype) authenticates an identity with minimal scopes. A **separate GitHub App** with per-repository permissions grants source access, webhook events and approved PR operations. Starting a new app without GitHub repo access should still be possible.
 
 ## Target roles
 
@@ -28,4 +28,4 @@ Cross-tenant IDOR; leaking code into prompts/training; compromised GitHub App; f
 
 ## Release gates
 
-Independent tenant access tests, threat modeling, secret scanners, dependency audits, critical-path e2e, rollback drills, monitored auth, incident response and backup restoration. **Current deployed site is only a static UI preview and does not have live user authentication.**
+Independent tenant access tests, threat modeling, secret scanners, dependency audits, critical-path e2e, rollback drills, monitored auth, incident response and backup restoration. **Hosted GitHub OAuth is not yet enabled.** The hosted sign-in gate and workspace UI are implemented in a review branch; production sign-in requires a dedicated Supabase project, configured GitHub OAuth provider and live isolation tests. See [IDENTITY-WORKSPACES.md](IDENTITY-WORKSPACES.md).
