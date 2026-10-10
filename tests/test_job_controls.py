@@ -188,15 +188,29 @@ def test_heartbeat_keeps_long_running_job_alive(signed_in, monkeypatch):
     client, headers = signed_in
     job_id = enqueue(client, headers).json()["id"]
     import oryveta_engine.worker as worker_module
-    monkeypatch.setattr(worker_module, "LEASE_SECONDS", 0.18)
+    # Sub-second real-time leases are flaky under parallel CI runners. Use a
+    # synchronization event to prove an actual renewal occurred instead of
+    # assuming a sleeping thread will be scheduled within 180 milliseconds.
+    monkeypatch.setattr(worker_module, "LEASE_SECONDS", 4.0)
+    renewed = threading.Event()
+    worker = Worker(client.app.state.db, client.app.state.settings.workspace_root)
+    original_renew = worker.renew_lease
+
+    def observe_renewal(job):
+        ok = original_renew(job)
+        if ok:
+            renewed.set()
+        return ok
+
+    monkeypatch.setattr(worker, "renew_lease", observe_renewal)
 
     def slow_benchmark(*_):
-        time.sleep(0.36)
+        assert renewed.wait(timeout=10), "Heartbeat did not renew the running job"
         return {"result": "complete"}
 
     monkeypatch.setattr(worker_module, "run_benchmark", slow_benchmark)
-    worker = Worker(client.app.state.db, client.app.state.settings.workspace_root)
     assert worker.run_once()
+    assert renewed.is_set()
     assert client.get(f"/api/jobs/{job_id}").json()["status"] == "succeeded"
 
 
