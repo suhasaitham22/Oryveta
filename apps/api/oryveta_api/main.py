@@ -16,6 +16,10 @@ from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
 from oryveta_engine.benchmarks import CHALLENGES
+from oryveta_engine.model_runtime import (
+    MAX_OUTPUT_TOKENS, ModelCompletion, OllamaProvider, prompt_token_ceiling,
+)
+from .ai_budget import AiBudget, BudgetExceeded
 from oryveta_engine.patches import InvalidPatch, StalePatch, preview_patch
 from oryveta_engine.scaffold import BLUEPRINTS, generate_files, write_scaffold
 from oryveta_engine.repositories import (InvalidRepository, create_archive,
@@ -45,6 +49,12 @@ class PatchPreviewInput(BaseModel):
     replacement: str = Field(max_length=128 * 1024)
 
 
+class AiGenerateInput(BaseModel):
+    prompt: str = Field(min_length=1, max_length=4096)
+    max_output_tokens: int = Field(default=256, ge=1, le=MAX_OUTPUT_TOKENS)
+    temperature: float = Field(default=0.2, ge=0, le=1)
+
+
 class ArenaInput(BaseModel):
     challenge: str
     seed: int = Field(default=42, ge=0, le=2**32 - 1)
@@ -56,6 +66,9 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app = FastAPI(title="Oryveta API", version="0.1.0", docs_url="/api/docs", openapi_url="/api/openapi.json")
     app.state.db = Database(settings.database_path)
     app.state.settings = settings
+    app.state.model_provider = (OllamaProvider(settings.ollama_url, settings.ollama_model)
+                                if settings.ollama_model else None)
+    app.state.ai_budget = AiBudget(app.state.db)
 
     @app.middleware("http")
     async def security_headers(request: Request, call_next):
@@ -85,6 +98,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     def public_config():
         return {"github_auth_enabled": settings.github_enabled,
                 "local_demo_enabled": settings.demo_enabled,
+                "local_model_enabled": bool(settings.ollama_model),
                 "navigation": ["Start New", "Evolve"],
                 "name": "Oryveta", "version": "0.1.0"}
 
@@ -464,6 +478,54 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             conn.commit()
         return {"id": job_id, "status": "canceled", "replayed": False,
                 "note": "Active computation may continue until its worker returns; results are fenced."}
+
+    @app.get("/api/ai/budget")
+    def ai_budget(user=Depends(current_user)):
+        return app.state.ai_budget.summary(user["id"])
+
+    @app.post("/api/ai/generate")
+    async def ai_generate(data: AiGenerateInput, user=Depends(current_user),
+                          _=Depends(require_csrf)):
+        provider = app.state.model_provider
+        if provider is None:
+            raise HTTPException(503, "Local Ollama inference is not configured")
+        try:
+            reserved_tokens = prompt_token_ceiling(data.prompt) + data.max_output_tokens
+        except ValueError as exc:
+            raise HTTPException(422, str(exc)) from exc
+        try:
+            call_id = app.state.ai_budget.reserve(user["id"], reserved_tokens)
+        except BudgetExceeded as exc:
+            raise HTTPException(429, str(exc), headers={"Retry-After": "60"}) from exc
+        actual_tokens = None
+        completion = None
+        try:
+            completion = await provider.complete(
+                data.prompt, max_output_tokens=data.max_output_tokens,
+                temperature=data.temperature,
+            )
+            if (not isinstance(completion, ModelCompletion) or
+                    type(completion.prompt_tokens) is not int or
+                    type(completion.output_tokens) is not int or
+                    completion.prompt_tokens < 0 or completion.output_tokens < 0):
+                raise ValueError("Invalid model usage")
+            actual_tokens = completion.prompt_tokens + completion.output_tokens
+            if (actual_tokens > reserved_tokens or
+                    completion.output_tokens > data.max_output_tokens or
+                    len(completion.text.encode("utf-8")) > 16384):
+                raise ValueError("Model exceeded output or usage bounds")
+        except Exception as exc:
+            # No raw provider errors, prompts or responses reach the client.
+            raise HTTPException(502, "Local model generation failed") from exc
+        finally:
+            settled = app.state.ai_budget.settle(user["id"], call_id, actual_tokens)
+        if not settled:
+            raise HTTPException(503, "Model reservation expired; response discarded")
+        return {"text": completion.text, "model": completion.model,
+                "usage": {"prompt_tokens": completion.prompt_tokens,
+                          "output_tokens": completion.output_tokens},
+                "budget": app.state.ai_budget.summary(user["id"]),
+                "note": "Generated text is unverified; no tools or repository writes were executed."}
 
     @app.get("/api/activity")
     def activity(user=Depends(current_user)):

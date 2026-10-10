@@ -43,6 +43,14 @@ CREATE TABLE IF NOT EXISTS jobs (
   UNIQUE(user_id, idempotency_key)
 );
 CREATE INDEX IF NOT EXISTS jobs_claim_idx ON jobs(status, lease_until, created_at);
+CREATE TABLE IF NOT EXISTS ai_calls (
+  id TEXT PRIMARY KEY, user_id TEXT NOT NULL REFERENCES users(id),
+  day_utc TEXT NOT NULL, status TEXT NOT NULL,
+  reserved_tokens INTEGER NOT NULL, charged_tokens INTEGER NOT NULL DEFAULT 0,
+  expires_at REAL NOT NULL, created_at REAL NOT NULL, updated_at REAL NOT NULL
+);
+CREATE INDEX IF NOT EXISTS ai_calls_owner_day_idx ON ai_calls(user_id,day_utc);
+CREATE INDEX IF NOT EXISTS ai_calls_expiry_idx ON ai_calls(status,expires_at);
 CREATE TABLE IF NOT EXISTS events (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   user_id TEXT NOT NULL REFERENCES users(id), job_id TEXT REFERENCES jobs(id),
