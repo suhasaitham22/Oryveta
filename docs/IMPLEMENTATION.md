@@ -1,6 +1,6 @@
 # Functional MVP implementation — code map and verified boundaries
 
-Status: **Review branch, not yet production-deployed**. Source: `feat/functional-mvp-foundation`. This page documents what the code actually does, and deliberately distinguishes starter generation and static analysis from autonomous software engineering.
+Status: **Merged local API and hosted read-only frontend**. The Python API is not deployed to Vercel. This page documents what the code actually does, and deliberately distinguishes starter generation and static analysis from autonomous software engineering.
 
 ## Local architecture
 
@@ -16,7 +16,8 @@ Status: **Review branch, not yet production-deployed**. Source: `feat/functional
 | `engine/oryveta_engine/benchmarks.py` | Deterministic local classification baselines; not Kaggle |
 | `engine/oryveta_engine/worker.py` | SQLite lease-based background worker, retry limits and status |
 | `apps/web/` | Standalone Soft Modern local UI served by FastAPI |
-| `preview/` | Separate Vercel-hosted static UI preview (no API) |
+| `preview/` | Archived standalone static prototype; **not deployed** to Vercel |
+| `apps/web/vercel.json` | Vercel static asset rewrites for the real app UI, read-only without hosted API |
 | `tests/` | API, ownership, CSRF, OAuth state, archive safety, worker and scaffold tests |
 | `Dockerfile`, `compose.yaml` | Single-host API and worker containers with local-only port binding |
 

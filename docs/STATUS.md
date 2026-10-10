@@ -8,7 +8,7 @@ Checked 2026-10-09. Distinguish merged behavior, proposed changes and production
 | Start New | Runnable starter scaffolds and ZIP export; not autonomous implementation of custom business requirements |
 | Evolve | Public GitHub/ZIP import, static findings, manual read-only patch previews and opt-in local-model-assisted read-only proposals; not autonomous fixes or PRs |
 | Identity | GitHub OAuth code + local demo; live hosted OAuth is not configured |
-| Hosted site | `oryveta.vercel.app` is a static preview, not a deployed worker/API |
+| Hosted site | `oryveta.vercel.app` serves the actual `apps/web` frontend in read-only preview mode, with Start New/Evolve navigation and no hosted worker/API. Browser smoke tests cover desktop/mobile UI |
 | Jobs | SQLite single-host queue with fenced retries; heartbeat, owner-scoped status/cancel and admission quotas proposed in this enterprise-foundations milestone |
 | Security | CSRF, owner isolation, bounded archives, patch preview tests; no untrusted code execution or multi-tenant sandbox |
 | AI | Opt-in local Ollama text generation and 20k tokens/day/account ledger; local assistant UI, readiness probe, optional Compose Ollama stack and read-only Evolve proposals. Tested with mocks and real TCP to a deterministic stub, not downloaded weights. No hosted model, production agent or independent verifier |

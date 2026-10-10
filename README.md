@@ -4,11 +4,11 @@
 
 ### [Open Oryveta — https://oryveta.vercel.app](https://oryveta.vercel.app)
 
-**Deployment:** [Vercel production](https://oryveta.vercel.app) automatically deploys from the GitHub `main` branch. This is a **navigable static UI preview** (no writes or live inference), not an Ollama server or a hosted FastAPI service. The Ollama feature below works in the self-hosted API.
+**Deployment:** [Vercel production](https://oryveta.vercel.app) automatically deploys from the GitHub `main` branch. Vercel now serves the **actual `apps/web` interface** (Overview, Start New, Evolve, Projects, Activity), rather than the old `preview/index.html` placeholder. Without a deployed API, the hosted interface runs in **read-only preview mode**: no writes, login or live inference. This is not an Ollama server or a hosted FastAPI service. The Ollama feature below works in the self-hosted API.
 
 > **Documentation:** [Complete product and technical decisions](docs/INDEX.md) · [Architecture](docs/ARCHITECTURE.md) · [UI design](docs/DESIGN-SYSTEM.md) · [Roadmap](docs/ROADMAP.md) · [Verified status](docs/STATUS.md) · [Quality gates](docs/QUALITY.md)
 
-> **Preview only:** The Vercel deployment demonstrates the responsive Start New and Evolve UI. It does **not** provide live GitHub OAuth, source analysis, repository generation or model inference. The local FastAPI app includes a functional AI assistant when Ollama is configured; it is not deployed to Vercel.
+> **Preview only:** The Vercel deployment serves the current responsive application UI in read-only mode. It does **not** provide live GitHub OAuth, source analysis, repository generation or model inference. The local FastAPI app includes a functional AI assistant when Ollama is configured; it is not deployed to Vercel.
 
 Oryveta is an open-source autonomous software engineering workspace with two product journeys:
 
