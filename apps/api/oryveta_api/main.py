@@ -487,6 +487,16 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         return {"id": job_id, "status": "canceled", "replayed": False,
                 "note": "Active computation may continue until its worker returns; results are fenced."}
 
+    @app.get("/api/ai/status")
+    async def ai_status(user=Depends(current_user)):
+        """Readiness is distinct from configuration; never expose provider errors."""
+        provider = app.state.model_provider
+        if provider is None:
+            return {"status": "disabled", "model": None}
+        if not isinstance(provider, OllamaProvider):
+            return {"status": "offline", "model": None}
+        return await provider.status()
+
     @app.get("/api/ai/budget")
     def ai_budget(user=Depends(current_user)):
         return app.state.ai_budget.summary(user["id"])

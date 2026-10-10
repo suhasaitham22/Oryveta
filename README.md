@@ -2,11 +2,13 @@
 
 **Build thoughtfully. Evolve continuously.**
 
-### [Live website preview → https://oryveta.vercel.app](https://oryveta.vercel.app)
+### [Open Oryveta — https://oryveta.vercel.app](https://oryveta.vercel.app)
+
+**Deployment:** [Vercel production](https://oryveta.vercel.app) automatically deploys from the GitHub `main` branch. This is a **navigable static UI preview** (no writes or live inference), not an Ollama server or a hosted FastAPI service. The Ollama feature below works in the self-hosted API.
 
 > **Documentation:** [Complete product and technical decisions](docs/INDEX.md) · [Architecture](docs/ARCHITECTURE.md) · [UI design](docs/DESIGN-SYSTEM.md) · [Roadmap](docs/ROADMAP.md) · [Verified status](docs/STATUS.md) · [Quality gates](docs/QUALITY.md)
 
-> **Preview only:** This deployment demonstrates the responsive Start New and Evolve UI. It does **not** yet offer live GitHub OAuth, repository generation, source analysis or autonomous coding. The local MVP API has not been deployed or wired to the site.
+> **Preview only:** The Vercel deployment demonstrates the responsive Start New and Evolve UI. It does **not** provide live GitHub OAuth, source analysis, repository generation or model inference. The local FastAPI app includes a functional AI assistant when Ollama is configured; it is not deployed to Vercel.
 
 Oryveta is an open-source autonomous software engineering workspace with two product journeys:
 
@@ -17,7 +19,7 @@ Kaggle and related benchmarks are **internal evaluation scenarios**, not a third
 
 ## Status
 
-**Early development.** The functional Python/FastAPI + SQLite MVP, tests, background worker, Docker Compose and initial CI are now merged into `main`. The latest completed `main` CI run passed on 2026-10-09. A follow-up hardening PR adds Python 3.11/3.12/3.13 test coverage gates, dependency/security checks, container smoke tests and worker/ZIP security regressions. The public Vercel site remains a **static UI preview**, not a hosted API. Autonomous bug-fixing PRs, Rust migrations, agent-built applications, hardened tenant isolation and 24/7 hosted execution are **not yet implemented**.
+**Early development.** The functional Python/FastAPI + SQLite MVP, tests, background worker, Docker Compose and CI are merged into `main`. The local app supports opt-in open-weight Ollama text generation, readiness checks, a budgeted AI assistant in the workspace and read-only AI-assisted Evolve patch proposals. CI tests exercise the Ollama HTTP protocol with a local deterministic test server; **a real downloaded model is not executed in CI**. The public Vercel site remains a static UI preview. Autonomous code execution, test-backed AI fixes, GitHub publishing, hosted inference and 24/7 execution are not implemented.
 
 See [current status](docs/STATUS.md) and [open-source policy](docs/OPEN-SOURCE.md).
 
@@ -45,6 +47,34 @@ python -m oryveta_engine.worker
 ```
 
 Open http://127.0.0.1:8000. Local demo sign-in is restricted to localhost; it is **not permitted** on the public Vercel site. Alternatively, use `docker compose up --build` with real GitHub OAuth credentials configured. To validate changes run `pytest -q --cov=oryveta_api --cov=oryveta_engine --cov-branch --cov-fail-under=84`, `ruff check apps/api engine tests`, and `node --check apps/web/app.js`. See [CI and quality gates](docs/QUALITY.md).
+
+### Run local Ollama inference
+
+On a computer with [Ollama](https://ollama.com/) installed and enough RAM/disk for the model:
+
+```bash
+# Ensure the Ollama desktop service is running (or run ollama serve separately).
+ollama pull qwen2.5-coder:1.5b
+```
+
+In another terminal, from this repository, start the Python API (as above) with:
+
+```bash
+export ORYVETA_LOCAL_DEMO=true
+export ORYVETA_OLLAMA_MODEL=qwen2.5-coder:1.5b
+export ORYVETA_OLLAMA_URL=http://127.0.0.1:11434
+uvicorn oryveta_api.main:app --host 127.0.0.1 --port 8000
+```
+
+Open http://127.0.0.1:8000, select **Explore local demo**, then use **Local AI assistant** on Overview. Verify actual model generation (not just mocks) with `python scripts/smoke_ollama.py`.
+
+Alternatively, the opt-in Docker Compose overlay runs Ollama privately, downloads the model into a persistent volume and starts the API after the download:
+
+```bash
+docker compose -f compose.yaml -f compose.ollama.yaml up --build
+```
+
+**Docker mode requires configured GitHub OAuth credentials to sign in**; the loopback-only demo sign-in is deliberately disabled inside Docker. Ollama is not published to the host or internet. See [complete Ollama setup, resource requirements and troubleshooting](docs/MODEL-GATEWAY.md).
 
 For service boundaries, limitations, and deployment considerations see [implementation guide](docs/IMPLEMENTATION.md).
 

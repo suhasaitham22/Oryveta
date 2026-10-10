@@ -1,0 +1,38 @@
+# Optional Ollama stack. Use with: docker compose -f compose.yaml -f compose.ollama.yaml up --build
+# No paid inference APIs. The model download requires disk space and internet once.
+# Ollama is internal to the Compose network; no host port is published.
+services:
+  ollama:
+    image: ollama/ollama:latest
+    restart: unless-stopped
+    expose:
+      - "11434"
+    volumes:
+      - ollama_models:/root/.ollama
+    healthcheck:
+      test: ["CMD", "ollama", "list"]
+      interval: 10s
+      timeout: 10s
+      retries: 30
+      start_period: 30s
+  ollama-pull:
+    image: ollama/ollama:latest
+    restart: "no"
+    entrypoint: ["/bin/sh", "-ec"]
+    command: 'ollama pull "$$ORYVETA_OLLAMA_MODEL"'
+    environment:
+      OLLAMA_HOST: http://ollama:11434
+      ORYVETA_OLLAMA_MODEL: ${ORYVETA_OLLAMA_MODEL:-qwen2.5-coder:1.5b}
+    depends_on:
+      ollama:
+        condition: service_healthy
+  api:
+    environment:
+      ORYVETA_OLLAMA_URL: http://ollama:11434
+      ORYVETA_OLLAMA_MODEL: ${ORYVETA_OLLAMA_MODEL:-qwen2.5-coder:1.5b}
+    depends_on:
+      ollama-pull:
+        condition: service_completed_successfully
+
+volumes:
+  ollama_models:

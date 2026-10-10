@@ -11,8 +11,8 @@ Checked 2026-10-09. Distinguish merged behavior, proposed changes and production
 | Hosted site | `oryveta.vercel.app` is a static preview, not a deployed worker/API |
 | Jobs | SQLite single-host queue with fenced retries; heartbeat, owner-scoped status/cancel and admission quotas proposed in this enterprise-foundations milestone |
 | Security | CSRF, owner isolation, bounded archives, patch preview tests; no untrusted code execution or multi-tenant sandbox |
-| AI | Opt-in local Ollama text generation and 20k tokens/day/account ledger; read-only AI Evolve proposals in this change; disabled by default and tested with mocks only; no production agent, independent verifier or proof receipts |
+| AI | Opt-in local Ollama text generation and 20k tokens/day/account ledger; local assistant UI, readiness probe, optional Compose Ollama stack and read-only Evolve proposals. Tested with mocks and real TCP to a deterministic stub, not downloaded weights. No hosted model, production agent or independent verifier |
 
-**Not implemented:** autonomous coding, private GitHub App access, isolated code execution, distributed job orchestration, enterprise multi-tenancy, or 24/7 hosted worker. The local model endpoint is not deployed on Vercel and has not been exercised against a real model.
+**Not implemented:** autonomous coding, private GitHub App access, isolated code execution, distributed job orchestration, enterprise multi-tenancy, or 24/7 hosted worker. The local model endpoint is not deployed on Vercel and has not been exercised against a downloaded real model in CI. A real-model smoke script is provided for self-hosted operators.
 
 See [ENTERPRISE-FOUNDATIONS.md](ENTERPRISE-FOUNDATIONS.md) for design invariants and measurable release gates. Proposed changes must pass remote CI and merge before being labeled implemented.
