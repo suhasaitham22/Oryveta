@@ -17,7 +17,10 @@ Status: **Merged local API and hosted read-only frontend**. The Python API is no
 | `engine/oryveta_engine/worker.py` | SQLite lease-based background worker, retry limits and status |
 | `apps/web/` | Standalone Soft Modern local UI served by FastAPI |
 | `preview/` | Archived standalone static prototype; **not deployed** to Vercel |
-| `apps/web/vercel.json` | Vercel static asset rewrites for the real app UI, read-only without hosted API |
+| `apps/web/vercel.json` | Vercel asset rewrites and restrictive security headers for the real app UI |
+| `apps/web/cloud-auth.js` | Supabase Auth PKCE adapter and owner-scoped workspace data client; inactive until configured |
+| `apps/web/cloud-config.js` | Public-only Supabase project URL and publishable key placeholders |
+| `supabase/schema.sql` | Owner-initiated workspaces, membership trigger and per-row authorization policies |
 | `tests/` | API, ownership, CSRF, OAuth state, archive safety, worker and scaffold tests |
 | `Dockerfile`, `compose.yaml` | Single-host API and worker containers with local-only port binding |
 
