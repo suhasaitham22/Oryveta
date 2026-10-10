@@ -7,6 +7,8 @@
   <meta name="description" content="Oryveta — autonomous engineering, measurable progress.">
   <title>Oryveta — Build and evolve software</title>
   <link rel="stylesheet" href="/static/styles.css">
+  <script src="/static/cloud-config.js" defer></script>
+  <script src="/static/cloud-auth.js" defer></script>
   <script src="/static/app.js" defer></script>
 </head>
 <body>
@@ -26,24 +28,24 @@
     <symbol id="i-refresh" viewBox="0 0 24 24"><path d="M20 7v5h-5M4 17v-5h5M6 8a7 7 0 0 1 12-2l2 1M4 17l2 1a7 7 0 0 0 12-2"/></symbol>
   </svg>
   <div id="login" class="login-screen hidden">
-    <div class="login-cover"><div class="login-mark"><span class="symbol">◈</span><span>oryveta</span></div><div class="login-illustration"><div class="orbit orbit-a"></div><div class="orbit orbit-b"></div><div class="orbit orbit-c"></div><div class="orbit-heart">✳</div></div><div class="login-cover-copy"><span>THE OPEN ENGINEERING WORKSPACE</span><h2>Thoughtful software.<br>Proven results.</h2><p>Go from first idea to your next breakthrough, with an engineering system that learns.</p></div></div>
-    <div class="login-main"><div class="login-panel"><span class="eyebrow">GOOD TO HAVE YOU HERE</span><h1>Your next idea starts here.</h1><p>Sign in to create a project or evolve an existing repository.</p><a href="/auth/github" id="github-login" class="btn btn-dark btn-wide"><svg class="icon"><use href="#i-github"/></svg>Continue with GitHub <svg class="icon icon-end"><use href="#i-arrow"/></svg></a><button id="demo-login" class="btn btn-outline btn-wide hidden">Explore local demo</button><div class="login-note"><svg class="icon"><use href="#i-shield"/></svg><span>GitHub sign-in only requests your identity. Repo access is separate.</span></div><p id="login-warning" class="notice notice-warning hidden"></p></div><p class="login-footer">Open source at the core. Your code stays yours.</p></div>
+    <div class="login-cover"><div class="login-mark"><span class="symbol">◈</span><span>oryveta</span></div><div class="login-illustration"><div class="orbit orbit-a"></div><div class="orbit orbit-b"></div><div class="orbit orbit-c"></div><div class="orbit-heart">✳</div></div><div class="login-cover-copy"><span>YOUR ENGINEERING COMPANY, IN ONE WORKSPACE</span><h2>From ambitious idea<br>to proven outcome.</h2><p>Build new products. Evolve the software you already own. Keep every decision, change and result accountable.</p><div class="login-cover-features"><span>◉&nbsp; Start New</span><span>◉&nbsp; Evolve</span><span>◉&nbsp; Evidence-first engineering</span></div></div></div>
+    <div class="login-main"><div class="login-panel"><span class="eyebrow">WELCOME TO ORYVETA</span><h1>Build with clarity.<br>Ship with confidence.</h1><p class="login-description">Sign in to create your engineering workspace. One place for products, repositories and the work that moves them forward.</p><a href="/auth/github" id="github-login" class="btn btn-dark btn-wide"><svg class="icon"><use href="#i-github"/></svg>Continue with GitHub <svg class="icon icon-end"><use href="#i-arrow"/></svg></a><button id="preview-login" class="btn btn-outline btn-wide hidden" type="button">Explore product preview <svg class="icon icon-end"><use href="#i-arrow"/></svg></button><button id="demo-login" class="btn btn-outline btn-wide hidden">Explore local demo</button><div class="auth-benefits"><div><span class="auth-benefit-icon">01</span><span><strong>Your own workspace</strong><small>Keep projects and activity organized by account.</small></span></div><div><span class="auth-benefit-icon">02</span><span><strong>Access stays intentional</strong><small>Repository access requires separate approval.</small></span></div><div><span class="auth-benefit-icon">03</span><span><strong>Built to grow with your team</strong><small>From solo builder to collaborative engineering.</small></span></div></div><div class="login-note"><svg class="icon"><use href="#i-shield"/></svg><span>Secure identity sign-in. GitHub repository permissions are requested separately.</span></div><p id="login-warning" class="notice notice-warning hidden"></p></div><p class="login-footer">Open source at the core. Your code stays yours.</p></div>
   </div>
   <div id="app" class="app-shell hidden">
     <aside class="sidebar">
       <div class="brand"><span class="brand-symbol">◈</span><span class="brand-text">oryveta</span><span class="brand-beta">EARLY</span></div>
-      <div class="sidebar-label">WORKSPACE</div>
+      <div class="sidebar-label">YOUR SPACE</div>
       <nav id="nav" aria-label="Main navigation">
-        <button class="nav-link active" data-page="home"><svg class="icon"><use href="#i-folder"/></svg>Overview</button>
+        <button class="nav-link active" data-page="home"><svg class="icon"><use href="#i-folder"/></svg>Overview</button><button class="nav-link" data-page="workspace"><svg class="icon"><use href="#i-shield"/></svg>Workspace</button>
         <button class="nav-link" data-page="new"><svg class="icon"><use href="#i-sparkles"/></svg>Start New</button>
         <button class="nav-link" data-page="evolve"><svg class="icon"><use href="#i-git"/></svg>Evolve</button>
         <button class="nav-link" data-page="projects"><svg class="icon"><use href="#i-folder"/></svg>Projects</button>
         <button class="nav-link" data-page="activity"><svg class="icon"><use href="#i-activity"/></svg>Activity</button>
       </nav>
-      <div class="sidebar-bottom"><div class="sidebar-note"><div class="online-dot"></div><div><b>Engineering workspace</b><small>Local-first preview</small></div></div><button class="profile" id="logout" aria-label="Sign out"><span class="avatar" id="avatar">O</span><span class="profile-name" id="profile-name">User</span><span class="profile-action">Sign out</span></button></div>
+      <div class="sidebar-bottom"><div class="sidebar-note"><div class="online-dot"></div><div><b>Engineering workspace</b><small id="workspace-mode">Private by default</small></div></div><button class="profile" id="logout" aria-label="Sign out"><span class="avatar" id="avatar">O</span><span class="profile-name" id="profile-name">User</span><span class="profile-action">Sign out</span></button></div>
     </aside>
     <div class="workspace">
-      <header class="topbar"><button class="mobile-brand" id="mobile-menu" aria-label="Toggle navigation">◈</button><div class="breadcrumb">Workspace <svg class="icon"><use href="#i-chevron"/></svg> <span id="breadcrumb-current">Overview</span></div><div class="topbar-right"><span class="topbar-tag"><span class="online-dot"></span>Preview v0.1</span><span class="avatar avatar-small" id="avatar-top">O</span></div></header>
+      <header class="topbar"><button class="mobile-brand" id="mobile-menu" aria-label="Toggle navigation">◈</button><div class="breadcrumb">Workspace <svg class="icon"><use href="#i-chevron"/></svg> <span id="breadcrumb-current">Overview</span></div><div class="topbar-right"><button id="workspace-switch" class="workspace-switch" type="button" aria-label="Workspace details"><span class="workspace-switch-mark">◈</span><span id="workspace-switch-name">My workspace</span><svg class="icon"><use href="#i-chevron"/></svg></button><span class="topbar-tag"><span class="online-dot"></span><span id="app-mode">Preview</span></span><span class="avatar avatar-small" id="avatar-top">O</span></div></header>
       <main id="page" class="page" tabindex="-1"></main>
       <footer class="footer">Oryveta · Open engineering, verified outcomes <span>Build thoughtfully. Evolve continuously.</span></footer>
     </div>
