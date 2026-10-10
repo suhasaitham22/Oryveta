@@ -46,13 +46,13 @@ jobs:
                   assert page.locator("#page").is_visible(), label
                   assert page.locator("#page h1").count() > 0, label
                   assert page.locator(".sidebar").count() == 1, label
-                  assert page.evaluate("getComputedStyle(document.body).fontFamily") != "", label
+                  assert page.evaluate("document.styleSheets.length") >= 1, label
                   assert not errors, (label, errors)
                   if label == "desktop":
                       page.locator('#nav [data-page="new"]').click()
-                      assert page.locator("#page").get_by_text("Start New").count() > 0
+                      assert page.locator("#page h1").inner_text() == "From idea to repository."
                       page.locator('#nav [data-page="evolve"]').click()
-                      assert page.locator("#page").get_by_text("Evolve").count() > 0
+                      assert page.locator("#page h1").inner_text() == "Great software never stands still."
                   print(f"PASS {label}: visible UI, navigation, no JavaScript exceptions")
                   page.close()
               browser.close()
