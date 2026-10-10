@@ -19,7 +19,7 @@ Oryveta must perform verifiable software work in Start New and Evolve, while rem
 
 **Context Compiler:** Tree-sitter, language server data, symbol/call graphs, Git history, relevant tests, semantic retrieval and compact evidence-linked context windows.
 
-**Model Adapter:** standardized messages, tools and resource usage for Ollama, llama.cpp, vLLM and optional customer providers. A free open-weight baseline should work without API keys. Large model inference requires user-provided compute.
+**Model Adapter:** a typed, text-only `ModelProvider` contract and an operator-configured local `OllamaProvider` now exist in the source. Bounded input/output and SQLite daily token reservations are implemented, but no live Ollama model is provisioned. Tool calling, llama.cpp, vLLM and customer-provider adapters are future work. Large model inference requires user-provided compute.
 
 **Adaptive Router:** versions of model-to-task policies; choose by observed quality, speed, cost and hardware constraints, not model brand. Permit splitting/defer rather than exceeding budget or silently using a paid service.
 

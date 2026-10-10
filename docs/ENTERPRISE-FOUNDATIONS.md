@@ -29,7 +29,9 @@ flowchart LR
 
 **Implemented or proposed in this milestone:** single-host SQLite job admission, authenticated status, owner-only cancellation, fenced lease heartbeats, atomic job/event creation, existing local source analysis and read-only Evolve patch previews.
 
-**Not implemented:** production AI model provider, hard sandbox isolation, GitHub App writes, distributed orchestration, cost billing, enterprise RBAC, independent runtime verification or cryptographic proof receipts.
+**Implemented in this change:** an opt-in local Ollama text-generation adapter and SQLite per-user token reservations. No model is deployed or exercised against a live inference server by CI.
+
+**Not implemented:** production AI coding agent, hard sandbox isolation, GitHub App writes, distributed orchestration, cost billing, enterprise RBAC, independent runtime verification or cryptographic proof receipts.
 
 ## Enterprise AI release gates
 
@@ -68,7 +70,7 @@ Scale only when evidence demands it: shared SQL for multi-host writes, a durable
 ## Next implementation order
 
 1. Job quotas, heartbeat, cancellation, owner isolation and atomic activity (**this change**).
-2. Model/tool execution policy and **hard per-task budgets**.
+2. Provider-neutral, text-only local model interface and durable per-account token budgets (**this change**). Tool permission policy, per-task compute budgets and a killable executor are still pending.
 3. Disposable, killable sandboxes and egress controls.
 4. Independent verifier and content-addressed proof receipts.
 5. GitHub App with explicit approval and idempotent PR publication.

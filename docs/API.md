@@ -15,6 +15,13 @@ The published FastAPI source supports health/config, GitHub identity OAuth callb
 - New job admission is capped at eight queued/running tasks per authenticated user, atomically enforced in SQLite; over-limit requests return `429` with `Retry-After: 30`. Matching idempotency-key benchmark retries are replayed without consuming extra capacity.
 - Worker lease heartbeats keep long-running tasks eligible to commit, while canceled or stolen leases cannot publish results. Running CPU work is **not** forcibly terminated by this endpoint; killable sandboxes are still required before executing imported code.
 
+## Optional local model gateway (self-hosted only)
+
+- `GET /api/ai/budget`: authenticated, owner-scoped UTC daily token allowance and current reservations.
+- `POST /api/ai/generate`: CSRF-protected text-only local Ollama request, bounded to 4096 UTF-8 prompt bytes and 512 output tokens. Requires operator-configured model; disabled by default.
+- The API reserves worst-case tokens before inference, settles verified provider usage, rejects over-limit output, and fails closed on timeout/unknown usage. Default allowance is 20,000 tokens/day/account and two concurrent calls. No prompts or generated text are stored in the usage ledger.
+- No tool calls, repository writes, independent verification or real model quality guarantees are provided by this endpoint. See [MODEL-GATEWAY.md](MODEL-GATEWAY.md).
+
 ## Target versioned HTTP resources
 
 Auth: GET /api/v1/me; POST /api/v1/logout; GitHub OAuth start/callback; GitHub App installation callback and webhook.
