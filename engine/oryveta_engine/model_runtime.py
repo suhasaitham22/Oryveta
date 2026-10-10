@@ -7,6 +7,7 @@ User input never selects a URL, model, tool, or execution permission.
 from __future__ import annotations
 
 import asyncio
+import json
 from dataclasses import dataclass
 from typing import Protocol
 from urllib.parse import urlsplit
@@ -15,7 +16,8 @@ import httpx
 
 MAX_PROMPT_BYTES = 4096
 MAX_OUTPUT_TOKENS = 512
-MODEL_TIMEOUT_SECONDS = 30
+MODEL_TIMEOUT_SECONDS = 75
+MODEL_STATUS_TIMEOUT_SECONDS = 4
 MAX_PROVIDER_RESPONSE_BYTES = 256 * 1024
 
 
@@ -68,6 +70,25 @@ class OllamaProvider:
             raise ValueError("Invalid configured Ollama model identifier")
         self.model = model
 
+    async def status(self) -> dict[str, str]:
+        """Bounded, non-secret model readiness probe. No generation or token spend."""
+        async def probe():
+            async with httpx.AsyncClient(timeout=MODEL_STATUS_TIMEOUT_SECONDS,
+                                         trust_env=False, follow_redirects=False) as client:
+                async with client.stream("GET", f"{self.base_url}/api/tags") as response:
+                    response.raise_for_status()
+                    body = await read_bounded_json(response)
+            if not isinstance(body, dict) or not isinstance(body.get("models"), list):
+                raise ProviderContractError("Invalid Ollama model catalog")
+            names = [item.get("name") for item in body["models"]
+                     if isinstance(item, dict) and isinstance(item.get("name"), str)]
+            return {"status": "ready" if self.model in names else "model_missing",
+                    "model": self.model}
+        try:
+            return await asyncio.wait_for(probe(), timeout=MODEL_STATUS_TIMEOUT_SECONDS)
+        except (httpx.HTTPError, ValueError, asyncio.TimeoutError, ProviderContractError):
+            return {"status": "offline", "model": self.model}
+
     async def complete(self, prompt: str, *, max_output_tokens: int = 256,
                        temperature: float = 0.2) -> ModelCompletion:
         ceiling = prompt_token_ceiling(prompt)
@@ -80,16 +101,14 @@ class OllamaProvider:
         async def call():
             async with httpx.AsyncClient(timeout=MODEL_TIMEOUT_SECONDS,
                                          trust_env=False, follow_redirects=False) as client:
-                response = await client.post(
-                    f"{self.base_url}/api/generate",
+                async with client.stream(
+                    "POST", f"{self.base_url}/api/generate",
                     json={"model": self.model, "prompt": prompt, "stream": False,
                           "options": {"num_predict": max_output_tokens,
                                       "temperature": temperature}},
-                )
-                response.raise_for_status()
-                if len(response.content) > MAX_PROVIDER_RESPONSE_BYTES:
-                    raise ProviderContractError("Provider response exceeds size limit")
-                return response.json()
+                ) as response:
+                    response.raise_for_status()
+                    return await read_bounded_json(response)
 
         payload = await asyncio.wait_for(call(), timeout=MODEL_TIMEOUT_SECONDS)
         if not isinstance(payload, dict) or payload.get("done") is not True:
@@ -105,3 +124,16 @@ class OllamaProvider:
         if payload.get("model") != self.model:
             raise ProviderContractError("Provider returned an unexpected model")
         return ModelCompletion(text, used_prompt, used_output, self.model)
+
+
+async def read_bounded_json(response: httpx.Response) -> object:
+    """Enforce the response cap while streaming, before untrusted data is buffered."""
+    data = bytearray()
+    async for chunk in response.aiter_bytes():
+        if len(data) + len(chunk) > MAX_PROVIDER_RESPONSE_BYTES:
+            raise ProviderContractError("Provider response exceeds size limit")
+        data.extend(chunk)
+    try:
+        return json.loads(data)
+    except (ValueError, UnicodeDecodeError) as exc:
+        raise ProviderContractError("Provider returned invalid JSON") from exc

@@ -114,4 +114,6 @@ jobs:
           assert app.title == "Oryveta API"
           print("Non-root container smoke OK")'
       - name: Validate single-host Compose configuration
-        run: docker compose config --quiet
+        run: |
+          docker compose config --quiet
+          docker compose -f compose.yaml -f compose.ollama.yaml config --quiet

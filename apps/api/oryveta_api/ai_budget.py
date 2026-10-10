@@ -9,7 +9,7 @@ from .database import Database
 
 DAILY_TOKEN_LIMIT = 20_000
 MAX_IN_FLIGHT = 2
-RESERVATION_TTL_SECONDS = 90
+RESERVATION_TTL_SECONDS = 120
 
 
 class BudgetExceeded(ValueError):
