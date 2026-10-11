@@ -1,6 +1,6 @@
 # Identity and workspace foundations (Phase 1)
 
-**State:** Code and SQL review only until a dedicated Supabase project and GitHub OAuth provider are configured. This is not a claim of live authentication.
+**State (2026-10-10):** Dedicated Oryveta Supabase project is provisioned, workspace schema and RLS applied, security advisors clear. GitHub OAuth provider is **not configured**, so the production login remains gated off. This is not a claim of live authentication.
 
 ## Product decision
 
@@ -18,14 +18,14 @@ After sign-in, the first meaningful action is to create/select a workspace. An a
 
 ## Setup checklist (requires owner actions)
 
-1. Select which Supabase organization should own a **new dedicated Oryveta project**. Never reuse another app's database. Supabase project pricing must be checked and confirmed before creation; prefer free tier.
-2. Create the project; run the reviewed `supabase/schema.sql` using SQL editor or a migration. Run Supabase database/security advisors and verify RLS using two independent test accounts.
+1. **Completed:** Dedicated project `nydtmiseclkwauiepqxn` created in the `oryveta` Free-plan organization (US West, $0/month base). [Project dashboard](https://supabase.com/dashboard/project/nydtmiseclkwauiepqxn).
+2. **Partially complete:** `supabase/schema.sql` applied as migration `initial_workspace_identity_rls`. Both workspace tables have RLS (4 workspace policies, 1 membership policy); Supabase security advisors report zero findings. Cross-account tenant isolation with two actual signed-in users is **still pending**. Performance advisor reports one expected unused index on the empty membership table.
 3. In [GitHub Developer Settings](https://github.com/settings/developers), create an **OAuth App** for Oryveta. Homepage: `https://oryveta.vercel.app`. Callback: `https://<project-ref>.supabase.co/auth/v1/callback`. Store its **client secret only in Supabase Auth provider settings**, never in GitHub or frontend files.
 4. In Supabase Auth, enable GitHub provider, set Site URL `https://oryveta.vercel.app` and allow the exact production redirect. For previews, allowlist explicit preview URLs only.
-5. Put only the Supabase project URL and **publishable** key in `apps/web/cloud-config.js`. Review key scope. A publishable key is public by design.
+5. **Staged safely:** `apps/web/cloud-config.js` contains only the project URL and **publishable** key, which is public by design. `githubEnabled: false` deliberately hides the sign-in action until the GitHub provider and redirect settings are configured and checked. Flip to `true` through a reviewed PR after steps 3–4.
 6. Verify sign-in, callback, refresh, logout, denied consent, unauthorized data access, workspace create/rename and a cross-account isolation attempt. Do not mark auth production-ready without this integration test.
 7. Configure incident logging, abuse/rate controls, MFA/SSO requirements, session lifecycle and recovery before serving enterprise clients.
 
 ## Current limitations
 
-The UI can be reviewed without provider credentials, but a real GitHub sign-in cannot complete until steps 1–5 are configured. Vercel still hosts only a frontend: creating/importing actual code repositories, agent execution and Ollama remain self-hosted. Team invitation, organization transfer, billing, audit history and hosted job execution are **future milestones**.
+The UI can be reviewed without provider credentials, but real GitHub sign-in cannot complete until GitHub OAuth provider setup and a controlled enablement PR. Vercel still hosts only a frontend: creating/importing actual code repositories, agent execution and Ollama remain self-hosted. Team invitation, organization transfer, billing, audit history and hosted job execution are **future milestones**.

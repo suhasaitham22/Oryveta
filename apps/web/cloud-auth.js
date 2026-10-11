@@ -12,7 +12,7 @@
   let clientPromise;
   let currentIdentity = null;
 
-  function configured(){return valid;}
+  function configured(){return valid && config.githubEnabled === true;}
   async function client(){
     if(!valid)throw new Error('Cloud authentication is not configured yet.');
     if(!clientPromise){
