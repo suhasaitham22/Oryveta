@@ -6,6 +6,10 @@
       "destination": "/experience.js"
     },
     {
+      "source": "/static/chats.js",
+      "destination": "/chats.js"
+    },
+    {
       "source": "/static/app.js",
       "destination": "/app.js"
     },

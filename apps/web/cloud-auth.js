@@ -89,7 +89,21 @@
     'Could not update workspace');
     return data;
   }
+
+  function requireUser(){if(!currentIdentity)throw new Error('Sign in to access private chats');}
+  async function listChats(){requireUser();const sb=await client();return unwrap(await sb.from('chats').select('id,owner_id,workspace_id,title,created_at').order('created_at',{ascending:false}).limit(100),'Could not load chats')||[];}
+  async function createChat(title,workspaceId){requireUser();const sb=await client();return unwrap(await sb.from('chats').insert({owner_id:currentIdentity.id,workspace_id:workspaceId||null,title}).select('id,owner_id,workspace_id,title,created_at').single(),'Could not create chat');}
+  async function deleteChat(id){requireUser();const sb=await client();unwrap(await sb.from('chats').delete().eq('id',id),'Could not delete chat');}
+  async function listMessages(chatId){requireUser();const sb=await client();return unwrap(await sb.from('chat_messages').select('id,chat_id,author_id,content,created_at').eq('chat_id',chatId).order('created_at').limit(200),'Could not load messages')||[];}
+  async function addMessage(chatId,content){requireUser();const sb=await client();return unwrap(await sb.from('chat_messages').insert({chat_id:chatId,author_id:currentIdentity.id,role:'user',content}).select('id,content').single(),'Could not save message');}
+  async function listInvites(){requireUser();const sb=await client();return (unwrap(await sb.from('chat_shares').select('id,chat_id,invited_by,recipient_email,recipient_alias,permission,status,accepted_by').eq('status','pending').limit(100),'Could not load invitations')||[]).filter(x=>x.invited_by!==currentIdentity.id);}
+  async function listShares(chatId){requireUser();const sb=await client();return unwrap(await sb.from('chat_shares').select('id,chat_id,recipient_email,recipient_alias,permission,status,accepted_by').eq('chat_id',chatId).limit(100),'Could not load shares')||[];}
+  async function inviteToChat(chatId,recipient,permission){requireUser();const target=String(recipient||'').trim().toLowerCase();const alias=target.startsWith('@');if(alias?!/^@[a-z][a-z0-9_]{2,31}$/.test(target):!(/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(target)&&target.length<=254))throw new Error('Use a valid email or registered @alias');if(!['viewer','editor'].includes(permission))throw new Error('Invalid permission');const sb=await client();return unwrap(await sb.from('chat_shares').insert({chat_id:chatId,invited_by:currentIdentity.id,permission,...(alias?{recipient_alias:target.slice(1)}:{recipient_email:target})}).select('id,status').single(),'Could not send invitation');}
+  async function acceptChatInvite(id){requireUser();const sb=await client();return unwrap(await sb.from('chat_shares').update({status:'accepted',accepted_by:currentIdentity.id,accepted_at:new Date().toISOString()}).eq('id',id).eq('status','pending').select('id,chat_id').single(),'Could not accept invitation');}
+  async function revokeChatInvite(id){requireUser();const sb=await client();unwrap(await sb.from('chat_shares').delete().eq('id',id),'Could not revoke access');}
+  async function getAlias(){requireUser();const sb=await client();return unwrap(await sb.from('user_aliases').select('alias').eq('user_id',currentIdentity.id).maybeSingle(),'Could not load alias')?.alias||'';}
+  async function setAlias(alias){requireUser();const a=String(alias||'').trim().toLowerCase().replace(/^@/,'');if(!/^[a-z][a-z0-9_]{2,31}$/.test(a))throw new Error('Alias must be 3–32 lowercase letters, numbers or underscores');const sb=await client();const current=await getAlias();unwrap(current?await sb.from('user_aliases').update({alias:a}).eq('user_id',currentIdentity.id):await sb.from('user_aliases').insert({user_id:currentIdentity.id,alias:a}),'Could not save alias');return a;}
   window.OryvetaCloudAuth=Object.freeze({
-    configured,githubConfigured,emailConfigured,hasSessionHint,identity,signIn,signInWithEmail,signOut,workspaces,createWorkspace,updateWorkspace
+    configured,githubConfigured,emailConfigured,hasSessionHint,identity,signIn,signInWithEmail,signOut,workspaces,createWorkspace,updateWorkspace,listChats,createChat,deleteChat,listMessages,addMessage,listInvites,listShares,inviteToChat,acceptChatInvite,revokeChatInvite,getAlias,setAlias
   });
 })();

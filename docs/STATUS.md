@@ -17,3 +17,5 @@ Checked 2026-10-12 (premium motion and email auth milestone). Distinguish merged
 **Not implemented:** autonomous coding, private GitHub App access, isolated code execution, distributed job orchestration, enterprise multi-tenancy, or 24/7 hosted worker. The local model endpoint is not deployed on Vercel and has not been exercised against a downloaded real model in CI. A real-model smoke script is provided for self-hosted operators.
 
 See [ENTERPRISE-FOUNDATIONS.md](ENTERPRISE-FOUNDATIONS.md) for design invariants and measurable release gates. Proposed changes must pass remote CI and merge before being labeled implemented.
+
+**Private chat milestone:** Supabase RLS tables installed and synthetic two-user isolation, alias/editor access, acceptance and revocation verified. Hosted chat UI is being added; real email sign-in and live two-user acceptance testing remain mandatory. No email notifications or hosted model replies.
