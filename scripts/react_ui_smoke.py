@@ -1,75 +1,181 @@
-"""Real Chromium smoke tests for the compiled Vite React/shadcn product (not mocks).
+"""Real Chromium consumer checks for the compiled React Studio.
 
-No email is sent and no GitHub OAuth credentials are used.
-Works against the production-built 'apps/web/studio/dist' folder.
+The default mode serves ``studio/dist`` as a hosted-style preview. Set
+``ORYVETA_SMOKE_API_URL`` to a running self-hosted FastAPI origin to exercise
+the local cookie login, ZIP analysis and persisted job timeline. No external
+credentials or production mutations are used.
 """
 from __future__ import annotations
+
+import io
 import json
+import os
 import threading
+import zipfile
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
+
 from playwright.sync_api import sync_playwright
-ROOT=Path(__file__).resolve().parents[1] / "apps" / "web" / "studio" / "dist"
+
+ROOT = Path(__file__).resolve().parents[1] / "apps" / "web" / "studio" / "dist"
+
+
 class Handler(SimpleHTTPRequestHandler):
-    def __init__(self,*a,**k):super().__init__(*a,directory=str(ROOT),**k)
-    def log_message(self,*a):pass
-    def translate_path(self,path):
-        if "?" in path:path=path.split("?",1)[0]
-        if path=="/":path="/index.html"
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, directory=str(ROOT), **kwargs)
+
+    def log_message(self, *_args):
+        pass
+
+    def translate_path(self, path):
+        if "?" in path:
+            path = path.split("?", 1)[0]
+        if path == "/":
+            path = "/index.html"
         return super().translate_path(path)
+
+
+def _archive() -> bytes:
+    stream = io.BytesIO()
+    with zipfile.ZipFile(stream, "w") as archive:
+        archive.writestr("snapshot/app.py", "def run():\n    return 'ok'\n")
+    return stream.getvalue()
+
+
+def _assert_no_overflow(page):
+    assert page.evaluate("document.documentElement.scrollWidth <= window.innerWidth + 1")
+
+
+def _open_nav(page, label, width):
+    if width <= 680:
+        page.get_by_role("button", name="Open workspace menu").click()
+    page.get_by_role("button", name=label, exact=True).first.click()
+
+
+
+
+def _check_hosted(page, base_url, width):
+    page.goto(base_url, wait_until="domcontentloaded", timeout=30000)
+    page.get_by_role("button", name="Start New", exact=True).first.click()
+    page.get_by_role("heading", name="Start New").wait_for()
+    start_tabs = page.get_by_label("Start New workflow")
+    start_tabs.get_by_role("tab", name="Local run").click()
+    assert page.get_by_text("Cloud execution is not connected.").count() == 1
+    assert page.get_by_text("Illustration · not running").count() == 1
+    nav = page.get_by_role("navigation", name="Workspace navigation")
+    assert nav.get_by_role("button", name="Demo Studio", exact=True).count() == 0
+    start_tabs.get_by_role("tab", name="Brief").click()
+    page.get_by_label("Project name").fill("Browser draft")
+    page.get_by_label("Describe the product").fill("A small product brief for browser smoke coverage.")
+    start_tabs.get_by_role("tab", name="Demo Studio").click()
+    page.get_by_role("button", name="Edit script").click()
+    page.get_by_label("Headline").fill("Edited start headline")
+    _open_nav(page, "Evolve", width)
+    evolve_tabs = page.get_by_label("Evolve workflow")
+    evolve_tabs.get_by_role("tab", name="Brief").click()
+    page.get_by_label("Repository URL or name").fill("Billing service")
+    page.get_by_label("What should be improved?").fill("Review a bounded change in the billing service.")
+    evolve_tabs.get_by_role("tab", name="Demo Studio").click()
+    assert page.locator('[aria-label="Evolve story"]').count() == 1
+    page.get_by_role("button", name="Edit script").click()
+    page.get_by_label("Headline").fill("Edited evolve headline")
+    with page.expect_download() as download_info:
+        page.get_by_role("button", name="Export storyboard").click()
+    exported = json.loads(download_info.value.path().read_text())
+    assert exported["id"] == "evolve"
+    assert exported["context"]["journey"] == "evolve"
+    assert exported["context"]["title"] == "Billing service"
+    assert exported["context"]["brief"] == "Review a bounded change in the billing service."
+    assert any(scene["headline"] == "Edited evolve headline" for scene in exported["scenes"])
+    _open_nav(page, "Start New", width)
+    page.get_by_role("tab", name="Demo Studio").click()
+    assert page.get_by_label("Headline").input_value() == "Edited start headline"
+    assert page.locator('[aria-label="Evolve story"]').count() == 0
+    _assert_no_overflow(page)
+
+
+def _check_local(page, api_url, width):
+    page.goto(f"{api_url}/studio", wait_until="domcontentloaded", timeout=30000)
+    assert page.url.endswith("/studio/")
+    page.get_by_role("heading", name="What are you working on?").wait_for(timeout=20000)
+    if width <= 680:
+        page.get_by_role("button", name="Open workspace menu").click()
+    page.get_by_role("button", name="Evolve", exact=True).first.click()
+    page.get_by_role("tab", name="Local run", exact=True).click()
+    page.get_by_role("button", name="Sign in to local demo").click()
+    page.get_by_role("button", name="Import & analyze").wait_for()
+    page.get_by_label("Repository ZIP").set_input_files({
+        "name": "smoke.zip",
+        "mimeType": "application/zip",
+        "buffer": _archive(),
+    })
+    page.get_by_role("button", name="Import & analyze").click()
+    page.get_by_text("Task timeline").wait_for(timeout=20000)
+    page.get_by_role("button", name="Cancel analysis").click()
+    page.get_by_role("heading", name="Canceled").wait_for(timeout=20000)
+    page.get_by_text("recorded events").wait_for()
+    _assert_no_overflow(page)
+
+
 def run():
-    assert (ROOT/"index.html").is_file(), "Run npm build in apps/web/studio before browser smoke"
-    assert json.loads((ROOT/"demo-stories.json").read_text())[0]["id"]=="start-new"
-    server=ThreadingHTTPServer(("127.0.0.1",0),Handler)
-    thread=threading.Thread(target=server.serve_forever,daemon=True);thread.start()
+    assert (ROOT / "index.html").is_file(), "Run npm build in apps/web/studio before browser smoke"
+    api_url = os.environ.get("ORYVETA_SMOKE_API_URL")
+    server = None
+    thread = None
+    if not api_url:
+        server = ThreadingHTTPServer(("127.0.0.1", 0), Handler)
+        thread = threading.Thread(target=server.serve_forever, daemon=True)
+        thread.start()
+        api_url = f"http://127.0.0.1:{server.server_port}"
     try:
-        url=f"http://127.0.0.1:{server.server_port}/"
-        with sync_playwright() as pw:
-            browser=pw.chromium.launch(headless=True)
-            for label,width in (("desktop",1440),("mobile",390)):
-                page=browser.new_page(viewport={"width":width,"height":880})
-                errors=[]
-                page.on("pageerror",lambda e:errors.append(str(e)))
-                response=page.goto(url,wait_until="domcontentloaded",timeout=30000)
-                assert response.status==200
-                page.get_by_role("heading",name="Ideas deserve extraordinary engineering.").wait_for(timeout=20000)
-                assert page.get_by_label("Your work email").count()==1
-                assert page.get_by_role("button",name="Continue with GitHub Needs OAuth setup").is_disabled()
-                page.get_by_role("button",name="Explore the workspace").first.click()
-                page.get_by_role("button",name="Start New").wait_for(state="visible" if width>680 else "attached")
-                if width<=680:page.get_by_role("button",name="Toggle navigation").click()
-                page.get_by_role("button",name="Private chats",exact=True).click()
-                page.get_by_role("heading",name="Private chats need a real account.").wait_for()
-                if width<=680:page.get_by_role("button",name="Toggle navigation").click()
-                page.get_by_role("button",name="Demo Studio",exact=True).click()
-                page.get_by_role("heading",name="Demo Studio / stories").wait_for()
-                page.get_by_role("button",name="Evolve Existing",exact=False).count() # nonfatal; list may vary
-                page.get_by_role("button",name="Next demo scene").click()
-                assert "02/03" in page.locator(".demo-screen").inner_text().replace(" ","") 
-                page.get_by_role("button",name="Exit preview").click() if width>680 else (page.get_by_role("button",name="Toggle navigation").click(),page.get_by_role("button",name="Exit preview").click())
-                page.get_by_role("heading",name="Ideas deserve extraordinary engineering.").wait_for()
-                assert not errors,(label,errors)
-                print("PASS",label,"React render; auth gate; workspace navigation; storyboard; preview exit")
-                page.close()
-            # Graceful state if a demo manifest is empty or temporarily unavailable.
-            empty_page=browser.new_page(viewport={"width": 1180, "height": 800})
-            empty_errors=[]
-            empty_page.on("pageerror",lambda e:empty_errors.append(str(e)))
-            empty_page.route("**/demo-stories.json", lambda route: route.fulfill(
-                status=200,content_type="application/json",body="[]"))
-            empty_page.goto(url,wait_until="domcontentloaded")
-            empty_page.get_by_role("heading",name="Ideas deserve extraordinary engineering.").wait_for()
-            empty_page.get_by_role("button",name="Explore the workspace").first.click()
-            empty_page.get_by_role("button",name="Demo Studio",exact=True).click()
-            empty_page.get_by_role("heading",name="No demo stories yet").wait_for()
-            assert not empty_errors,empty_errors
-            empty_page.close()
-            reduced=browser.new_page(reduced_motion="reduce")
-            reduced.goto(url,wait_until="domcontentloaded")
-            reduced.get_by_role("heading",name="Ideas deserve extraordinary engineering.").wait_for()
-            assert reduced.evaluate("matchMedia('(prefers-reduced-motion: reduce)').matches")
-            print("PASS reduced-motion support")
+        with sync_playwright() as playwright:
+            browser = playwright.chromium.launch(headless=True)
+            for label, width in (("desktop", 1440), ("mobile", 390)):
+                context = browser.new_context(viewport={"width": width, "height": 880})
+                page = context.new_page()
+                errors = []
+                page.on("pageerror", lambda error: errors.append(str(error)))
+                if os.environ.get("ORYVETA_SMOKE_API_URL"):
+                    _check_local(page, api_url, width)
+                else:
+                    # Static mode proves the hosted boundary and draft/story UX.
+                    page.goto(api_url, wait_until="domcontentloaded", timeout=30000)
+                    _check_hosted(page, api_url, width)
+                assert not errors, (label, errors)
+                scenario = "local API lifecycle" if os.environ.get("ORYVETA_SMOKE_API_URL") else "hosted boundary and contextual story"
+                print("PASS", label, scenario, "overflow")
+                context.close()
+            reduced = browser.new_context(reduced_motion="reduce", viewport={"width": 390, "height": 844})
+            reduced_page = reduced.new_page()
+            reduced_page.goto(f"{api_url}/studio/" if os.environ.get("ORYVETA_SMOKE_API_URL") else api_url, wait_until="domcontentloaded")
+            if os.environ.get("ORYVETA_SMOKE_API_URL"):
+                _check_local(reduced_page, api_url, 390)
+                assert reduced_page.evaluate("matchMedia('(prefers-reduced-motion: reduce)').matches")
+                completed_icon = reduced_page.locator(".lifecycle-tasks .task-complete svg")
+                assert completed_icon.count() >= 1
+                assert completed_icon.first.evaluate("(node) => getComputedStyle(node).animationName") == "none"
+                assert reduced_page.locator(".lifecycle-tasks .task-complete").first.evaluate(
+                    "(node) => getComputedStyle(node).transitionDuration"
+                ) == "0s"
+                print("PASS reduced-motion local lifecycle tasks")
+            else:
+                story_chapter = reduced_page.get_by_role("button", name="Evolve", exact=True).last
+                story_chapter.focus()
+                reduced_page.keyboard.press("Enter")
+                assert reduced_page.locator(".story-artifact").get_attribute("data-active-chapter") == "evolve"
+                scene = reduced_page.locator(".story-artifact .scene-enter")
+                assert scene.evaluate("(node) => getComputedStyle(node).animationName") == "none"
+                assert scene.evaluate("(node) => getComputedStyle(node).transitionDuration") == "0s"
+                print("PASS reduced-motion React chapter keyboard and disabled motion")
+            reduced.close()
             browser.close()
     finally:
-        server.shutdown();server.server_close();thread.join(timeout=4)
-if __name__=="__main__":run()
+        if server:
+            server.shutdown()
+            server.server_close()
+        if thread:
+            thread.join(timeout=4)
+
+
+if __name__ == "__main__":
+    run()

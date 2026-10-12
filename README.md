@@ -4,22 +4,22 @@
 
 ### [Open Oryveta — https://oryveta.vercel.app](https://oryveta.vercel.app)
 
-**Deployment:** [Vercel production](https://oryveta.vercel.app) automatically deploys from the GitHub `main` branch. Vercel now serves the **actual `apps/web` interface** (Overview, Start New, Evolve, Projects, Activity), rather than the old `preview/index.html` placeholder. Without a deployed API, Start New/Evolve remain **read-only**. The new startup sign-in gate and workspace UI are ready for a dedicated Supabase Auth project, but **real hosted login and persistent workspaces are not enabled until provider setup and RLS verification**. This is not an Ollama server or a hosted FastAPI service. The Ollama feature below works in the self-hosted API.
+**Deployment:** [Vercel production](https://oryveta.vercel.app) serves the React Studio build from `apps/web/studio`. Start New/Evolve hosted flows produce planning/storyboard drafts only; Supabase provider setup and real RLS/mailbox verification remain required for hosted account claims. The self-hosted FastAPI origin retains legacy `/` and serves the built React workspace at `/studio/` when a production dist exists; this local API/worker is not deployed to Vercel.
 
 > **Documentation:** [Complete product and technical decisions](docs/INDEX.md) · [Architecture](docs/ARCHITECTURE.md) · [UI design](docs/DESIGN-SYSTEM.md) · [Roadmap](docs/ROADMAP.md) · [Verified status](docs/STATUS.md) · [Quality gates](docs/QUALITY.md)
 
-> **Launch status:** The Vercel deployment offers a polished GitHub sign-in gate and explicit **Explore product preview**. Live GitHub OAuth is **not yet configured**. Project generation, repository analysis and model inference require the separate API. See [identity and workspace setup](docs/IDENTITY-WORKSPACES.md). The local FastAPI app includes a functional AI assistant when Ollama is configured; it is not deployed to Vercel.
+> **Launch status:** The hosted UI clearly labels its unavailable execution boundary. Project generation, repository analysis and model inference require the separate self-hosted API. Live GitHub OAuth and hosted coding agents are not configured. Local deterministic starters and read-only analysis are not autonomous custom application generation.
 
-Oryveta is an open-source autonomous software engineering workspace with two product journeys:
+Oryveta is an open-source software engineering workspace with two target product journeys (the local MVP implements only bounded starter/scanning capabilities):
 
-- **Start New:** turn a project brief into a real software repository, then iteratively develop, test, review, and deploy it.
-- **Evolve:** import an existing repository, analyze bugs, risky patterns, unused-code *candidates*, security concerns, and modernization opportunities, then implement verified improvements.
+- **Start New (target):** turn a project brief into a real software repository, then iteratively develop, test, review, and deploy it. Today the local path creates a deterministic starter and can analyze it; custom feature generation is not implemented.
+- **Evolve (target):** import an existing repository, analyze bugs, risky patterns, unused-code *candidates*, security concerns, and modernization opportunities, then implement verified improvements. Today the local path imports authorized snapshots and performs read-only heuristic analysis; patches remain review-only.
 
 Kaggle and related benchmarks are **internal evaluation scenarios**, not a third product or navigation destination.
 
 ## Status
 
-**Early development.** The functional Python/FastAPI + SQLite MVP, tests, background worker, Docker Compose and CI are merged into `main`. The local app supports opt-in open-weight Ollama text generation, readiness checks, a budgeted AI assistant in the workspace and read-only AI-assisted Evolve patch proposals. CI tests exercise the Ollama HTTP protocol with a local deterministic test server; **a real downloaded model is not executed in CI**. The public Vercel site remains a static UI preview. Autonomous code execution, test-backed AI fixes, GitHub publishing, hosted inference and 24/7 execution are not implemented.
+**Early development.** The functional Python/FastAPI + SQLite MVP, tests, background worker, Docker Compose and CI are merged into `main`. The React Studio is the hosted UI and also an optional self-hosted `/studio/` surface; local jobs expose coarse worker states/events only. Autonomous code execution, test-backed AI fixes, GitHub publishing, hosted inference and 24/7 execution are not implemented.
 
 See [current status](docs/STATUS.md) and [open-source policy](docs/OPEN-SOURCE.md).
 
@@ -41,12 +41,20 @@ python -m venv .venv
 source .venv/bin/activate
 pip install -e '.[dev]'
 export ORYVETA_LOCAL_DEMO=true
+export ORYVETA_BASE_URL=http://127.0.0.1:8000
 uvicorn oryveta_api.main:app --host 127.0.0.1 --port 8000
 # In another terminal, with the same environment:
 python -m oryveta_engine.worker
 ```
 
-Open http://127.0.0.1:8000. Local demo sign-in is restricted to localhost; it is **not permitted** on the public Vercel site. Alternatively, use `docker compose up --build` with real GitHub OAuth credentials configured. To validate changes run `pytest -q --cov=oryveta_api --cov=oryveta_engine --cov-branch --cov-fail-under=84`, `ruff check apps/api engine tests`, and `node --check apps/web/app.js`. See [CI and quality gates](docs/QUALITY.md).
+For the React Studio, Vite 7 requires Node **20.19+ or 22.12+** (CI uses Node 22):
+
+```bash
+npm --prefix apps/web/studio install
+npm --prefix apps/web/studio run build
+```
+
+Open `http://127.0.0.1:8000/studio/`, choose **Start New** or **Evolve**, open **Local run**, then choose **Sign in to local demo**. The browser and API must share the same origin/base URL; local demo sign-in is loopback-only and not permitted on public Vercel. `npm --prefix apps/web/studio run check` validates story/evidence contracts. Use `docker compose up --build` only with configured GitHub OAuth for non-demo sign-in. See [CI and quality gates](docs/QUALITY.md).
 
 ### Run local Ollama inference
 

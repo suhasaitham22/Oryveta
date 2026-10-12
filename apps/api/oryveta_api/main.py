@@ -436,17 +436,50 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             conn.commit()
         return {"id": job_id, "status": "queued", "replayed": False}
 
+    def _job_view(conn, job_id: str, user_id: str):
+        row = conn.execute(
+            """SELECT id,project_id,kind,status,attempts,error,created_at,updated_at
+               FROM jobs WHERE id=? AND user_id=?""", (job_id, user_id),
+        ).fetchone()
+        if row is None:
+            return None
+        events = conn.execute(
+            """SELECT id,kind,detail,created_at FROM events
+               WHERE user_id=? AND job_id=? ORDER BY id ASC""",
+            (user_id, job_id),
+        ).fetchall()
+        event_list = [dict(event) for event in events]
+        started = next((event["created_at"] for event in event_list
+                        if event["kind"] == "job_started"), None)
+        finished = (row["updated_at"] if row["status"] in
+                    {"succeeded", "failed", "canceled"} else None)
+        result = dict(row)
+        result.update({"events": event_list, "started_at": started,
+                       "finished_at": finished})
+        return result
+
+    @app.get("/api/jobs")
+    def jobs(project_id: str | None = None, user=Depends(current_user)):
+        with app.state.db.connect() as conn:
+            query = """SELECT id,project_id,kind,status,attempts,error,created_at,updated_at
+                       FROM jobs WHERE user_id=?"""
+            params: list[str] = [user["id"]]
+            if project_id is not None:
+                query += " AND project_id=?"
+                params.append(project_id)
+            query += " ORDER BY created_at DESC"
+            rows = conn.execute(query, params).fetchall()
+            result = [dict(row) for row in rows]
+        return result
+
     @app.get("/api/jobs/{job_id}")
     def job_status(job_id: str, user=Depends(current_user)):
         with app.state.db.connect() as conn:
-            row = conn.execute(
-                """SELECT id,project_id,kind,status,attempts,error,created_at,updated_at
-                   FROM jobs WHERE id=? AND user_id=?""", (job_id, user["id"]),
-            ).fetchone()
-        if row is None:
+            result = _job_view(conn, job_id, user["id"])
+        if result is None:
             raise HTTPException(404, "Job not found")
         # Lease tokens, provider details and internal result blobs are private.
-        return dict(row)
+        return result
 
     @app.post("/api/jobs/{job_id}/cancel")
     def cancel_job(job_id: str, user=Depends(current_user), _=Depends(require_csrf)):
@@ -593,6 +626,51 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             rows = conn.execute("SELECT * FROM events WHERE user_id=? ORDER BY created_at DESC LIMIT 60",
                                 (user["id"],)).fetchall()
         return [dict(row) for row in rows]
+
+    studio_dist = WEB_DIR / "studio" / "dist"
+    if studio_dist.is_dir():
+        app.mount("/studio/assets", StaticFiles(directory=studio_dist / "assets"),
+                  name="studio-assets")
+
+    def studio_unavailable():
+        raise HTTPException(503, "React Studio build is unavailable")
+
+    @app.get("/studio")
+    def studio_redirect():
+        return RedirectResponse("/studio/", status_code=307)
+
+    @app.get("/studio/")
+    def studio_index():
+        index = studio_dist / "index.html"
+        if not index.is_file():
+            return studio_unavailable()
+        return FileResponse(index)
+
+    @app.get("/studio/demo-stories.json")
+    def studio_manifest():
+        manifest = studio_dist / "demo-stories.json"
+        if not manifest.is_file():
+            return studio_unavailable()
+        return FileResponse(manifest, media_type="application/json")
+
+    @app.get("/studio/template-license.txt")
+    def studio_template_license():
+        license_file = studio_dist / "template-license.txt"
+        if not license_file.is_file():
+            return studio_unavailable()
+        return FileResponse(license_file, media_type="text/plain")
+
+    @app.get("/studio/assets/{asset_path:path}")
+    def studio_asset(asset_path: str):
+        asset = (studio_dist / "assets" / asset_path).resolve()
+        assets_root = (studio_dist / "assets").resolve()
+        if not asset.is_relative_to(assets_root):
+            raise HTTPException(404, "Studio asset not found")
+        if not studio_dist.is_dir():
+            return studio_unavailable()
+        if not asset.is_file():
+            raise HTTPException(404, "Studio asset not found")
+        return FileResponse(asset)
 
     app.mount("/static", StaticFiles(directory=WEB_DIR), name="static")
 

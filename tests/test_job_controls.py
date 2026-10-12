@@ -11,7 +11,7 @@ from concurrent.futures import ThreadPoolExecutor
 from fastapi.testclient import TestClient
 
 from oryveta_api.auth import new_session
-from oryveta_api.main import MAX_ACTIVE_JOBS_PER_USER
+from oryveta_api.main import MAX_ACTIVE_JOBS_PER_USER, create_app
 from oryveta_engine.worker import Worker
 
 
@@ -156,6 +156,78 @@ def test_other_account_cannot_read_or_cancel(signed_in):
     assert other.post(f"/api/jobs/{job_id}/cancel",
                       headers={"X-Oryveta-CSRF": csrf}).status_code == 404
     assert client.get(f"/api/jobs/{job_id}").json()["status"] == "queued"
+
+def test_job_list_and_event_timestamps_are_owner_scoped(signed_in):
+    client, headers = signed_in
+    job_id = enqueue(client, headers).json()["id"]
+    queued = client.get("/api/jobs").json()
+    assert queued[0]["id"] == job_id
+    assert "events" not in queued[0]
+    assert "started_at" not in queued[0]
+    assert "finished_at" not in queued[0]
+
+    worker = Worker(client.app.state.db, client.app.state.settings.workspace_root)
+    assert worker.run_once()
+    detail = client.get(f"/api/jobs/{job_id}").json()
+    assert [event["kind"] for event in detail["events"]] == [
+        "benchmark_queued", "job_started", "job_completed"
+    ]
+    assert detail["started_at"] == detail["events"][1]["created_at"]
+    assert detail["finished_at"] == detail["updated_at"]
+    assert detail["finished_at"] >= detail["started_at"]
+    assert all({"id", "kind", "detail", "created_at"} <= set(event)
+               for event in detail["events"])
+    assert all("lease_token" not in event and "result_json" not in event
+               for event in detail["events"])
+
+
+def test_job_list_project_filter_and_other_owner_isolation(signed_in):
+    client, headers = signed_in
+    project = client.post("/api/projects", json={
+        "name": "Filtered app", "brief": "An application for filtering jobs safely",
+        "blueprint": "python-api",
+    }, headers=headers).json()
+    matching = client.post(f"/api/projects/{project['id']}/analyze", headers=headers)
+    assert matching.status_code == 202
+    other_project = client.post("/api/projects", json={
+        "name": "Other app", "brief": "An application for another job filter",
+        "blueprint": "python-api",
+    }, headers=headers).json()
+    other_job = client.post(f"/api/projects/{other_project['id']}/analyze", headers=headers)
+    assert other_job.status_code == 202
+    matching_id = matching.json()["id"]
+    other_id = other_job.json()["id"]
+    assert [job["id"] for job in client.get("/api/jobs", params={"project_id": project["id"]}).json()] == [matching_id]
+    assert [job["id"] for job in client.get("/api/jobs", params={"project_id": other_project["id"]}).json()] == [other_id]
+    assert client.get("/api/jobs", params={"project_id": "missing"}).json() == []
+
+    with client.app.state.db.connect() as conn:
+        conn.execute("""INSERT INTO users(id,github_id,login,display_name,avatar_url,created_at)
+            VALUES('job-owner-2','job-owner-2-gh','job-owner-2','Other','',0)""")
+        conn.execute("""INSERT INTO jobs
+            (id,user_id,project_id,kind,status,created_at,updated_at)
+            VALUES('hidden-job','job-owner-2',NULL,'benchmark','queued',0,0)""")
+    assert all(job["id"] not in {"hidden-job"} for job in client.get("/api/jobs").json())
+    hidden_detail = client.get("/api/jobs/hidden-job")
+    assert hidden_detail.status_code == 404
+
+
+def test_studio_redirect_and_missing_build(monkeypatch, tmp_path):
+    import oryveta_api.main as main_module
+    monkeypatch.setattr(main_module, "WEB_DIR", tmp_path / "web")
+    (tmp_path / "web").mkdir()
+    settings = main_module.Settings(database_path=str(tmp_path / "db.sqlite"),
+                                    workspace_root=str(tmp_path / "workspaces"),
+                                    local_demo=True)
+    client = TestClient(create_app(settings))
+    assert client.post("/auth/local-demo").status_code == 204
+    redirect = client.get("/studio", follow_redirects=False)
+    assert redirect.status_code == 307
+    assert redirect.headers["location"] == "/studio/"
+    assert client.get("/studio/").status_code == 503
+    assert client.get("/studio/demo-stories.json").status_code == 503
+    assert client.get("/studio/template-license.txt").status_code == 503
+    assert client.get("/studio/assets/%2E%2E/index.html").status_code == 404
 
 
 def test_cancel_imported_analysis_updates_project(signed_in):

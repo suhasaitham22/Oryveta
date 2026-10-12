@@ -1,29 +1,35 @@
-import React,{useMemo,useState} from "react";
-import {ArrowLeft,ArrowRight,CheckCircle2,Clapperboard,Download,Layers3,Play,ShieldCheck,Sparkles,Video,FileText} from "lucide-react";
-import {Button} from "@/components/ui/button";import {Badge} from "@/components/ui/badge";import {Card} from "@/components/ui/card";
-function downloadFile(name,text){const url=URL.createObjectURL(new Blob([text],{type:"application/json"}));const a=document.createElement("a");a.href=url;a.download=name;document.body.append(a);a.click();a.remove();URL.revokeObjectURL(url);}
-export default function DemoStudio({stories,compact=false}){
- const [selected,setSelected]=useState("start-new");const [frame,setFrame]=useState(0);const [playing,setPlaying]=useState(false);const [editMode,setEditMode]=useState(false);
- const [overrides,setOverrides]=useState({});
- const story=stories.find(s=>s.id===selected)||stories[0];
- const scenes=overrides[story?.id]||story?.scenes||[];
- const active=scenes[Math.min(frame,scenes.length-1)]||{};
- const metadata=useMemo(()=>({id:story?.id,title:story?.title,description:story?.description,scenes,source:"oryveta-demo-studio",status:"storyboard_only_not_rendered",renderPipeline:"Remotion + snapcn",verified:false}),[story,scenes]);
- if(!story)return <div className="rounded-2xl border border-indigo-100 bg-white/80 p-9" role="status"><h2 className="font-display text-2xl font-semibold text-slate-800">No demo stories yet</h2><p className="mt-3 text-sm text-slate-500">The demo manifest is unavailable. Retry later or inspect the feature storyboard source.</p></div>;
- function choose(id){setSelected(id);setFrame(0);setPlaying(false);setEditMode(false);}
- function next(){setFrame(f=>(f+1)%scenes.length);}
- function previous(){setFrame(f=>(f+scenes.length-1)%scenes.length);}
- function editScene(value,key){setOverrides(prev=>({...prev,[story.id]:(prev[story.id]||story.scenes).map((s,i)=>i===frame?{...s,[key]:value}:s)}));}
- return <div className={compact?"demo-root demo-compact":"demo-root"}>
-  <div className="flex flex-wrap items-center justify-between gap-3 mb-5"><div><div className="eyebrow">PRODUCT STORYTELLING</div><h2 className="font-display text-2xl md:text-3xl font-bold tracking-tight text-slate-800 mt-1">Demo Studio <span className="gradient-text">/ stories</span></h2><p className="text-sm text-slate-500 mt-2">Every feature gets a storyboard before we call it ready to demo.</p></div><Badge variant="outline"><Video size={13}/> Remotion + snapcn export</Badge></div>
-  <div className="demo-layout">
-   <div className="grid gap-3 content-start" role="list" aria-label="Feature demos">{stories.map(s=><button role="listitem" type="button" onClick={()=>choose(s.id)} key={s.id} className={`demo-choice text-left ${s.id===story.id?"selected":""}`}><span className="demo-choice-icon"><Clapperboard size={18}/></span><span className="min-w-0"><strong>{s.title}</strong><small>{s.description}</small></span><ArrowRight size={16} className="ml-auto shrink-0 opacity-50"/></button>)}</div>
-   <div className="demo-viewer"><div className="flex items-center justify-between border-b border-white/30 px-5 py-4"><span className="text-[10px] font-bold tracking-[.19em] text-indigo-200 flex items-center gap-2"><span className="w-2 h-2 bg-emerald-300 rounded-full"/> LIVE STORYBOARD</span><Badge className="!border-white/15 !bg-white/10 !text-white">Preview, not a rendered video</Badge></div>
-    <div className="demo-screen" aria-live="polite"><div className="absolute top-5 right-6 text-[11px] text-indigo-200/70">ORYVETA · {String(frame+1).padStart(2,"0")}/{String(scenes.length).padStart(2,"0")}</div><div className="relative max-w-lg animate-in"><div className="text-xs font-bold tracking-[.18em] text-sky-200 mb-6">{active.eyebrow||"PRODUCT CAPABILITY"}</div><h3 className="font-display text-[clamp(2rem,4vw,3.7rem)] tracking-[-.065em] font-bold leading-[1.09] text-white">{active.headline}</h3><p className="mt-6 text-[15px] leading-7 text-indigo-100/80">{active.body}</p><div className="flex gap-2 items-center mt-9"><ShieldCheck size={17} className="text-emerald-300"/><span className="text-xs text-indigo-100/80">{active.receipt||"No live execution evidence; illustrative preview"}</span></div></div></div>
-    <div className="demo-controls"><div className="flex items-center gap-2"><Button size="icon" variant="glass" onClick={previous} aria-label="Previous demo scene"><ArrowLeft size={16}/></Button><Button size="icon" variant="glass" onClick={next} aria-label="Next demo scene"><ArrowRight size={16}/></Button><span className="text-xs text-indigo-200 ml-3">{frame+1} of {scenes.length}</span></div><div className="flex items-center gap-2"><Button size="sm" variant="glass" onClick={()=>setEditMode(!editMode)}><FileText size={14}/> {editMode?"Done":"Edit script"}</Button><Button size="sm" variant="glass" onClick={()=>downloadFile(`${story.id}-demo.json`,JSON.stringify(metadata,null,2))}><Download size={14}/> Export</Button></div></div>
-    {editMode&&<div className="demo-editor"><label className="text-xs font-semibold text-slate-500" htmlFor="scene-headline">Headline</label><input id="scene-headline" maxLength="140" value={active.headline||""} onChange={e=>editScene(e.target.value,"headline")}/><label className="text-xs font-semibold text-slate-500" htmlFor="scene-body">Narration</label><textarea id="scene-body" maxLength="700" value={active.body||""} onChange={e=>editScene(e.target.value,"body")}/></div>}
-   </div>
-  </div>
-  <div className="flex flex-wrap gap-2 items-start text-xs text-slate-500 mt-5"><CheckCircle2 size={15} className="text-emerald-500 shrink-0"/> Storyboard scenes are interactive and downloadable. Rendering MP4 requires the dedicated Remotion/snapcn pipeline, not a browser-only export. All claims must match feature evidence.</div>
- </div>;
+import React from "react";
+import {ArrowLeft, ArrowRight, Clapperboard, Download, FilePenLine, Info} from "lucide-react";
+import {Button} from "@/components/ui/button";
+import {Input} from "@/components/ui/input";
+import {Textarea} from "@/components/ui/textarea";
+import {downloadJson} from "@/lib/download";
+
+// The journey supplies its exact story and owns edits. There is no global/default story.
+export default function DemoStudio({stories, storyId, draft, onChange, context}) {
+  const story = stories.find(value => value.id === storyId);
+  if (!story) return <div className="surface-panel" role="status"><h3>This journey's storyboard is unavailable.</h3><p>The manifest did not provide a matching story. Your brief is still available; no other journey is substituted.</p></div>;
+  const scenes = draft.scenes || story.scenes;
+  const frame = Math.min(draft.frame || 0, scenes.length - 1);
+  const scene = scenes[frame];
+  function editScene(key, value) {
+    onChange({scenes: scenes.map((item, index) => index === frame ? {...item, [key]: value} : item)});
+  }
+  function exportStory() {
+    downloadJson(`${story.id}-demo.json`, {
+      id: story.id, title: story.title, description: story.description, scenes,
+      context, source: "oryveta-demo-studio", status: "storyboard_only_not_rendered",
+      renderPipeline: "Remotion + snapcn", verified: false,
+    });
+  }
+  return <section className="demo-root" aria-label={`${story.title} story`}>
+    <div className="demo-heading"><div><div className="section-label"><Clapperboard size={15}/> Demo Studio / {story.title}</div><h2>Make the handoff easier to understand.</h2><p>{context.title || "Untitled brief"} · Draft scenes stay with this journey while you work.</p></div><span className="status-tag">Draft · unverified</span></div>
+    <div className="storyboard-stage">
+      <div className="storyboard-meta"><span>{story.title} story</span><span>Scene {frame + 1} / {scenes.length}</span></div>
+      <div className="storyboard-scene" aria-live="polite" aria-atomic="true"><div className="section-label">{scene.eyebrow}</div><h3>{scene.headline}</h3><p>{scene.body}</p><div className="scene-receipt"><Info size={17}/><span>{scene.receipt}</span></div></div>
+      <div className="demo-controls"><div className="flex items-center gap-2"><Button size="icon" variant="outline" disabled={frame === 0} onClick={() => onChange({frame: frame - 1})} aria-label="Previous demo scene"><ArrowLeft size={16}/></Button><Button size="icon" variant="outline" disabled={frame === scenes.length - 1} onClick={() => onChange({frame: frame + 1})} aria-label="Next demo scene"><ArrowRight size={16}/></Button></div><div className="flex flex-wrap gap-2"><Button size="sm" variant="outline" onClick={() => onChange({editing: !draft.editing})} aria-expanded={!!draft.editing} aria-controls={`${storyId}-scene-editor`}><FilePenLine size={15}/>{draft.editing ? "Close editor" : "Edit script"}</Button><Button size="sm" onClick={exportStory}><Download size={15}/>Export storyboard</Button></div></div>
+    </div>
+    {draft.editing && <div className="demo-editor" id={`${storyId}-scene-editor`}><label className="field-label">Headline<Input maxLength={140} value={scene.headline} onChange={event => editScene("headline", event.target.value)}/></label><label className="field-label">Narration<Textarea maxLength={700} value={scene.body} onChange={event => editScene("body", event.target.value)}/></label></div>}
+    <p className="fine-print">This exports an editable storyboard, not a video or proof of a working feature. Edits are retained in this open workspace, not saved to your account. MP4 rendering uses the separate Remotion + snapcn pipeline.</p>
+  </section>;
 }

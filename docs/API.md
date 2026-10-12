@@ -10,10 +10,17 @@ The published FastAPI source supports health/config, GitHub identity OAuth callb
 
 ## Current job control API (single-host)
 
-- `GET /api/jobs/{job_id}` — authenticated owner-only job status, sanitized to omit lease tokens and internal result blobs.
+- `GET /api/jobs?project_id=<id>` — authenticated owner-only safe job summaries, optionally filtered to one owned project. The response omits lease tokens, result blobs and event history.
+- `GET /api/jobs/{job_id}` — authenticated owner-only job status with sanitized fields and ascending persisted `events` (`id`, `kind`, `detail`, `created_at`). It also returns `started_at` from the first `job_started` event and terminal-only `finished_at` from `updated_at`; neither field invents granular task progress.
 - `POST /api/jobs/{job_id}/cancel` — authenticated owner-only, CSRF-protected cancellation; `200` for queued/running and already-canceled tasks, `409` for succeeded/failed tasks, `404` for non-owned IDs.
 - New job admission is capped at eight queued/running tasks per authenticated user, atomically enforced in SQLite; over-limit requests return `429` with `Retry-After: 30`. Matching idempotency-key benchmark retries are replayed without consuming extra capacity.
 - Worker lease heartbeats keep long-running tasks eligible to commit, while canceled or stolen leases cannot publish results. Running CPU work is **not** forcibly terminated by this endpoint; killable sandboxes are still required before executing imported code.
+
+## Self-hosted React Studio
+
+- `/studio` redirects to canonical `/studio/`, which serves the built Vite app from `apps/web/studio/dist`.
+- `/studio/assets/*`, `/studio/demo-stories.json` and `/studio/template-license.txt` are same-origin built distribution files.
+- If the production build is absent, Studio routes return HTTP `503` while legacy `/` remains available. Escaped asset paths return `404`.
 
 ## Optional local model gateway (self-hosted only)
 

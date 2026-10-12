@@ -38,6 +38,24 @@ jobs:
           python -m playwright install chromium
       - name: Test production-built frontend on desktop/mobile
         run: python scripts/react_ui_smoke.py
+      - name: Exercise self-hosted local API and persisted job UI
+        env:
+          ORYVETA_BASE_URL: http://127.0.0.1:8789
+          ORYVETA_LOCAL_DEMO: 'true'
+          ORYVETA_DATABASE_PATH: ${{ runner.temp }}/oryveta-studio.db
+          ORYVETA_WORKSPACE_ROOT: ${{ runner.temp }}/oryveta-studio-work
+        run: |
+          set -euo pipefail
+          python -m pip install -e .
+          uvicorn oryveta_api.main:app --host 127.0.0.1 --port 8789 >"${RUNNER_TEMP}/oryveta-api.log" 2>&1 &
+          api_pid=$!
+          trap 'kill "$api_pid" 2>/dev/null || true; wait "$api_pid" 2>/dev/null || true' EXIT
+          for attempt in $(seq 1 30); do
+            if curl --fail --silent http://127.0.0.1:8789/api/health >/dev/null; then break; fi
+            sleep 1
+          done
+          curl --fail --silent http://127.0.0.1:8789/api/health >/dev/null
+          ORYVETA_SMOKE_API_URL=http://127.0.0.1:8789 python scripts/react_ui_smoke.py
       - name: Validate vendored snapcn demo scene manifests
         working-directory: apps/web/studio/demo
         run: npm run check

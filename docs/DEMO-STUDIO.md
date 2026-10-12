@@ -11,6 +11,12 @@ Every feature, story or customer-facing change must ship with a concise storyboa
 
 The browser Demo Studio is a functioning editable **storyboard preview**, not video generation. Its JSON export preserves scenes and labels `verified: false`. An automated build/publishing agent should treat `state=storyboard` as an approval gate, not a green launch.
 
+## Context and local-run boundaries
+
+Demo Studio is opened inside Start New or Evolve and receives that journey's story ID and draft context; it is not a standalone workspace navigation destination. Edits remain in the current browser draft while switching journey tabs, but are not persisted to an account unless the surrounding product explicitly adds persistence.
+
+The local-run panel may show real coarse worker states and recorded event timelines from the self-hosted API, including cancellation and elapsed timestamps. It must not invent agent steps, tool counts, percentage, ETA or private reasoning. Hosted mode instead shows an explicitly illustrative sequence and states that cloud execution is unavailable.
+
 ## Agent integration
 The offline agent's evidence gate (`oryveta_engine.learning`) remains fail-closed. Use the same task IDs and outcome receipts to create a demo script after verification; never promote unreviewed candidate behavior. Feed approved receipts into story captions and version each demo with code/feature revision.
 

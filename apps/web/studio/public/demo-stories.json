@@ -2,54 +2,81 @@
   {
     "id": "start-new",
     "title": "Start New",
-    "description": "Idea → product brief → verified foundation",
-    "version": 1,
+    "description": "Product intent → local starter → contextual draft story",
+    "version": 2,
     "state": "storyboard",
     "scenes": [
       {
-        "eyebrow": "01 / THE SPARK",
-        "headline": "Every great product starts with clarity.",
-        "body": "Capture the users, the constraints and what success should look like.",
-        "receipt": "Product brief is created by the user, not by a hosted model."
+        "eyebrow": "01 / DEFINE THE CUSTOMER TASK",
+        "headline": "Make the brief useful before writing code.",
+        "body": "Describe who uses the onboarding portal, which documents they submit, and how a reviewer knows the request is complete. Export the planning brief.",
+        "receipt": "User-authored JSON brief. No hosted agent execution or custom feature generation."
       },
       {
-        "eyebrow": "02 / THE FOUNDATION",
-        "headline": "A strong beginning is engineered.",
-        "body": "Oryveta's local Python engine can scaffold runnable starter repositories with baseline tests.",
-        "receipt": "Local implementation available; hosted execution is not live."
+        "eyebrow": "02 / PREPARE LOCALLY",
+        "headline": "A starter is a beginning, not a finished product.",
+        "body": "On your self-hosted /studio/ origin, explicitly sign in to the local engine, choose a template and create a runnable starter. Request static analysis and inspect recorded worker events.",
+        "receipt": "Separate cookie/CSRF session. The template does not implement the customer's whole brief or run its acceptance tests."
       },
       {
-        "eyebrow": "03 / ACCOUNTABLE OUTPUT",
-        "headline": "Proof is part of the product.",
-        "body": "Every future cloud job must attach tests, reviewable changes and clear limitations.",
-        "receipt": "Evidence gate and local test harness exist; deployment requires review."
+        "eyebrow": "03 / EXPLAIN WHAT COMES NEXT",
+        "headline": "Keep the story beside the work.",
+        "body": "Open Demo Studio inside Start New. Edit a scene, switch workflow tabs or journeys, and return to the same draft. Export the storyboard with its brief and project context.",
+        "receipt": "Edits last in the open workspace only. Storyboard JSON is unverified, not a rendered video or proof of a working portal."
       }
     ]
   },
   {
     "id": "evolve",
     "title": "Evolve",
-    "description": "Existing code → insights → reviewable improvements",
+    "description": "Authorized snapshot → source findings → honest change narrative",
+    "version": 2,
+    "state": "storyboard",
+    "scenes": [
+      {
+        "eyebrow": "01 / CHOOSE THE SCOPE",
+        "headline": "Start with the change you want to understand.",
+        "body": "Describe a billing service's current behavior, desired improvement and regressions to avoid. On the local studio, import an authorized ZIP snapshot for analysis.",
+        "receipt": "Hosted Evolve exports a brief only. Local ZIP import reads source without executing it or requesting repository credentials."
+      },
+      {
+        "eyebrow": "02 / INSPECT THE RECORDED WORK",
+        "headline": "Review findings, not a claim of correctness.",
+        "body": "Watch the local job move through its real recorded states. Expand the event timeline and review the latest project analysis, including skipped files and finding confidence.",
+        "receipt": "Static heuristics are not a security audit. No code changes or application tests are performed by analysis."
+      },
+      {
+        "eyebrow": "03 / KEEP THE RIGHT CONTEXT",
+        "headline": "Tell the Evolve story, not a different journey.",
+        "body": "Open Demo Studio from this Evolve brief. Edit the customer action and limitation, then export the matching Evolve story without losing edits when switching journeys.",
+        "receipt": "A contextual unverified storyboard, not a verified patch or automatically generated PR. Rendering requires the separate Remotion pipeline."
+      }
+    ]
+  },
+  {
+    "id": "local-runs",
+    "title": "Recorded local work",
+    "description": "Explicit local sign-in → real worker lifecycle → compact outcome",
     "version": 1,
     "state": "storyboard",
     "scenes": [
       {
-        "eyebrow": "01 / UNDERSTAND",
-        "headline": "See what you are changing.",
-        "body": "Inspect a repository snapshot before proposing any code changes.",
-        "receipt": "The local engine supports public GitHub and ZIP snapshots."
+        "eyebrow": "01 / EXPLICIT LOCAL SESSION",
+        "headline": "Know which engine you are using.",
+        "body": "Open /studio/ on the self-hosted API, explicitly sign in with its supported local identity, and request analysis from Start New or Evolve. The API persists the queued job.",
+        "receipt": "Local cookies and CSRF stay same-origin. Supabase login does not grant engine access; hosted SPA HTML is not accepted as an API."
       },
       {
-        "eyebrow": "02 / PROPOSE",
-        "headline": "Better code needs context.",
-        "body": "Investigate findings and build a read-only patch proposal with known trade-offs.",
-        "receipt": "Local read-only patch previews exist; no auto-merge."
+        "eyebrow": "02 / OBSERVE ACTUAL ACTIONS",
+        "headline": "A visible task list grounded in recorded state.",
+        "body": "A running worker updates the job. The studio shows elapsed time, the analysis operation and lifecycle tasks. Expand timestamps and recorded events, or cancel the job.",
+        "receipt": "No invented subtools, percentages, ETA or private reasoning. Cancel fences result delivery; computation may continue until worker return."
       },
       {
-        "eyebrow": "03 / VERIFY",
-        "headline": "Don't ship without evidence.",
-        "body": "Independent tests and human review guard the path to an approved PR.",
-        "receipt": "Cloud sandbox, real PR automation and verifier are future features."
+        "eyebrow": "03 / KEEP THE OUTCOME COMPACT",
+        "headline": "One elapsed label. An honest result.",
+        "body": "On success, read a compact completion state and expand its timeline if needed. Failures and cancellations stay explicit; a lost connection preserves the last known state without claiming success.",
+        "receipt": "The latest project findings are labeled separately from older selected runs. Source analysis does not verify application behavior."
       }
     ]
   },
