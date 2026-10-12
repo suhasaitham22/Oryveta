@@ -1,19 +1,19 @@
 # Oryveta implementation status
 
-Checked 2026-10-12 (premium motion and email auth milestone). Distinguish merged behavior, proposed changes and production gaps.
+React/shadcn migration milestone — 2026-10-12.
 
-| Capability | State |
-| --- | --- |
-| GitHub + CI | [Source](https://github.com/suhasaitham22/Oryveta); CI stabilization merged in PR #7, Evolve read-only patch preview merged in PR #8 |
-| Start New | Runnable starter scaffolds and ZIP export; not autonomous implementation of custom business requirements |
-| Evolve | Public GitHub/ZIP import, static findings, manual read-only patch previews and opt-in local-model-assisted read-only proposals; not autonomous fixes or PRs |
-| Identity | Supabase Auth/PKCE and email-link UI exist; real email link clickthrough and redirect allowlist are not yet validated. GitHub OAuth is still disabled. The dedicated Supabase project and workspace RLS are provisioned. Live hosted GitHub OAuth is still DISABLED pending GitHub OAuth App credentials and callback setup; do not imply real sign-in works. Local FastAPI OAuth remains separate |
-| Hosted site | `oryveta.vercel.app` serves the current frontend with a sign-in gate and explicit guest preview. Workspace onboarding is coded but cannot be exercised by real users until provider setup. Workspace SQL onboarding/tenant isolation checks passed under simulated authenticated DB roles; live two-account OAuth check remains pending. No hosted engineering API or worker |
-| Jobs | SQLite single-host queue with fenced retries; heartbeat, owner-scoped status/cancel and admission quotas proposed in this enterprise-foundations milestone |
-| Security | CSRF, owner isolation, bounded archives, patch preview tests; no untrusted code execution or multi-tenant sandbox |
-| Agent learning gate | Offline paired evaluation checks security, per-task regressions, quality gain and cost; emits human-review recommendation only, not an autonomous learning agent |
-| AI | Opt-in local Ollama text generation and 20k tokens/day/account ledger; local assistant UI, readiness probe, optional Compose Ollama stack and read-only Evolve proposals. Tested with mocks and real TCP to a deterministic stub, not downloaded weights. No hosted model, production agent or independent verifier |
+The `apps/web/studio` Vite React app is the proposed **hosted product UI**, served via the `apps/web/vercel.json` Vercel build output. The legacy vanilla-JS `apps/web/index.html` and FastAPI local backend are retained as self-hosted compatibility paths; React replaces the hosted interface first.
 
-**Not implemented:** autonomous coding, private GitHub App access, isolated code execution, distributed job orchestration, enterprise multi-tenancy, or 24/7 hosted worker. The local model endpoint is not deployed on Vercel and has not been exercised against a downloaded real model in CI. A real-model smoke script is provided for self-hosted operators.
+**React product:** mobile/desktop responsive premium glass design, semantic navigation, meaningful scroll narrative, shadcn/Radix UI primitives, reduced-motion support, interactive Start New and Evolve planning flows, Demo Studio with edit/preview/export, and a truthful agent evidence lab. Build and React browser smoke in GitHub Actions are release gates.
 
-See [ENTERPRISE-FOUNDATIONS.md](ENTERPRISE-FOUNDATIONS.md) for design invariants and measurable release gates. Proposed changes must pass remote CI and merge before being labeled implemented.
+**Identity:** Supabase Auth email magic links are initiated only at a user's request. A successful email login has **not** been tested with a real mailbox or redirect. Project URL and publishable key are public browser configuration. **GitHub OAuth remains disabled**, pending secure GitHub OAuth App registration and provider settings in Supabase; GitHub repo access is a separate GitHub App permission workflow.
+
+**Workspaces:** private Supabase schema and tenant RLS deployed and tested under simulated authenticated roles (PR #17). Real two-user browser tenant checks must pass before enterprise claims. React exposes workspace creation, rename, and switching through RLS-backed Supabase access.
+
+**Demos:** `apps/web/studio/demo` owns the vendored MIT-licensed snapcn TextReveal and Remotion compositions for Start New, Evolve and Agent Evaluation. Website Demo Studio provides storyboards, *not browser-rendered videos*. Rendering MP4 requires the separate local CLI. Every new customer-facing feature must have a story in `apps/web/studio/public/demo-stories.json`.
+
+**Agent learning:** local Python evidence-gated evaluation (`oryveta_engine.learning`) does not run an autonomous self-training agent. Candidate promotion remains human-reviewed.
+
+**Not implemented:** hosted FastAPI engine/worker, isolated code execution, production autonomous app generation, real GitHub repository App permissions, a fully functioning online PR/CI agent, secure enterprise invitations/billing, cloud-run Remotion rendering, continuously fine-tuned agents.
+
+See `docs/DEMO-STUDIO.md`, `docs/EVALUATION.md` and `docs/IDENTITY-WORKSPACES.md`. Do not label this milestone deployed until Vercel confirms READY on the new React app SHA and frontend smoke passes.

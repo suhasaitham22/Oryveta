@@ -14,3 +14,9 @@ Explain the user-visible problem, change and non-goals. Link a relevant issue or
 ## Evidence and limitations
 
 Link exact test/CI results and any reproducible before/after evidence. Describe known gaps; do not claim a feature is live based only on a scaffold or mock.
+
+## Product demo contract
+- [ ] New customer-facing feature has an entry or updated scenes in `apps/web/studio/public/demo-stories.json`, or this change is internal-only with justification.
+- [ ] Storyboard matches implemented capability and does not misrepresent mocks as live features.
+- [ ] Demo receipt/limitations reviewed; MP4 capture available where useful.
+- [ ] React build + desktop/mobile browser checks pass (if UI changed).
