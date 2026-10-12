@@ -20,6 +20,10 @@
     {
       "source": "/static/cloud-auth.js",
       "destination": "/cloud-auth.js"
+    },
+    {
+      "source": "/((?!assets/|favicon.ico).*)",
+      "destination": "/index.html"
     }
   ],
   "headers": [
@@ -48,5 +52,8 @@
         }
       ]
     }
-  ]
+  ],
+  "installCommand": "cd studio && npm install --no-audit --no-fund",
+  "buildCommand": "cd studio && npm run build",
+  "outputDirectory": "studio/dist"
 }

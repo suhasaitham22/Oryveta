@@ -1,0 +1,11 @@
+import { createClient } from "@supabase/supabase-js";
+const url="https://nydtmiseclkwauiepqxn.supabase.co";
+const key="sb_publishable_-iMwv7z7moDQ2l84q64K5g_8NopqeMg"; // public browser key, never a secret/service-role key
+export const oauthGitHubEnabled=false; // manually enable after registering GitHub OAuth App and configuring Supabase provider
+export const supabase=createClient(url,key,{auth:{flowType:"pkce",detectSessionInUrl:true,persistSession:true,autoRefreshToken:true,storage:window.sessionStorage}});
+export async function verifiedUser(){const {data:{session},error:e1}=await supabase.auth.getSession();if(e1)throw e1;if(!session)return null;const {data,error}=await supabase.auth.getUser();if(error)throw error;return data.user||null;}
+export async function sendEmailLink(email){const clean=email.trim().toLowerCase();if(clean.length>254||!/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(clean))throw Error("Enter a valid email address");const {error}=await supabase.auth.signInWithOtp({email:clean,options:{emailRedirectTo:window.location.origin+"/",shouldCreateUser:true}});if(error)throw error;}
+export async function signInWithGitHub(){if(!oauthGitHubEnabled)throw Error("GitHub OAuth has not been activated");const {error}=await supabase.auth.signInWithOAuth({provider:"github",options:{redirectTo:window.location.origin+"/",scopes:"read:user user:email"}});if(error)throw error;}
+export async function listWorkspaces(){const {data,error}=await supabase.from("workspaces").select("id,name,slug,description,created_by,created_at,updated_at").order("created_at",{ascending:false});if(error)throw error;return data||[];}
+export async function createWorkspace(user,{name,slug,description}){if(!user)throw Error("Not authenticated");const {data,error}=await supabase.from("workspaces").insert({created_by:user.id,name,slug,description}).select("id,name,slug,description,created_by,created_at,updated_at").single();if(error)throw error;return data;}
+export async function updateWorkspace(id,{name,description}){const {data,error}=await supabase.from("workspaces").update({name,description}).eq("id",id).select("id,name,slug,description,created_by,created_at,updated_at").single();if(error)throw error;return data;}

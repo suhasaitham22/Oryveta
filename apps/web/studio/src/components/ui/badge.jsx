@@ -1,0 +1,2 @@
+import {cn} from "@/lib/utils";
+export function Badge({className,variant="default",...props}){return <span className={cn("inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11px] font-semibold tracking-wide",variant==="success"?"border-emerald-200 bg-emerald-50 text-emerald-700":variant==="warning"?"border-amber-200 bg-amber-50 text-amber-700":variant==="outline"?"border-slate-200 bg-white/65 text-slate-500":"border-indigo-100 bg-indigo-50 text-indigo-700",className)} {...props}/>;}
