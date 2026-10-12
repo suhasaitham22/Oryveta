@@ -17,3 +17,5 @@ The `apps/web/studio` Vite React app is the proposed **hosted product UI**, serv
 **Not implemented:** hosted FastAPI engine/worker, isolated code execution, production autonomous app generation, real GitHub repository App permissions, a fully functioning online PR/CI agent, secure enterprise invitations/billing, cloud-run Remotion rendering, continuously fine-tuned agents.
 
 See `docs/DEMO-STUDIO.md`, `docs/EVALUATION.md` and `docs/IDENTITY-WORKSPACES.md`. Do not label this milestone deployed until Vercel confirms READY on the new React app SHA and frontend smoke passes.
+
+**Chat sharing milestone (2026-10-12):** Dedicated Supabase has owner-private chat/message storage, verified-email or immutable alias invitations, explicit acceptance and viewer/editor/revocation RLS. Synthetic role-level SQL tests pass and leave zero accounts/messages after rollback. The React private chat UX and matching SnapCN storyboard are under PR review; do not call this production-proven until React CI and two real mailbox sign-ins pass. No email notification delivery or hosted AI chat responses.

@@ -79,5 +79,32 @@
         "receipt": "Fail-closed human approval is enforced by current evaluation gate."
       }
     ]
+  },
+  {
+    "id": "private-chats",
+    "title": "Private chats",
+    "description": "Private message → consent-based invite → controlled collaboration",
+    "version": 1,
+    "state": "storyboard",
+    "scenes": [
+      {
+        "eyebrow": "01 / PRIVATE BY DEFAULT",
+        "headline": "Your conversations belong to you.",
+        "body": "Only the authenticated creator can read a new conversation. Workspace membership alone never unlocks it.",
+        "receipt": "PostgreSQL row policies tested against simulated authenticated users; real login remains pending."
+      },
+      {
+        "eyebrow": "02 / SHARE WITH INTENTION",
+        "headline": "Invite the right person—not the whole team.",
+        "body": "Address a verified Outlook/work email or existing @alias. A pending invitation reveals no content until it is accepted.",
+        "receipt": "Synthetic multi-account test verified pending isolation and explicit acceptance; in-app invitations only."
+      },
+      {
+        "eyebrow": "03 / ALWAYS IN CONTROL",
+        "headline": "Viewer, editor, revoke.",
+        "body": "Choose read-only or contribution access. Revoke a share to remove access without exposing messages by public link.",
+        "receipt": "Database verification passed for viewer/editor separation and owner revocation; real browser accounts untested."
+      }
+    ]
   }
 ]

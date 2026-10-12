@@ -8,7 +8,8 @@
     "render:start-new": "remotion render src/index.ts start-new out/start-new.mp4",
     "render:evolve": "remotion render src/index.ts evolve out/evolve.mp4",
     "render:agent-evaluation": "remotion render src/index.ts agent-evaluation out/agent-evaluation.mp4",
-    "check": "node scripts/check-stories.mjs"
+    "check": "node scripts/check-stories.mjs",
+    "render:private-chats": "remotion render src/index.ts private-chats out/private-chats.mp4"
   },
   "dependencies": {
     "react": "19.1.1",

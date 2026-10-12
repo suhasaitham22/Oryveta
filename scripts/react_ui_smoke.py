@@ -38,6 +38,9 @@ def run():
                 page.get_by_role("button",name="Explore the workspace").first.click()
                 page.get_by_role("button",name="Start New").wait_for(state="visible" if width>680 else "attached")
                 if width<=680:page.get_by_role("button",name="Toggle navigation").click()
+                page.get_by_role("button",name="Private chats",exact=True).click()
+                page.get_by_role("heading",name="Private chats need a real account.").wait_for()
+                if width<=680:page.get_by_role("button",name="Toggle navigation").click()
                 page.get_by_role("button",name="Demo Studio",exact=True).click()
                 page.get_by_role("heading",name="Demo Studio / stories").wait_for()
                 page.get_by_role("button",name="Evolve Existing",exact=False).count() # nonfatal; list may vary
