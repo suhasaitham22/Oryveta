@@ -1,6 +1,6 @@
 # Identity and workspace foundations (Phase 1)
 
-**State (2026-10-10):** Dedicated Oryveta Supabase project is provisioned, workspace schema and RLS applied, security advisors clear. GitHub OAuth provider is **not configured**, so the production login remains gated off. This is not a claim of live authentication.
+**State (2026-10-12):** Dedicated Oryveta Supabase project is provisioned, workspace schema and RLS applied, security advisors clear. During a transactional authenticated-role test, a real `INSERT ... RETURNING` onboarding failure was found and corrected by the `workspace_owner_select_returning_fix` migration (already applied to the Oryveta project). Cross-tenant SQL tests passed for owner provisioning, read/update/delete isolation and denied membership writes using simulated users, with **ROLLBACK** leaving zero test rows. These are not a substitute for live independent OAuth-account end-to-end tests. GitHub OAuth provider is **not configured**, so production login remains gated off.
 
 ## Product decision
 
@@ -19,7 +19,7 @@ After sign-in, the first meaningful action is to create/select a workspace. An a
 ## Setup checklist (requires owner actions)
 
 1. **Completed:** Dedicated project `nydtmiseclkwauiepqxn` created in the `oryveta` Free-plan organization (US West, $0/month base). [Project dashboard](https://supabase.com/dashboard/project/nydtmiseclkwauiepqxn).
-2. **Partially complete:** `supabase/schema.sql` applied as migration `initial_workspace_identity_rls`. Both workspace tables have RLS (4 workspace policies, 1 membership policy); Supabase security advisors report zero findings. Cross-account tenant isolation with two actual signed-in users is **still pending**. Performance advisor reports one expected unused index on the empty membership table.
+2. **Partially complete:** `supabase/schema.sql` applied as migration `initial_workspace_identity_rls`. Both workspace tables have RLS (4 workspace policies, 1 membership policy); Supabase security advisors report zero findings. Transactional simulated-account database isolation passed (see `supabase/tests/workspace_rls.sql`); cross-account isolation with two **actual signed-in** users is **still pending**. Performance advisor reports one expected unused index on the empty membership table.
 3. In [GitHub Developer Settings](https://github.com/settings/developers), create an **OAuth App** for Oryveta. Homepage: `https://oryveta.vercel.app`. Callback: `https://<project-ref>.supabase.co/auth/v1/callback`. Store its **client secret only in Supabase Auth provider settings**, never in GitHub or frontend files.
 4. In Supabase Auth, enable GitHub provider, set Site URL `https://oryveta.vercel.app` and allow the exact production redirect. For previews, allowlist explicit preview URLs only.
 5. **Staged safely:** `apps/web/cloud-config.js` contains only the project URL and **publishable** key, which is public by design. `githubEnabled: false` deliberately hides the sign-in action until the GitHub provider and redirect settings are configured and checked. Flip to `true` through a reviewed PR after steps 3–4.

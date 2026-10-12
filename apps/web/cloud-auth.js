@@ -39,6 +39,7 @@
     return currentIdentity;
   }
   async function signIn(){
+    if(!configured())throw new Error('GitHub sign-in is not enabled yet.');
     const supabase=await client();
     const result=await supabase.auth.signInWithOAuth({
       provider:'github',

@@ -17,6 +17,8 @@ def test_workspace_schema_has_owner_scope_and_rls():
     assert "alter table public.workspace_memberships enable row level security" in SQL
     assert "with check (created_by = (select auth.uid()))" in SQL
     assert "private.is_workspace_member(id)" in SQL
+    assert "created_by = (select auth.uid())" in SQL
+    assert "INSERT ... RETURNING" in SQL
     assert "revoke insert,update,delete on public.workspace_memberships from authenticated" in SQL
     assert "set search_path = ''" in SQL
 
