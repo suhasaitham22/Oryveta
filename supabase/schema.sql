@@ -88,7 +88,12 @@ alter table public.workspace_memberships enable row level security;
 drop policy if exists workspace_select_member on public.workspaces;
 create policy workspace_select_member on public.workspaces
 for select to authenticated
-using (private.is_workspace_member(id));
+using (
+  -- INSERT ... RETURNING checks SELECT visibility before AFTER INSERT owner
+  -- membership provisioning is visible. Owners can see their own fresh rows.
+  created_by = (select auth.uid())
+  or (select private.is_workspace_member(id))
+);
 
 drop policy if exists workspace_insert_self on public.workspaces;
 create policy workspace_insert_self on public.workspaces

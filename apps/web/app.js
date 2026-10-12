@@ -124,7 +124,10 @@ async function enterApp(page){
  $('#profile-name').textContent=state.user.display_name||'User';
  const initial=(state.user.display_name||'O')[0].toUpperCase();
  $('#avatar').textContent=initial;$('#avatar-top').textContent=initial;
- $('#logout').classList.toggle('hidden',!state.cloud&&!state.csrf);
+ const guestPreview=state.preview&&!state.cloud&&!state.csrf;
+ $('#logout').classList.toggle('hidden',!guestPreview&&!state.cloud&&!state.csrf);
+ $('#logout').setAttribute('aria-label',guestPreview?'Exit preview':'Sign out');
+ $('#logout .profile-action').textContent=guestPreview?'Exit preview':'Sign out';
  updateWorkspaceChrome();
  await navigate(page);
 }
@@ -163,7 +166,10 @@ async function init(){
 document.addEventListener('click',async(event)=>{const node=event.target.closest('[data-page],[data-project],[data-tab],[data-download],[data-run-scan],[data-refresh-ai],[data-workspace]');if(!node)return;try{if(node.hasAttribute('data-refresh-ai'))await refreshAiStatus();else if(node.dataset.workspace){if(!state.workspaces.some(w=>w.id===node.dataset.workspace))throw new Error('Workspace unavailable');state.activeWorkspaceId=node.dataset.workspace;sessionStorage.setItem('oryveta.active-workspace',state.activeWorkspaceId);updateWorkspaceChrome();await navigate('workspace');}else if(node.dataset.page)await navigate(node.dataset.page);else if(node.dataset.project)await navigate('detail',node.dataset.project);else if(node.dataset.tab){state.importMode=node.dataset.tab;await navigate('evolve')}else if(node.dataset.download){const response=await api(`/api/projects/${encodeURIComponent(node.dataset.download)}/export`);const blob=await response.blob();const url=URL.createObjectURL(blob);const link=document.createElement('a');link.href=url;link.download='oryveta-project.zip';document.body.append(link);link.click();link.remove();setTimeout(()=>URL.revokeObjectURL(url),1000)}else if(node.dataset.runScan){await api(`/api/projects/${encodeURIComponent(node.dataset.runScan)}/analyze`,{method:'POST'});toast('Analysis job queued')}}catch(e){toast(e.message,true)}});
 document.addEventListener('submit',async(event)=>{if(!['new-form','github-import','zip-import','ai-form','workspace-create','workspace-update'].includes(event.target.id))return;event.preventDefault();try{if(event.target.id==='workspace-create')await createWorkspace(event.target);else if(event.target.id==='workspace-update')await updateWorkspace(event.target);else if(event.target.id==='ai-form')await submitAi(event.target);else if(event.target.id==='new-form')await submitNew(event.target);else if(event.target.id==='github-import')await submitGitHub();else await submitZip()}catch(e){toast(e.message,true)}});
 $('#demo-login').addEventListener('click',async()=>{try{await api('/auth/local-demo',{method:'POST'});window.location.reload()}catch(e){toast(e.message,true)}});
-$('#logout').addEventListener('click',async()=>{try{if(state.cloud)await window.OryvetaCloudAuth.signOut();else await api('/auth/logout',{method:'POST'});window.location.assign('/')}catch(e){toast(e.message,true)}});
+$('#logout').addEventListener('click',async()=>{
+ if(state.preview&&!state.cloud&&!state.csrf){window.location.reload();return;}
+ try{if(state.cloud)await window.OryvetaCloudAuth.signOut();else await api('/auth/logout',{method:'POST'});window.location.assign('/')}catch(e){toast(e.message,true)}
+});
 function workspaceInput(form){
  const name=form.elements.name.value.trim();
  const description=form.elements.description.value.trim();
