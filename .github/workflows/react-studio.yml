@@ -41,3 +41,8 @@ jobs:
       - name: Validate vendored snapcn demo scene manifests
         working-directory: apps/web/studio/demo
         run: npm run check
+      - name: Install & typecheck real Remotion + snapcn video components
+        working-directory: apps/web/studio/demo
+        run: |
+          npm install --no-audit --no-fund
+          npx tsc --noEmit
