@@ -48,6 +48,19 @@ def run():
                 assert not errors,(label,errors)
                 print("PASS",label,"React render; auth gate; workspace navigation; storyboard; preview exit")
                 page.close()
+            # Graceful state if a demo manifest is empty or temporarily unavailable.
+            empty_page=browser.new_page(viewport={"width": 1180, "height": 800})
+            empty_errors=[]
+            empty_page.on("pageerror",lambda e:empty_errors.append(str(e)))
+            empty_page.route("**/demo-stories.json", lambda route: route.fulfill(
+                status=200,content_type="application/json",body="[]"))
+            empty_page.goto(url,wait_until="domcontentloaded")
+            empty_page.get_by_role("heading",name="Ideas deserve extraordinary engineering.").wait_for()
+            empty_page.get_by_role("button",name="Explore the workspace").first.click()
+            empty_page.get_by_role("button",name="Demo Studio",exact=True).click()
+            empty_page.get_by_role("heading",name="No demo stories yet").wait_for()
+            assert not empty_errors,empty_errors
+            empty_page.close()
             reduced=browser.new_page(reduced_motion="reduce")
             reduced.goto(url,wait_until="domcontentloaded")
             reduced.get_by_role("heading",name="Ideas deserve extraordinary engineering.").wait_for()
