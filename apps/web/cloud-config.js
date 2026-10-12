@@ -6,5 +6,6 @@
 window.ORYVETA_CLOUD = Object.freeze({
   url: 'https://nydtmiseclkwauiepqxn.supabase.co',
   publishableKey: 'sb_publishable_-iMwv7z7moDQ2l84q64K5g_8NopqeMg',
-  githubEnabled: false
+  githubEnabled: false,
+  emailEnabled: true
 });

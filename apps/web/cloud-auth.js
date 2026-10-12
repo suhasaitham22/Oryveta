@@ -12,7 +12,10 @@
   let clientPromise;
   let currentIdentity = null;
 
-  function configured(){return valid && config.githubEnabled === true;}
+  function configured(){return valid && (config.githubEnabled === true || config.emailEnabled === true);}
+  function githubConfigured(){return valid && config.githubEnabled === true;}
+  function emailConfigured(){return valid && config.emailEnabled === true;}
+  function hasSessionHint(){const ref=new URL(config.url).hostname.split('.')[0];return new URLSearchParams(location.search).has('code') || location.hash.includes('access_token=') || !!sessionStorage.getItem('sb-'+ref+'-auth-token');}
   async function client(){
     if(!valid)throw new Error('Cloud authentication is not configured yet.');
     if(!clientPromise){
@@ -39,7 +42,7 @@
     return currentIdentity;
   }
   async function signIn(){
-    if(!configured())throw new Error('GitHub sign-in is not enabled yet.');
+    if(!githubConfigured())throw new Error('GitHub sign-in is not enabled yet.');
     const supabase=await client();
     const result=await supabase.auth.signInWithOAuth({
       provider:'github',
@@ -47,6 +50,14 @@
     });
     const data=unwrap(result,'Could not start GitHub sign-in');
     if(data.url)window.location.assign(data.url);
+  }
+  async function signInWithEmail(email){
+    if(!emailConfigured())throw new Error('Email sign-in is not enabled yet.');
+    const normalized=String(email||'').trim().toLowerCase();
+    if(normalized.length>254 || !/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(normalized))throw new Error('Enter a valid email address.');
+    const supabase=await client();
+    unwrap(await supabase.auth.signInWithOtp({email:normalized,options:{emailRedirectTo:window.location.origin+'/',shouldCreateUser:true}}),'Could not send a sign-in link');
+    return true;
   }
   async function signOut(){
     const supabase=await client();
@@ -79,6 +90,6 @@
     return data;
   }
   window.OryvetaCloudAuth=Object.freeze({
-    configured,identity,signIn,signOut,workspaces,createWorkspace,updateWorkspace
+    configured,githubConfigured,emailConfigured,hasSessionHint,identity,signIn,signInWithEmail,signOut,workspaces,createWorkspace,updateWorkspace
   });
 })();

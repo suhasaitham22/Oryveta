@@ -2,6 +2,10 @@
   "version": 2,
   "rewrites": [
     {
+      "source": "/static/experience.js",
+      "destination": "/experience.js"
+    },
+    {
       "source": "/static/app.js",
       "destination": "/app.js"
     },

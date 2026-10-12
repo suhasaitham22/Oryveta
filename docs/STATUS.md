@@ -1,13 +1,13 @@
 # Oryveta implementation status
 
-Checked 2026-10-12. Distinguish merged behavior, proposed changes and production gaps.
+Checked 2026-10-12 (premium motion and email auth milestone). Distinguish merged behavior, proposed changes and production gaps.
 
 | Capability | State |
 | --- | --- |
 | GitHub + CI | [Source](https://github.com/suhasaitham22/Oryveta); CI stabilization merged in PR #7, Evolve read-only patch preview merged in PR #8 |
 | Start New | Runnable starter scaffolds and ZIP export; not autonomous implementation of custom business requirements |
 | Evolve | Public GitHub/ZIP import, static findings, manual read-only patch previews and opt-in local-model-assisted read-only proposals; not autonomous fixes or PRs |
-| Identity | GitHub OAuth/PKCE adapter and branded sign-in gate exist. The dedicated Supabase project and workspace RLS are provisioned. Live hosted GitHub OAuth is still DISABLED pending GitHub OAuth App credentials and callback setup; do not imply real sign-in works. Local FastAPI OAuth remains separate |
+| Identity | Supabase Auth/PKCE and email-link UI exist; real email link clickthrough and redirect allowlist are not yet validated. GitHub OAuth is still disabled. The dedicated Supabase project and workspace RLS are provisioned. Live hosted GitHub OAuth is still DISABLED pending GitHub OAuth App credentials and callback setup; do not imply real sign-in works. Local FastAPI OAuth remains separate |
 | Hosted site | `oryveta.vercel.app` serves the current frontend with a sign-in gate and explicit guest preview. Workspace onboarding is coded but cannot be exercised by real users until provider setup. Workspace SQL onboarding/tenant isolation checks passed under simulated authenticated DB roles; live two-account OAuth check remains pending. No hosted engineering API or worker |
 | Jobs | SQLite single-host queue with fenced retries; heartbeat, owner-scoped status/cancel and admission quotas proposed in this enterprise-foundations milestone |
 | Security | CSRF, owner isolation, bounded archives, patch preview tests; no untrusted code execution or multi-tenant sandbox |

@@ -29,3 +29,7 @@ After sign-in, the first meaningful action is to create/select a workspace. An a
 ## Current limitations
 
 The UI can be reviewed without provider credentials, but real GitHub sign-in cannot complete until GitHub OAuth provider setup and a controlled enablement PR. Vercel still hosts only a frontend: creating/importing actual code repositories, agent execution and Ollama remain self-hosted. Team invitation, organization transfer, billing, audit history and hosted job execution are **future milestones**.
+
+## Passwordless sign-in and premium flows (2026-10-12)
+The frontend now offers Supabase email magic links in addition to the gated GitHub OAuth flow. `signInWithOtp` uses `emailRedirectTo` set to the current origin; production Supabase **Authentication → URL Configuration** must have Site URL `https://oryveta.vercel.app` and an exact redirect `https://oryveta.vercel.app/`. We cannot change these settings with the available connector. Email sending alone does not establish completed sign-in; validate actual email clickthrough and two-account isolation separately. Supabase Free email limits/default delivery are unsuitable for a large customer launch without custom SMTP. Credentials remain out of browser code.
+The landing now has scroll-revealed product narrative, accessible keyboard tab selection, a guided preview action, refined glass surfaces, glow hover and reduced-motion behavior. These are progressively enhanced; Vercel still does not host an agent executor. GitHub repository access requires a separate GitHub App installation.

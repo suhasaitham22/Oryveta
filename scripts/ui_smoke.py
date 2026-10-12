@@ -82,7 +82,16 @@ def run() -> None:
                 assert page.locator("#github-login").is_hidden()
                 assert page.locator("#preview-login").is_visible()
                 assert page.locator("#login h1").inner_text().startswith("Build with clarity.")
-                page.locator("#preview-login").click()
+                assert page.locator("#email-login-form").is_visible()
+                assert page.locator("#story-tab-build").is_visible()
+                page.locator("#story-tab-build").focus()
+                page.keyboard.press("ArrowRight")
+                assert page.locator("#story-tab-evolve").get_attribute("aria-selected") == "true"
+                assert page.locator("#story-panel-build").is_hidden()
+                assert page.locator("#story-panel-evolve").is_visible()
+                page.locator("#story-tab-proof").click()
+                assert page.locator("#story-panel-proof").is_visible()
+                page.locator("#story-explore").click()
                 assert page.locator("#app").is_visible()
                 if label == "mobile":
                     page.locator("#mobile-menu").click()  # Exit action lives in the collapsible sidebar.
@@ -96,6 +105,17 @@ def run() -> None:
                 assert page.locator("#page h1").inner_text() == "Good software gets better."
                 assert page.evaluate("document.styleSheets.length") >= 1
                 assert page.locator("#app").bounding_box()["width"] > 300
+                if not page.evaluate("document.documentElement.scrollWidth <= innerWidth + 1"):
+                    print("MOBILE OVERFLOW:", page.evaluate("""() => ({
+                        viewport: innerWidth, content: document.documentElement.scrollWidth,
+                        nodes: [...document.querySelectorAll('body *')].filter(e => {
+                          const r=e.getBoundingClientRect();
+                          return r.width && (r.right > innerWidth + 2 || r.left < -2) &&
+                            getComputedStyle(e).display !== 'none'
+                        }).slice(0,25).map(e => ({tag:e.tagName,cls:e.className?.baseVal || e.className,
+                          id:e.id, rect:e.getBoundingClientRect().toJSON()}))
+                    })"""), flush=True)
+                assert page.evaluate("document.documentElement.scrollWidth <= innerWidth + 1"), label
                 if label == "mobile":
                     page.locator("#mobile-menu").click()
                     assert page.locator("#nav").is_visible()
