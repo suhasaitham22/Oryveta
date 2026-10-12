@@ -1,0 +1,83 @@
+[
+  {
+    "id": "start-new",
+    "title": "Start New",
+    "description": "Idea → product brief → verified foundation",
+    "version": 1,
+    "state": "storyboard",
+    "scenes": [
+      {
+        "eyebrow": "01 / THE SPARK",
+        "headline": "Every great product starts with clarity.",
+        "body": "Capture the users, the constraints and what success should look like.",
+        "receipt": "Product brief is created by the user, not by a hosted model."
+      },
+      {
+        "eyebrow": "02 / THE FOUNDATION",
+        "headline": "A strong beginning is engineered.",
+        "body": "Oryveta's local Python engine can scaffold runnable starter repositories with baseline tests.",
+        "receipt": "Local implementation available; hosted execution is not live."
+      },
+      {
+        "eyebrow": "03 / ACCOUNTABLE OUTPUT",
+        "headline": "Proof is part of the product.",
+        "body": "Every future cloud job must attach tests, reviewable changes and clear limitations.",
+        "receipt": "Evidence gate and local test harness exist; deployment requires review."
+      }
+    ]
+  },
+  {
+    "id": "evolve",
+    "title": "Evolve",
+    "description": "Existing code → insights → reviewable improvements",
+    "version": 1,
+    "state": "storyboard",
+    "scenes": [
+      {
+        "eyebrow": "01 / UNDERSTAND",
+        "headline": "See what you are changing.",
+        "body": "Inspect a repository snapshot before proposing any code changes.",
+        "receipt": "The local engine supports public GitHub and ZIP snapshots."
+      },
+      {
+        "eyebrow": "02 / PROPOSE",
+        "headline": "Better code needs context.",
+        "body": "Investigate findings and build a read-only patch proposal with known trade-offs.",
+        "receipt": "Local read-only patch previews exist; no auto-merge."
+      },
+      {
+        "eyebrow": "03 / VERIFY",
+        "headline": "Don't ship without evidence.",
+        "body": "Independent tests and human review guard the path to an approved PR.",
+        "receipt": "Cloud sandbox, real PR automation and verifier are future features."
+      }
+    ]
+  },
+  {
+    "id": "agent-evaluation",
+    "title": "Agent evaluation",
+    "description": "Experiment → compare → human approval",
+    "version": 1,
+    "state": "storyboard",
+    "scenes": [
+      {
+        "eyebrow": "01 / LEARN FROM WORK",
+        "headline": "Capture the complete outcome.",
+        "body": "A useful experiment records failures, runtime costs and acceptance criteria as well as wins.",
+        "receipt": "Offline evidence records exist, not autonomous learning."
+      },
+      {
+        "eyebrow": "02 / SCIENTIFIC REVIEW",
+        "headline": "Compare on equal footing.",
+        "body": "Run baseline and candidate over matched tasks; reject safety failures, regressions and cost overruns.",
+        "receipt": "Implemented in the Python evidence gate."
+      },
+      {
+        "eyebrow": "03 / HUMAN IN CONTROL",
+        "headline": "Only reviewed improvements ship.",
+        "body": "A favorable result creates a recommendation for human review, never an automatic production change.",
+        "receipt": "Fail-closed human approval is enforced by current evaluation gate."
+      }
+    ]
+  }
+]
