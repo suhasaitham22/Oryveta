@@ -5,7 +5,6 @@ All output is explicitly a storyboard and needs a reviewer before publishing.
 """
 from __future__ import annotations
 
-from dataclasses import asdict
 import re
 
 from oryveta_engine.learning import Outcome, evaluate
