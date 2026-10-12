@@ -105,6 +105,16 @@ def run() -> None:
                 assert page.locator("#page h1").inner_text() == "Good software gets better."
                 assert page.evaluate("document.styleSheets.length") >= 1
                 assert page.locator("#app").bounding_box()["width"] > 300
+                if not page.evaluate("document.documentElement.scrollWidth <= innerWidth + 1"):
+                    print("MOBILE OVERFLOW:", page.evaluate("""() => ({
+                        viewport: innerWidth, content: document.documentElement.scrollWidth,
+                        nodes: [...document.querySelectorAll('body *')].filter(e => {
+                          const r=e.getBoundingClientRect();
+                          return r.width && (r.right > innerWidth + 2 || r.left < -2) &&
+                            getComputedStyle(e).display !== 'none'
+                        }).slice(0,25).map(e => ({tag:e.tagName,cls:e.className?.baseVal || e.className,
+                          id:e.id, rect:e.getBoundingClientRect().toJSON()}))
+                    })"""), flush=True)
                 assert page.evaluate("document.documentElement.scrollWidth <= innerWidth + 1"), label
                 if label == "mobile":
                     page.locator("#mobile-menu").click()
