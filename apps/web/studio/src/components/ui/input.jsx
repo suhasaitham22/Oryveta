@@ -1,2 +1,17 @@
-import * as React from "react";import {cn} from "@/lib/utils";
-export const Input=React.forwardRef(({className,type="text",...props},ref)=><input ref={ref} type={type} className={cn("flex h-12 w-full rounded-xl border border-slate-200 bg-white/80 px-4 text-sm text-slate-700 outline-none placeholder:text-slate-400 focus-visible:border-indigo-400 focus-visible:ring-4 focus-visible:ring-indigo-100 disabled:opacity-50",className)} {...props}/>);Input.displayName="Input";
+import * as React from "react";
+import { cn } from "@/lib/utils";
+
+export const Input = React.forwardRef(
+  ({ className, type = "text", ...props }, ref) => (
+    <input
+      ref={ref}
+      type={type}
+      className={cn(
+        "flex h-12 w-full rounded-md border border-[#cbd2c0] bg-[#fcfdf9] px-4 text-sm text-[#303a26] placeholder:text-[#7b856e] focus-visible:border-[#7b9855] disabled:opacity-50",
+        className,
+      )}
+      {...props}
+    />
+  ),
+);
+Input.displayName = "Input";

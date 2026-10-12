@@ -54,6 +54,54 @@ def _open_nav(page, label, width):
 
 
 
+def _check_chapters(page, base_url):
+    page.goto(base_url, wait_until="domcontentloaded")
+    controls = page.get_by_label("Product story chapters").get_by_role("button")
+    artifact = page.locator(".story-artifact")
+    expected = ("start-new", "evolve", "work", "handoff")
+
+    def select_all():
+        for index, chapter in enumerate(expected):
+            controls.nth(index).focus()
+            controls.nth(index).press("Enter")
+            page.wait_for_function(
+                "chapter => document.querySelector('.story-artifact').dataset.activeChapter === chapter",
+                arg=chapter,
+            )
+            # Wait for native smooth scrolling to settle, not an invented run clock.
+            page.wait_for_timeout(900)
+            assert artifact.get_attribute("data-active-chapter") == chapter
+            active = artifact.locator(".artifact-content[aria-hidden=false]")
+            assert active.count() == 1 and active.is_visible()
+            assert active.evaluate("(node) => node.scrollHeight <= node.clientHeight + 1")
+
+    select_all()
+    first = page.locator(".scroll-chapter").first
+    start, height = first.evaluate(
+        "(node) => [node.getBoundingClientRect().top + scrollY, node.getBoundingClientRect().height]"
+    )
+    transforms = []
+    for position in (start, start + height * 0.8):
+        page.evaluate("(top) => scrollTo({top, behavior: 'instant'})", position)
+        page.wait_for_timeout(120)
+        transforms.append(artifact.locator(".artifact-content").evaluate_all(
+            "(nodes) => nodes.map(node => getComputedStyle(node).transform)"
+        ))
+    assert transforms[0] != transforms[1], "Native scroll must transform the product composition"
+
+    # Changing the preference in an already-open page must stop motion.
+    page.emulate_media(reduced_motion="reduce")
+    select_all()
+    assert artifact.locator(".artifact-content[aria-hidden=false]").evaluate(
+        "(node) => getComputedStyle(node).transform"
+    ) == "none"
+    page.evaluate("document.body.style.zoom = '1.5'")
+    select_all()
+    page.evaluate("document.body.style.zoom = ''")
+    page.emulate_media(reduced_motion="no-preference")
+    _assert_no_overflow(page)
+
+
 def _check_hosted(page, base_url, width):
     page.goto(base_url, wait_until="domcontentloaded", timeout=30000)
     page.get_by_role("button", name="Start New", exact=True).first.click()
@@ -139,7 +187,7 @@ def run():
                     _check_local(page, api_url, width)
                 else:
                     # Static mode proves the hosted boundary and draft/story UX.
-                    page.goto(api_url, wait_until="domcontentloaded", timeout=30000)
+                    _check_chapters(page, api_url)
                     _check_hosted(page, api_url, width)
                 assert not errors, (label, errors)
                 scenario = "local API lifecycle" if os.environ.get("ORYVETA_SMOKE_API_URL") else "hosted boundary and contextual story"
@@ -159,14 +207,17 @@ def run():
                 ) == "0s"
                 print("PASS reduced-motion local lifecycle tasks")
             else:
-                story_chapter = reduced_page.get_by_role("button", name="Evolve", exact=True).last
+                story_chapter = reduced_page.get_by_label("Product story chapters").get_by_role("button").nth(1)
                 story_chapter.focus()
                 reduced_page.keyboard.press("Enter")
-                assert reduced_page.locator(".story-artifact").get_attribute("data-active-chapter") == "evolve"
-                scene = reduced_page.locator(".story-artifact .scene-enter")
-                assert scene.evaluate("(node) => getComputedStyle(node).animationName") == "none"
+                reduced_page.wait_for_function(
+                    "document.querySelector('.story-artifact').dataset.activeChapter === 'evolve'"
+                )
+                scene = reduced_page.locator(".artifact-content[aria-hidden=false]")
+                assert scene.is_visible()
+                assert scene.evaluate("(node) => getComputedStyle(node).transform") == "none"
                 assert scene.evaluate("(node) => getComputedStyle(node).transitionDuration") == "0s"
-                print("PASS reduced-motion React chapter keyboard and disabled motion")
+                print("PASS reduced-motion React chapter keyboard and visible static scene")
             reduced.close()
             browser.close()
     finally:

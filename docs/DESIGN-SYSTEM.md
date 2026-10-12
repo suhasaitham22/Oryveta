@@ -1,61 +1,62 @@
-# Soft Modern / Minimalist design system
+# Oryveta Studio — clear direction
 
-**Design direction LOCKED:** Oryveta uses the calm "Soft Modern" identity, not a glass-heavy futuristic AI dashboard. Our design reference is high-quality minimalist productivity software with strong typography, space and restrained micro-interactions.
+This redesign supersedes the previous Soft Modern direction. The primary visual reference is the public **Galileo** preview: a bright material-like canvas, centered bold sans-serif hierarchy, a yellow primary action, and large product imagery. Oryveta's relief loops, brief, source finding and storyboard are original CSS/HTML artwork. No paid template source, sphere assets, brand marks, waitlist claims, countdowns or customer metrics are reused.
 
-## Color tokens
+## Reference synthesis
 
-| Token | Value | Use |
+Public previews were inspected in Chromium on 2026-10-12, not just read as sales descriptions:
+
+- [Galileo](https://galileo.shadcn.io): primary light/sculptural composition, centered hierarchy and yellow action. The original Oryveta context loops are lightweight CSS, not copied geometry or WebGL.
+- [Reframe](https://reframe.shadcn.io): oversized typography, generous space and product artwork carrying the page. Its blue CTAs, customer logos and showcase assets are not copied.
+- [Lightbox](https://lightbox.shadcn.io): contrast and process-oriented section hierarchy. Its purple/cyan ribbon, branding and agency content are not copied.
+- [Solaris](https://solaris.shadcn.io): product-proof framing and technical diagrams. Oryveta shows its own brief/source/story semantics, not fictional hosted agent capabilities or dashboard metrics.
+- [Catalogue](https://www.shadcn.io/template) / [Prodexa](https://prodexa.shadcn.io): the transition from product-focused marketing to a calmer working interface, without floating people/cursor decorations.
+
+These are reference observations, not claims about the templates' animation implementations or licenses. Historical ShadcnStore attribution remains intact; see [THIRD_PARTY.md](../apps/web/studio/THIRD_PARTY.md).
+
+## Tokens and typography
+
+| Token | Value | Role |
 | --- | --- | --- |
-| Canvas | #F7F8FA | Warm page background |
-| Surface | #FFFFFF | Panels and forms |
-| Primary text | #1D2636 | Main information |
-| Muted text | #59677C | Descriptions with stronger contrast |
-| Accent | #4866A8 | Primary actions and selection |
-| Border | #DCE3EB | Dividers and cards |
+| Canvas | `#F8F9F6` | Bright neutral page |
+| Ink | `#232521` | Headings and dark technical surfaces |
+| Muted | `#58604F` | Secondary readable text |
+| Signal | `#F5D84C` | Primary actions and selected details |
+| Border | `#DCE0D5` | Quiet dividers |
 
-The React studio uses these tokens for a light-first experience. It does not add a dark/neon mode or external font requests. Inter is preferred when available; a system sans-serif fallback works under the self-hosted CSP.
+The deliberately **system-font** stack is Helvetica Neue, Helvetica, Arial, sans-serif. No unshipped Inter assumption or external font request. Main hero type uses restrained `-.035em` tracking; mobile uses `-.03em`. Forms use solid, labeled fields and visible focus. Status green/red remains semantic, not a decorative success claim.
 
-## Typography and components
+## Composition and motion
 
-The current studio uses React, Tailwind, Radix/shadcn primitives and Lucide. The landing refines the maintained MIT **ShadcnStore dashboard + landing template**, Vite version, pinned at `953300fa5176608a9d682943edfc359ce809f2c7`. It retains the centered hero/product frame, alternating feature layouts and sticky responsive navigation while replacing sample imagery and marketplace copy with concrete Oryveta scenarios. See [source mappings and full license](../apps/web/studio/THIRD_PARTY.md). No paid assets, fictional testimonials, customer metrics or unsupported outcome claims are included.
+- The centered hero places an original dimensional context backdrop behind large type. A brief, code finding and storyboard form the product artwork. All are explicitly illustrative.
+- Hero artwork has one short spring entrance from a visible state; the brief gently responds to native scroll. No loading splash, looping ornament, scroll hijack or simulated job completion.
+- A sticky evidence stage retains four sheets in one composition. Scroll position directly transforms their translation, rotation and scale rather than just swapping faded text. Each actual chapter's geometry determines the active sheet, including unequal heights and zoom. Four keyboard-operable controls provide direct navigation.
+- Use cases form an open dark spread; capabilities use rules and whitespace rather than repeated floating cards. The workspace carries quieter neutral surfaces, one yellow action vocabulary, stronger forms and a clear contextual Demo Studio stage.
+- Buttons/cards use restrained spring-like hover and press responses. Real run panels use Motion size-layout transitions; native task-timeline disclosure uses progressive CSS size interpolation (immediate native fallback in browsers without support). State and elapsed values still come only from the API.
+- **Motion 14.1.0**, MIT, is the only added runtime library. It is pinned in package.json and package-lock.json. CI installs the lock using `npm ci`.
 
-## Information architecture
+## Accessibility and responsive behavior
 
-Home/Overview; **Start New**; **Evolve**. Workspaces, Private chats and Activity are secondary context. Each journey has **Brief**, **Local run** and **Demo Studio** tabs; Demo Studio has no standalone navigation entry or default/fallback journey. Arena remains internal; its protocol is linked from Activity rather than positioned as a product start.
+Native document scrolling, labeled forms, skip links, visible focus, Radix keyboard tabs and the native workspace dialog remain. Mobile menu Escape returns focus to its trigger. Mobile sheets keep receipts in frame; short viewports use non-sticky narrative content.
 
-## UX details
+Reduced motion is a live `matchMedia` subscription, including preference changes while the page is open. Motion 14's own hook snapshots on mount, so the small shared hook uses React's `useSyncExternalStore`. Reduced mode removes scroll transforms and spring entrances, keeps the selected sheet fully visible, and preserves keyboard chapter selection. CSS disables continuous indicators, transitions and hover movement. No essential content depends on animation.
 
-- Landing: a client onboarding brief, billing-service snapshot, recorded local work and contextual handoff form a scroll-linked story. Explicit chapter buttons offer keyboard navigation; Start New and Evolve are alternative starting points, not a fabricated execution sequence. All product illustrations are labeled.
-- Login: hosted Supabase email-link identity remains separate from local GitHub/demo cookies. Repository permissions are not granted by email sign-in. Local sign-in is explicit; `/api/config` must return the expected JSON contract, not a static host's SPA fallback.
-- Onboarding: two primary entry cards. No standalone demo option, fake project metrics or fabricated activity.
-- Start New: export an unexecuted planning brief; on the self-hosted studio, create a deterministic template starter, export it and request actual source analysis. Custom brief implementation and application test execution are not provided.
-- Evolve: export a change brief; locally import an authorized ZIP, inspect the recorded analysis run and review heuristic findings. Imported code is never executed; analysis does not apply patches or establish security/correctness.
-- Demo Studio: exact journey selection, no fallback to another story; headline/narration edits and scene selection live with the brief. Drafts are retained while switching tabs, journeys and workspace context within the mounted workspace. They are not saved to an account or across reload/sign-out. Exports remain `storyboard_only_not_rendered`, `verified: false`, with journey/brief/project context. The Remotion/snapcn pipeline remains separate.
-- Working UI: show waiting/running/completed/failed/canceled from persisted job state. Lifecycle task rows represent queue acceptance, worker analysis and result persistence only. Running tasks animate subtly; stopped tasks do not acquire false completion marks. One elapsed label uses API timestamps; success becomes compact with expandable recorded tasks and events. User-expanded details remain open across ordinary polling updates.
-- Event summaries are recorded actions, not private reasoning. Event counts are never labeled tool counts. No invented percentage, ETA, file-by-file task state or fine-grained agent success. A polling error freezes the last confirmed state and offers explicit refresh; it never implies completion. Latest project findings are labeled separately because an older selected job may have a different result.
-- Mobile: responsive cards/forms, native modal workspace navigation with Escape/focus management, no horizontal overflow and meaningful touch targets. Existing Supabase workspace CRUD and explicit private-chat sharing remain in place.
+## Product contracts preserved
 
-## Motion and accessibility
+**Start New** and **Evolve** are the only work starts. Each has Brief, Local run and contextual Demo Studio tabs. There is no standalone Demo entry or fallback to another journey's story. Brief/scene/tab drafts remain scoped to their workspace and journey within the mounted workspace, not persisted across reload/sign-out. Storyboard exports keep `storyboard_only_not_rendered`, `verified: false`, and exact journey/brief/project context.
 
-Use 120–220ms transitions for affordances. Scroll changes the selected illustrative chapter; there is no auto-playing video or invented timer-driven task completion. Reduced-motion disables animation and smooth scrolling. Important status announcements remain outside the `aria-busy` task list; elapsed seconds are not announced repeatedly. Provide visible focus, skip links, native labeled form controls and keyboard-operable Radix tabs. The only continuous motion is a real running-state indicator; reduced-motion replaces it with a static icon and text.
+Hosted Supabase identity/workspaces/private human chats remain separate from the self-hosted same-origin `/studio/` cookie/CSRF API. Hosted preview has no coding engine. Local users can create deterministic starters, export ZIPs, import authorized snapshots and request read-only static analysis. Imported code is never executed; findings do not prove security/correctness or apply patches. Legacy `/` remains intentionally supported.
 
-## Current implementation
+Run status is persisted queued/running/succeeded/failed/canceled truth. The UI retains one elapsed label, actual event records, stale/disconnected behavior, owner-bound selections and user-opened details across polls. Lifecycle rows mean queue acceptance, source analysis and result persistence only. No percentages, ETAs, invented tool counts, fine-grained agent steps or private reasoning. Latest project findings remain distinct from an older selected run.
 
-The source supports two environments without conflating identities:
+## Visual evidence
 
-- **Hosted React (Vercel):** Supabase identity/workspaces/private human chats, plus browser-only planning and storyboard exports. No hosted coding engine, application test runner or deployment automation. Authenticated integration code is not evidence of a real two-account/mailbox acceptance test.
-- **Self-hosted React (`/studio/` on FastAPI):** built assets use relative URLs, while requests use same-origin `/api` and `/auth` routes with existing cookie/CSRF protection. Local starter/import/analyze/cancel operations consume the real worker job contract. Disconnect/identity changes clear mounted owner-scoped data, and project/job selections are owner-bound. The deliberately separate legacy `/` UI remains supported.
+Intentional PR assets are local browser captures of this implementation, not deployment or customer-execution claims:
 
-`public/demo-stories.json` includes at least three scenes for Start New, Evolve, recorded local work, private chats and internal evaluation. `npm run check` validates scene/receipt metadata and completion-evidence references rather than pinning source formatting or component file names. It also performs a narrow privileged-Supabase-credential scan, not a security certification. Build/browser/runtime evidence belongs in the change's verification report; screenshots of sample product states are not proof of engine execution.
+![Bright product-centered landing](media/studio-landing.png)
 
-## Redesign visual evidence
+![Scroll-linked source review scene](media/studio-story.png)
 
-These are local browser captures of the built studio, not a production deployment claim.
+![Self-hosted real local analysis](media/studio-local-run.png)
 
-![Template-based Soft Modern landing with two product journeys](media/studio-landing.png)
-
-The landing's product frame is explicitly illustrative. It communicates a brief, source evidence and draft story rather than a completed customer application.
-
-![Real local source-analysis worker with recorded lifecycle tasks](media/studio-local-run.png)
-
-The task panel was captured while a real worker inspected a synthetic repository fixture through the self-hosted React consumer. Its elapsed value includes queue wait; it is not a performance benchmark or time-saved claim. The same run later reported success with persisted queued/started/completed events. Source analysis does not run application tests or establish feature correctness.
+The landing/story images are explicitly illustrative. The local-run capture uses an isolated synthetic repository and real persisted worker state; it is not a performance benchmark, application-test result or security certification. Exact runtime checks and their limitations belong in the PR verification report.
