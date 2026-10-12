@@ -1,5 +1,32 @@
 [
   {
+    "id": "guided-workflow",
+    "title": "A clear direction",
+    "description": "Product intent → scroll-linked context → accessible workspace",
+    "version": 1,
+    "state": "storyboard",
+    "scenes": [
+      {
+        "eyebrow": "01 / CHOOSE YOUR START",
+        "headline": "An idea or a codebase. Both are a beginning.",
+        "body": "Choose Start New or Evolve from the product-centered landing. The brief, source finding and story artwork show the kind of context each journey keeps.",
+        "receipt": "Artwork is illustrative, not a running agent, customer result or completed application."
+      },
+      {
+        "eyebrow": "02 / FOLLOW THE CONTEXT",
+        "headline": "One continuous thread from intent to explanation.",
+        "body": "Scroll through the brief, source review, local work and handoff chapters, or select any chapter with the keyboard. Reduced motion keeps the active scene visible without transforms.",
+        "receipt": "The four scenes describe workflow options. Start New and Evolve are alternatives, not simulated execution steps."
+      },
+      {
+        "eyebrow": "03 / WORK IN YOUR CONTEXT",
+        "headline": "Keep the actual work separate from the illustration.",
+        "body": "Open a journey, edit its brief and contextual storyboard, or use the separately authenticated local engine. Real task details expand from persisted events and keep one elapsed label.",
+        "receipt": "Hosted exports remain unverified drafts. Local source analysis neither executes imported code nor proves application correctness."
+      }
+    ]
+  },
+  {
     "id": "start-new",
     "title": "Start New",
     "description": "Product intent → local starter → contextual draft story",

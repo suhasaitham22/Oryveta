@@ -16,13 +16,14 @@
     "class-variance-authority": "0.7.1",
     "clsx": "2.1.1",
     "lucide-react": "0.468.0",
+    "motion": "14.1.0",
     "react": "19.1.1",
     "react-dom": "19.1.1",
     "tailwind-merge": "3.3.1"
   },
   "devDependencies": {
-    "@vitejs/plugin-react": "4.7.0",
     "@tailwindcss/vite": "4.1.11",
+    "@vitejs/plugin-react": "4.7.0",
     "tailwindcss": "4.1.11",
     "vite": "7.0.0"
   }

@@ -22,7 +22,7 @@ Record pinned seeds/data versions, model versions, hardware, cost and time. No f
 
 ## Product/visual acceptance
 
-Keep **Start New** and **Evolve** as primary journeys and **Arena** internal. Retain the minimalist Soft Modern style, keyboard navigation, responsive layouts and clear preview/verified status labels.
+Keep **Start New** and **Evolve** as primary journeys and **Arena** internal. Follow the current [design system](DESIGN-SYSTEM.md): bright product-centered composition, restrained motion and a calm workspace, not the superseded Soft Modern styling. Keep labels truthful, native scroll, keyboard navigation, visible focus and no mobile overflow. UI changes need desktop/mobile captures plus actual scroll/hover/press behavior, all keyboard chapter selections and live reduced-motion preference changes. Confirm active receipts stay readable; preserve contextual exports and real local lifecycle/stale/canceled behavior. Reference public previews without copying paid source, assets, branding or fabricated customer claims.
 
 ## Licensing
 
