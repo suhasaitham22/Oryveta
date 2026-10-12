@@ -41,3 +41,7 @@ Respect Kaggle consent, entry/submission limits, team account and external-data 
 ## Current status
 
 A local earlier MVP ran small scikit-learn cross-validation benchmarks on built-in datasets. **No Kaggle medals, leaderboard domination, third-party benchmark wins, automated learning gains or deployed Arena worker are established.**
+
+## Implemented fail-closed evidence gate (2026-10-12)
+
+`oryveta_engine.learning` compares paired baseline/candidate outcomes on pinned dataset and evaluator fingerprints. It rejects unmatched, duplicate or insufficient tasks, candidate security failures, any previously passing task regression, no improvement, or cost overruns. Accepted cases produce only **NEEDS_HUMAN_REVIEW**, never an automatic deployment. A SHA-256 receipt allows reviewers to identify a precise evidence payload, not prove the truth of caller-submitted results. `python scripts/evaluate_candidate.py evidence.json` reads JSON evidence and prints the decision. Independent harness execution, genuine held-out task selection, human approval, live agents, persistent experience retrieval and model fine-tuning remain future integrations. Do not call this autonomous self-training.
