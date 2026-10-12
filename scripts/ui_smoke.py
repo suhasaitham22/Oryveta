@@ -84,6 +84,8 @@ def run() -> None:
                 assert page.locator("#login h1").inner_text().startswith("Build with clarity.")
                 page.locator("#preview-login").click()
                 assert page.locator("#app").is_visible()
+                if label == "mobile":
+                    page.locator("#mobile-menu").click()  # Exit action lives in the collapsible sidebar.
                 assert page.locator("#logout").is_visible()
                 assert page.locator("#logout").get_attribute("aria-label") == "Exit preview"
                 page.locator("#logout").click()
