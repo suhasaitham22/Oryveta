@@ -1,33 +1,72 @@
-import React,{useCallback,useEffect,useRef,useState} from "react";
-import {ArrowRight, ArrowUpRight, CheckCircle2, ChevronDown, CircleHelp, Code2, Compass, GitBranch, Github, Layers3, LockKeyhole, Mail, Menu, MonitorPlay, MousePointer2, Play, ShieldCheck, Sparkles, X, Zap} from "lucide-react";
-import {Button} from "@/components/ui/button";import {Badge} from "@/components/ui/badge";import {Input} from "@/components/ui/input";import {Tabs,TabsContent,TabsList,TabsTrigger} from "@/components/ui/tabs";
-import {supabase,verifiedUser,sendEmailLink,signInWithGitHub,oauthGitHubEnabled} from "@/lib/identity";
-import Workspace from "./pages/Workspace.jsx";import DemoStudio from "./pages/DemoStudio.jsx";
-function Reveal({children,className="",delay=0}){const ref=useRef(null);useEffect(()=>{const node=ref.current;if(!node)return;if(!window.IntersectionObserver||matchMedia("(prefers-reduced-motion: reduce)").matches){node.classList.add("visible");return;}const observer=new IntersectionObserver(entries=>{for(const e of entries)if(e.isIntersecting){e.target.classList.add("visible");observer.unobserve(e.target)}},{threshold:.1,rootMargin:"0px 0px -50px 0px"});observer.observe(node);return()=>observer.disconnect();},[]);return <div ref={ref} className={`reveal ${className}`} style={{transitionDelay:`${delay}ms`}}>{children}</div>}
-function Brand(){return <span className="brand-wordmark"><span className="brand-glyph">◈</span><span>oryveta<span className="brand-dot">.</span></span></span>}
-function FeatureShowcase({onPreview}){const [step,setStep]=useState("build");const steps=[{id:"build",icon:Sparkles,title:"Start New",subtitle:"Build with intention",chip:"01 / IDEA TO FOUNDATION",headline:"Your ambition deserves a stronger beginning.",body:"Define a brief, establish tests and keep the outcome clear before you generate anything.",marks:["Outcome-driven plans","Runnable local scaffolds","Tests built into the workflow"]},{id:"evolve",icon:GitBranch,title:"Evolve",subtitle:"Improve what matters",chip:"02 / CODE TO UNDERSTANDING",headline:"Know what changes before it changes.",body:"Explore a real repository snapshot, find risks and inspect proposals without surrendering control.",marks:["Public repository analysis","Read-only patch previews","Developer review at each stage"]},{id:"verify",icon:ShieldCheck,title:"Verify",subtitle:"Progress backed by proof",chip:"03 / EVIDENCE TO DECISION",headline:"Build confidence into every release.",body:"Measured evidence, a clear boundary between tested and untested, and explicit human approvals.",marks:["Fail-closed evaluation","Cost and regression gates","Human review before promotion"]}];const current=steps.find(s=>s.id===step);return <div className="story-shell"><Reveal><div className="section-kicker"><span className="dot-status"/> BUILT FOR ENGINEERS WHO CARE</div><h2 className="section-heading">One seamless workflow.<br/><span className="text-gradient-light">From concept to confidence.</span></h2><p className="section-copy">Every scroll reveals a stage. Every interaction has a purpose. The product shows what exists today—and where it's headed.</p></Reveal><div className="journey-grid"><Reveal className="journey-tabs">{steps.map((s,i)=>{const Icon=s.icon;return <button key={s.id} onClick={()=>setStep(s.id)} type="button" className={`journey-tab ${step===s.id?"selected":""}`} aria-pressed={step===s.id}><span className="journey-index">0{i+1}</span><span className="journey-step-icon"><Icon size={21}/></span><span className="flex-1"><strong>{s.title}</strong><small>{s.subtitle}</small></span><ArrowUpRight size={18} className="journey-step-arrow"/></button>})}</Reveal><Reveal delay={120}><div className="journey-screen"><div className="journey-topline"><div className="flex items-center gap-2"><span className="terminal-dots"><i/><i/><i/></span><span className="text-[10px] font-bold tracking-[.18em] text-indigo-200/80">ORYVETA / JOURNEY</span></div><Badge className="!bg-white/10 !border-white/10 !text-indigo-100">Product preview</Badge></div><div key={step} className="journey-scene"><span className="text-xs tracking-[.21em] text-sky-200 font-bold">{current.chip}</span><h3>{current.headline}</h3><p>{current.body}</p><div className="journey-checks">{current.marks.map(m=><span key={m}><CheckCircle2 size={15}/>{m}</span>)}</div></div><div className="journey-bottom"><span>Design → Build → Evolve</span><span>{String(steps.findIndex(x=>x.id===step)+1).padStart(2,"0")} / 03</span></div></div></Reveal></div><Reveal><div className="journey-bottom-cta"><div><span className="section-kicker">EXPERIENCE IT</span><h3>The next chapter starts with your idea.</h3><p>Try the full interactive interface. Guest exploration does not write to your account.</p></div><Button size="lg" className="shrink-0" onClick={onPreview}>Explore product <ArrowRight size={18}/></Button></div></Reveal></div>}
-function LoginCard({onPreview,onAuthenticated,authBusy,setAuthBusy}){const [email,setEmail]=useState(""),[error,setError]=useState(""),[sent,setSent]=useState(false);
- async function submit(e){e.preventDefault();setError("");setSent(false);setAuthBusy(true);try{await sendEmailLink(email);setSent(true);}catch(e){setError(e.message)}finally{setAuthBusy(false)}}
- return <div className="auth-panel" id="sign-in"><div className="flex items-center gap-2 text-[11px] text-indigo-500 font-extrabold tracking-[.16em]"><span className="w-2 h-2 rounded-full bg-indigo-400"/> YOUR SPACE BEGINS HERE</div><h2 className="font-display font-bold tracking-[-.055em] leading-[1.12] text-[#283855] text-[clamp(1.9rem,2.7vw,2.65rem)] mt-5">Build with clarity.<br/><span className="text-[#8996bf]">Ship with confidence.</span></h2><p className="text-sm leading-7 text-slate-500 mt-5">Create a space for what you're building. Start with your email or explore the product without an account.</p>
- <form className="space-y-3 mt-9" onSubmit={submit}><label htmlFor="login-email" className="block text-xs font-bold text-slate-600">Your work email</label><Input id="login-email" type="email" required maxLength={254} placeholder="you@company.com" autoComplete="email" value={email} onChange={e=>{setEmail(e.target.value);setError("");setSent(false)}}/><Button type="submit" className="w-full h-12 text-sm" disabled={authBusy}><Mail size={17}/>{authBusy?"Requesting secure link…":"Continue with email"}<ArrowRight size={16}/></Button>{sent&&<p role="status" className="auth-success"><CheckCircle2 size={17}/>If email delivery is configured, a single-use sign-in link has been sent. Check your inbox.</p>}{error&&<p role="alert" className="auth-error">{error}</p>}</form>
- <div className="auth-or"><span>OR</span></div><Button className="w-full" variant="outline" disabled={!oauthGitHubEnabled||authBusy} onClick={async()=>{try{await signInWithGitHub()}catch(e){setError(e.message)}}}><Github size={17}/>Continue with GitHub {oauthGitHubEnabled?"":<span className="text-[10px] font-normal text-slate-400">Needs OAuth setup</span>}</Button>
- <Button variant="ghost" className="w-full mt-2 !text-slate-600" onClick={onPreview}>Explore the interactive preview <ArrowRight size={17}/></Button>
- <div className="auth-footnote"><LockKeyhole size={15} className="shrink-0 mt-1"/><span>Passwordless identity is provided by Supabase Auth. GitHub repository permissions are requested separately; connecting an email does not grant repository access.</span></div></div>}
-export default function App(){const [mode,setMode]=useState("landing"),[user,setUser]=useState(null),[checking,setChecking]=useState(true),[authBusy,setAuthBusy]=useState(false),[stories,setStories]=useState([]),[scroll,setScroll]=useState(0),[menu,setMenu]=useState(false),[toast,setToast]=useState("");const header=useRef(null);
- useEffect(()=>{fetch("/demo-stories.json").then(r=>r.ok?r.json():Promise.reject(Error("No story data"))).then(setStories).catch(()=>setStories([]));},[]);
- useEffect(()=>{let live=true;async function verify(){try{const u=await verifiedUser();if(live&&u){setUser(u);setMode("workspace")}}catch(e){if(live)setToast("We couldn't restore your session. You can try signing in again.");}finally{if(live)setChecking(false)}}verify();const {data:{subscription}}=supabase.auth.onAuthStateChange((_event,session)=>{if(!live)return;if(session){setTimeout(()=>{verify()},0)}else if(_event==="SIGNED_OUT"){setUser(null);setMode("landing");}});return()=>{live=false;subscription.unsubscribe()}},[]);
- useEffect(()=>{let queued=false;function onScroll(){if(queued)return;queued=true;requestAnimationFrame(()=>{const total=Math.max(1,document.documentElement.scrollHeight-innerHeight);setScroll(Math.min(100,scrollY/total*100));queued=false})}addEventListener("scroll",onScroll,{passive:true});return()=>removeEventListener("scroll",onScroll)},[]);
- const preview=()=>{setMode("preview");setMenu(false);window.scrollTo(0,0)};
- async function exit(){if(user){await supabase.auth.signOut().catch(e=>setToast(e.message));setUser(null);}setMode("landing");window.scrollTo(0,0);}
- if(checking)return <div className="boot-screen" role="status"><Brand/><div className="boot-line"/></div>;
- if(mode!=="landing")return <Workspace key={mode} user={user} preview={mode==="preview"} onExit={exit} stories={stories}/>;
- return <div className="landing relative"><div className="scroll-progress" aria-hidden="true" style={{transform:`scaleX(${scroll/100})`}}/>
- <header ref={header} className="landing-nav"><div className="nav-inner"><a href="#top" aria-label="Oryveta home"><Brand/></a><nav aria-label="Primary" className={`nav-menu ${menu?"open":""}`}><a href="#workflow" onClick={()=>setMenu(false)}>How it works</a><a href="#features" onClick={()=>setMenu(false)}>The platform</a><a href="#demo" onClick={()=>setMenu(false)}>Demo Studio</a><a href="https://github.com/suhasaitham22/Oryveta" target="_blank" rel="noreferrer">GitHub <ArrowUpRight size={14}/></a></nav><div className="flex items-center gap-3"><a href="#sign-in" className="hidden sm:inline-flex"><Button size="sm">Get started <ArrowRight size={15}/></Button></a><button className="sm:hidden rounded-lg p-2 text-slate-700" aria-label={menu?"Close menu":"Open menu"} aria-expanded={menu} onClick={()=>setMenu(!menu)}>{menu?<X size={21}/>:<Menu size={21}/>}</button></div></div></header>
- <main id="top"><section className="hero-section"><div className="hero-orb orb-a" aria-hidden="true"/><div className="hero-orb orb-b" aria-hidden="true"/><div className="hero-grid"><div className="hero-copy"><Reveal><div className="hero-eyebrow"><span className="pulse-point"/> A NEW ERA OF SOFTWARE ENGINEERING <ArrowUpRight size={13}/></div><h1 className="font-display hero-title">Ideas deserve<br/><span className="hero-gradient">extraordinary</span><br/>engineering.</h1><p className="hero-lead">Meet Oryveta. A more thoughtful way to create, understand, and evolve software—with humans in control and evidence at every step.</p><div className="flex flex-wrap gap-3 mt-10"><Button size="lg" onClick={preview}>Explore the workspace <ArrowRight size={18}/></Button><a href="#workflow"><Button variant="glass" size="lg"><Play size={16}/> See how it works</Button></a></div><div className="hero-proof"><span><ShieldCheck size={15}/> Private by design</span><span><Code2 size={15}/> Open engineering</span><span><CheckCircle2 size={15}/> Evidence first</span></div></Reveal></div><Reveal delay={150} className="hero-login"><LoginCard onPreview={preview} authBusy={authBusy} setAuthBusy={setAuthBusy}/></Reveal></div><a href="#workflow" className="scroll-invite">DISCOVER THE WORKFLOW <ChevronDown size={15}/></a></section>
- <section className="trust-strip"><span>BUILD THOUGHTFULLY</span><span className="trust-divider"/><span>EVOLVE CONTINUOUSLY</span><span className="trust-divider"/><span>VERIFY EVERYTHING THAT MATTERS</span></section>
- <section className="workflow-section" id="workflow"><FeatureShowcase onPreview={preview}/></section>
- <section className="features-section" id="features"><div className="max-w-[1180px] mx-auto"><Reveal><div className="section-kicker !text-indigo-500">THE ORYVETA DIFFERENCE</div><h2 className="section-heading !text-[#293a5e]">Made for the <span className="text-[#8c93c7]">long game.</span></h2><p className="section-copy !text-slate-500">The best software doesn't happen in one prompt. Oryveta is designed for continuous, accountable progress.</p></Reveal><div className="feature-grid">{[[Layers3,"One cohesive workspace","See software projects, feature briefs and demonstrations in one place."],[ShieldCheck,"Your control, by default","Workspace rows are protected by database policies. Agent runs and repository permissions stay separate."],[Zap,"Designed to evolve","Compare agent changes against baseline evidence, then require review before promotion."]].map(([Icon,title,desc],i)=><Reveal key={title} delay={i*90}><div className="feature-story glass-react-card"><span className="feature-story-icon"><Icon size={25}/></span><h3>{title}</h3><p>{desc}</p><span className="mt-auto text-xs font-bold text-indigo-500">ENGINEERED WITH INTENTION ↗</span></div></Reveal>)}</div></div></section>
- <section className="demo-section" id="demo"><div className="max-w-[1180px] mx-auto"><Reveal><div className="section-kicker !text-indigo-500">SHOW, DON'T JUST TELL</div><h2 className="section-heading !text-[#293a5e]">Every feature.<br/><span className="text-[#8c93c7]">A story worth showing.</span></h2><p className="section-copy !text-slate-500">Interactive storyboards make each product capability explainable. Export a scene brief for the snapcn + Remotion video pipeline.</p></Reveal><Reveal delay={90}><div className="landing-demo-wrapper">{stories.length?<DemoStudio stories={stories} compact/>:<p className="text-slate-500">Loading product stories…</p>}</div></Reveal></div></section>
- <section className="end-cta"><Reveal><div className="max-w-[760px] mx-auto text-center"><span className="text-xs font-bold tracking-[.2em] text-indigo-200">YOUR NEXT CHAPTER</span><h2 className="font-display font-extrabold text-[clamp(2.5rem,5vw,4.9rem)] tracking-[-.07em] text-white leading-[1.05] mt-6">Build with more <span className="text-[#becdff]">confidence.</span></h2><p className="text-indigo-100/75 mt-6 leading-7">A beautiful interface is the beginning. Verifiable results are the standard.</p><div className="flex justify-center gap-3 mt-9"><Button size="lg" onClick={preview} className="!bg-white !text-indigo-800 hover:!bg-indigo-50">Explore Oryveta <ArrowRight size={18}/></Button><a href="#top"><Button size="lg" variant="glass" className="!text-white">Back to top ↑</Button></a></div></div></Reveal></section></main>
- <footer className="landing-footer"><Brand/><p>Build thoughtfully. Evolve continuously.</p><a href="https://github.com/suhasaitham22/Oryveta" target="_blank" rel="noreferrer">Open-source foundation <ArrowUpRight size={15}/></a></footer>{toast&&<div role="alert" className="fixed bottom-6 right-6 bg-white p-4 rounded-xl border border-rose-200 text-sm text-rose-700 shadow-lg z-50">{toast}<button aria-label="Dismiss" className="ml-4" onClick={()=>setToast("")}>×</button></div>}</div>;
+import React, {useEffect, useState} from "react";
+import {ArrowRight, Github, LockKeyhole, Mail} from "lucide-react";
+import {Button} from "@/components/ui/button";
+import {Input} from "@/components/ui/input";
+import Brand from "@/components/Brand.jsx";
+import {supabase, verifiedUser, sendEmailLink, signInWithGitHub, oauthGitHubEnabled} from "@/lib/identity";
+import Workspace from "./pages/Workspace.jsx";
+import Landing from "./pages/Landing.jsx";
+
+const selfHosted = window.location.pathname === "/studio" || window.location.pathname.startsWith("/studio/");
+
+export default function App() {
+  const [mode, setMode] = useState(selfHosted ? "local" : "landing");
+  const [user, setUser] = useState(null);
+  const [checking, setChecking] = useState(!selfHosted);
+  const [stories, setStories] = useState([]);
+  const [initialPage, setInitialPage] = useState("overview");
+  const [toast, setToast] = useState("");
+  useEffect(() => {
+    const controller = new AbortController();
+    fetch(`${import.meta.env.BASE_URL}demo-stories.json`, {signal: controller.signal})
+      .then(response => response.ok ? response.json() : Promise.reject(new Error("Story manifest unavailable")))
+      .then(value => {if (Array.isArray(value)) setStories(value);})
+      .catch(error => {if (error.name !== "AbortError") setStories([]);});
+    return () => controller.abort();
+  }, []);
+  useEffect(() => {
+    if (selfHosted) return;
+    let live = true;
+    async function verify() {
+      try {
+        const value = await verifiedUser();
+        if (live && value) {setUser(value); setMode("workspace");}
+      } catch {if (live) setToast("We couldn't restore your session. You can try signing in again.");}
+      finally {if (live) setChecking(false);}
+    }
+    verify();
+    const {data: {subscription}} = supabase.auth.onAuthStateChange((event, session) => {
+      if (!live) return;
+      if (session) setTimeout(verify, 0);
+      else if (event === "SIGNED_OUT") {setUser(null); setMode("landing");}
+    });
+    return () => {live = false; subscription.unsubscribe();};
+  }, []);
+  function preview(page = "overview") {
+    setInitialPage(page); setMode("preview"); window.scrollTo(0, 0);
+  }
+  async function exit() {
+    if (selfHosted) {window.location.assign("/"); return;}
+    if (user) {
+      const {error} = await supabase.auth.signOut();
+      if (error) {setToast(error.message); return;}
+      setUser(null);
+    }
+    setMode("landing"); window.scrollTo(0, 0);
+  }
+  if (checking) return <div className="boot-screen" role="status"><Brand/><p>Restoring your workspace…</p></div>;
+  if (mode !== "landing") return <><Workspace key={mode} user={user} preview={mode === "preview"} onExit={exit} stories={stories} initialPage={initialPage} selfHosted={selfHosted}/>{toast && <div role="alert" className="toast">{toast}<button onClick={() => setToast("")} aria-label="Dismiss notification">Dismiss</button></div>}</>;
+  return <Landing onPreview={preview} toast={toast} onDismiss={() => setToast("")}><LoginCard onPreview={() => preview("overview")}/></Landing>;
+}
+
+function LoginCard({onPreview}) {
+  const [email, setEmail] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
+  const [sent, setSent] = useState(false);
+  async function submit(event) {
+    event.preventDefault(); setBusy(true); setError(""); setSent(false);
+    try {await sendEmailLink(email); setSent(true);} catch (error) {setError(error.message);} finally {setBusy(false);}
+  }
+  return <div className="auth-panel"><div className="section-label"><LockKeyhole size={15}/> Your private workspace</div><h3>Good work starts with clarity.</h3><p>Continue with a secure email link.</p><form onSubmit={submit}><label className="field-label" htmlFor="login-email">Your work email<Input id="login-email" type="email" required maxLength={254} autoComplete="email" placeholder="you@company.com" value={email} onChange={event => {setEmail(event.target.value); setError(""); setSent(false);}}/></label><Button type="submit" className="w-full" disabled={busy}><Mail size={16}/>{busy ? "Requesting secure link…" : "Continue with email"}<ArrowRight size={15}/></Button>{sent && <p role="status" className="notice">If email delivery is configured, a single-use sign-in link has been sent. Check your inbox.</p>}{error && <p role="alert" className="alert-error">{error}</p>}</form><Button className="w-full mt-3" variant="outline" disabled={!oauthGitHubEnabled || busy} onClick={async () => {try {await signInWithGitHub();} catch (error) {setError(error.message);}}}><Github size={16}/>Continue with GitHub</Button>{!oauthGitHubEnabled && <p className="fine-print text-center">GitHub sign-in needs OAuth setup.</p>}<Button variant="ghost" className="w-full" onClick={onPreview}>Explore without signing in <ArrowRight size={15}/></Button><p className="auth-footnote">Passwordless identity is provided by Supabase Auth. Brief and storyboard drafts are not saved to your account; export them to keep a copy.</p></div>;
 }

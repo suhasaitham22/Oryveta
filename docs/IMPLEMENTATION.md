@@ -1,6 +1,6 @@
 # Functional MVP implementation — code map and verified boundaries
 
-Status: **Merged local API and hosted read-only frontend**. The Python API is not deployed to Vercel. This page documents what the code actually does, and deliberately distinguishes starter generation and static analysis from autonomous software engineering.
+Status: **Merged local API and React Studio frontend; hosted React/Supabase integration remains separately configured.** The Python API is not deployed to Vercel. This page documents actual code and distinguishes deterministic starters/read-only analysis from autonomous software engineering.
 
 ## Local architecture
 
@@ -15,7 +15,7 @@ Status: **Merged local API and hosted read-only frontend**. The Python API is no
 | `engine/oryveta_engine/scaffold.py` | Portable runnable project templates, tests and CI skeleton |
 | `engine/oryveta_engine/benchmarks.py` | Deterministic local classification baselines; not Kaggle |
 | `engine/oryveta_engine/worker.py` | SQLite lease-based background worker, retry limits and status |
-| `apps/web/` | Standalone Soft Modern local UI served by FastAPI |
+| `apps/web/` | Legacy standalone Soft Modern local UI served at `/`; built React Studio is served at `/studio/` when `apps/web/studio/dist` exists, while missing builds return `503` without replacing the legacy path |
 | `preview/` | Archived standalone static prototype; **not deployed** to Vercel |
 | `apps/web/vercel.json` | Vercel asset rewrites and restrictive security headers for the real app UI |
 | `apps/web/cloud-auth.js` | Supabase Auth PKCE adapter and owner-scoped workspace data client; inactive until configured |
@@ -31,14 +31,21 @@ python -m venv .venv
 source .venv/bin/activate
 pip install -e '.[dev]'
 export ORYVETA_LOCAL_DEMO=true
+export ORYVETA_BASE_URL=http://127.0.0.1:8000
 uvicorn oryveta_api.main:app --host 127.0.0.1 --port 8000
 # second terminal:
 python -m oryveta_engine.worker
-# verification:
-pytest -q
-ruff check apps/api engine tests
-node --check apps/web/app.js
 ```
+
+Build the React Studio separately with Node 20+:
+
+```bash
+npm --prefix apps/web/studio install
+npm --prefix apps/web/studio run check
+npm --prefix apps/web/studio run build
+```
+
+Open `http://127.0.0.1:8000/studio/`, sign in to local demo, and use Start New/Evolve. `pytest -q`, coverage and `ruff check apps/api engine tests` provide Python gates.
 
 Python 3.11+ is supported by metadata; GitHub CI tests Python 3.12. No paid model keys required.
 
@@ -52,12 +59,13 @@ Python 3.11+ is supported by metadata; GitHub CI tests Python 3.12. No paid mode
 
 ## Known production blockers
 
-1. The public `https://oryveta.vercel.app` preview is not connected to this API. It has no actual GitHub login, persistence or agent work.
+1. The public Vercel React Studio is not connected to the self-hosted FastAPI engine; hosted flows remain planning/storyboard experiences.
 2. SQLite and file workspaces are single-host and not adequate as-is for multi-tenant consultancy deployment.
 3. Source imports are snapshots only; imported code is not executed or changed by an AI agent.
 4. The worker does not run in a hardened per-tenant container or microVM and has no managed always-on hosting.
-5. OAuth requires real client credentials, production ingress, rate limits, secrets management, audit and backup/restore before internet-facing operation.
-6. Full custom application generation, automated bug fixes/PRs, Rust supervisor, Cloudflare/Supabase production DB and self-improving harness remain planned.
+5. Supabase Auth/workspace integration is implemented in the React client/schema, but real mailbox login, two-user RLS/browser authorization and provider configuration remain unverified.
+6. OAuth requires real client credentials, production ingress, rate limits, secrets management, audit and backup/restore before internet-facing operation.
+7. Full custom application generation, automated bug fixes/PRs, Rust supervisor, managed Cloudflare/Supabase production infrastructure and self-improving harness remain planned.
 
 ## Release discipline
 

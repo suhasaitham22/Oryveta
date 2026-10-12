@@ -6,9 +6,9 @@ Keep three replaceable planes: **control**, **intelligence**, and **execution**.
 
 ## Current known implementation
 
-**Public site:** static dependency-free HTML/CSS/JavaScript at preview/index.html, hosted on Vercel. Interaction is explicitly illustrative; no OAuth or agent API.
+**Hosted site:** Vercel builds `apps/web/studio` as the React/shadcn product UI. Hosted Supabase identity/workspaces and the self-hosted FastAPI engine are separate; the hosted UI does not call local jobs.
 
-**Earlier local MVP:** FastAPI backend, session-oriented GitHub identity OAuth implementation awaiting credentials, SQLite users/projects/jobs, project scaffolding/ZIP export, basic repository snapshot analysis, separate Python job worker and small ML evaluation tasks. This full local source was not yet published to the remote GitHub repository as of 2026-10-09. Its local test results are not production QA.
+**Self-hosted compatibility:** FastAPI retains legacy `/` plus `/studio/` for the built React distribution. SQLite users/projects/jobs/events support deterministic starter creation, ZIP snapshot import, read-only heuristic analysis and coarse queued/running/succeeded/failed/canceled worker lifecycle. No hosted bridge, sandboxed arbitrary execution or autonomous coding agent exists.
 
 ## Planned production control plane
 
