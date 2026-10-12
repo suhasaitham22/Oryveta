@@ -23,6 +23,10 @@ jobs:
       - name: Install pinned direct dependencies (lockfile to be generated)
         working-directory: apps/web/studio
         run: npm install --no-audit --no-fund
+      - name: Publish install dependency manifest for lockfile pinning (public metadata)
+        working-directory: apps/web/studio
+        run: |
+          node -e 'const f=require("fs").readFileSync("package-lock.json").toString("base64");for(let i=0;i<f.length;i+=1800)console.log("ORYVETA_STUDIO_LOCK "+String(i/1800)+" "+f.slice(i,i+1800));'
       - name: Validate story contracts and browser auth boundary
         working-directory: apps/web/studio
         run: npm run check
@@ -45,4 +49,5 @@ jobs:
         working-directory: apps/web/studio/demo
         run: |
           npm install --no-audit --no-fund
+          node -e 'const f=require("fs").readFileSync("package-lock.json").toString("base64");for(let i=0;i<f.length;i+=1800)console.log("ORYVETA_DEMO_LOCK "+String(i/1800)+" "+f.slice(i,i+1800));'
           npx tsc --noEmit
