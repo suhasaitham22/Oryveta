@@ -9,6 +9,7 @@ export default function DemoStudio({stories,compact=false}){
  const scenes=overrides[story?.id]||story?.scenes||[];
  const active=scenes[Math.min(frame,scenes.length-1)]||{};
  const metadata=useMemo(()=>({id:story?.id,title:story?.title,description:story?.description,scenes,source:"oryveta-demo-studio",status:"storyboard_only_not_rendered",renderPipeline:"Remotion + snapcn",verified:false}),[story,scenes]);
+ if(!story)return <div className="rounded-2xl border border-indigo-100 bg-white/80 p-9" role="status"><h2 className="font-display text-2xl font-semibold text-slate-800">No demo stories yet</h2><p className="mt-3 text-sm text-slate-500">The demo manifest is unavailable. Retry later or inspect the feature storyboard source.</p></div>;
  function choose(id){setSelected(id);setFrame(0);setPlaying(false);setEditMode(false);}
  function next(){setFrame(f=>(f+1)%scenes.length);}
  function previous(){setFrame(f=>(f+scenes.length-1)%scenes.length);}
