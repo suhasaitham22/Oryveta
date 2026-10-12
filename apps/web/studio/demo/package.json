@@ -1,0 +1,27 @@
+{
+  "name": "@oryveta/product-demos",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "start": "remotion studio src/index.ts",
+    "render:start-new": "remotion render src/index.ts start-new out/start-new.mp4",
+    "render:evolve": "remotion render src/index.ts evolve out/evolve.mp4",
+    "render:agent-evaluation": "remotion render src/index.ts agent-evaluation out/agent-evaluation.mp4",
+    "check": "node scripts/check-stories.mjs"
+  },
+  "dependencies": {
+    "react": "19.1.1",
+    "react-dom": "19.1.1",
+    "remotion": "4.0.350",
+    "@remotion/cli": "4.0.350",
+    "@remotion/google-fonts": "4.0.350",
+    "culori": "4.0.1"
+  },
+  "devDependencies": {
+    "@types/react": "19.1.8",
+    "@types/react-dom": "19.1.6",
+    "typescript": "5.9.2",
+    "@types/culori": "4.0.1"
+  }
+}

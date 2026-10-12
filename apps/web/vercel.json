@@ -20,6 +20,10 @@
     {
       "source": "/static/cloud-auth.js",
       "destination": "/cloud-auth.js"
+    },
+    {
+      "source": "/((?!assets/|favicon.ico).*)",
+      "destination": "/index.html"
     }
   ],
   "headers": [
@@ -44,9 +48,12 @@
         },
         {
           "key": "Content-Security-Policy",
-          "value": "default-src 'self'; script-src 'self' https://esm.sh; connect-src 'self' https://*.supabase.co https://esm.sh; img-src 'self' https://avatars.githubusercontent.com data:; style-src 'self'; font-src 'self'; object-src 'none'; base-uri 'self'; frame-ancestors 'none'; form-action 'self'; upgrade-insecure-requests"
+          "value": "default-src 'self'; script-src 'self' https://esm.sh; connect-src 'self' https://*.supabase.co https://esm.sh; img-src 'self' https://avatars.githubusercontent.com data:; style-src 'self' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; object-src 'none'; base-uri 'self'; frame-ancestors 'none'; form-action 'self'; upgrade-insecure-requests"
         }
       ]
     }
-  ]
+  ],
+  "installCommand": "cd studio && npm install --no-audit --no-fund",
+  "buildCommand": "cd studio && npm run build",
+  "outputDirectory": "studio/dist"
 }

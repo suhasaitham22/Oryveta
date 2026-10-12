@@ -1,0 +1,2 @@
+import * as React from "react";import {cn} from "@/lib/utils";
+export const Textarea=React.forwardRef(({className,...props},ref)=><textarea ref={ref} className={cn("flex min-h-32 w-full resize-y rounded-xl border border-slate-200 bg-white/80 p-4 text-sm text-slate-700 outline-none placeholder:text-slate-400 focus-visible:border-indigo-400 focus-visible:ring-4 focus-visible:ring-indigo-100 disabled:opacity-50",className)} {...props}/>);Textarea.displayName="Textarea";
