@@ -120,6 +120,7 @@ function updateWorkspaceChrome(){
  $('#app-mode').textContent=state.cloud?'Workspace':'Preview';
 }
 async function enterApp(page){
+ document.body.classList.remove('login-ready');document.body.classList.add('in-product');
  $('#login').classList.add('hidden');$('#app').classList.remove('hidden');
  $('#profile-name').textContent=state.user.display_name||'User';
  const initial=(state.user.display_name||'O')[0].toUpperCase();
@@ -135,13 +136,18 @@ function showHostedLogin(configured,error){
  $('#app').classList.add('hidden');$('#login').classList.remove('hidden');
  $('#preview-login').classList.remove('hidden');
  const github=$('#github-login');
- github.classList.toggle('hidden',!configured);
- $('#login-warning').classList.toggle('hidden',!error&&!configured);
- $('#login-warning').textContent=error||(!configured?'GitHub sign-in is being configured. You can explore the product preview without an account.':'');
+ const gh=window.OryvetaCloudAuth?.githubConfigured?.()===true;
+ github.classList.toggle('hidden',!gh);
+ $('#email-login-form').classList.toggle('hidden',window.OryvetaCloudAuth?.emailConfigured?.()!==true);
+ const message=error||(!configured?'Sign-in is being configured. Explore the product preview in the meantime.':!gh?'GitHub OAuth is not yet enabled. Email links require the production redirect to be configured in Supabase.':'');
+ $('#login-warning').classList.toggle('hidden',!message);
+ $('#login-warning').textContent=message;
+ document.body.classList.remove('in-product');document.body.classList.add('login-ready');
 }
 async function initHosted(){
  const auth=window.OryvetaCloudAuth;
  if(auth?.configured()){
+  if(auth.hasSessionHint?.()===false){showHostedLogin(true,'');return;}
   try{
    const user=await auth.identity();
    if(user){
@@ -205,10 +211,22 @@ document.addEventListener('click',async event=>{
  }else if(event.target.closest('#workspace-signin')){
   state.preview=false;state.cloud=false;showHostedLogin(window.OryvetaCloudAuth?.configured(), '');
  }else if(event.target.closest('#workspace-switch'))await navigate('workspace');
- else if(event.target.closest('#github-login')&&window.location.hostname.endsWith('.vercel.app')){
+ else if(event.target.closest('#github-login')&&window.OryvetaCloudAuth?.githubConfigured?.()){
   event.preventDefault();
   try{await window.OryvetaCloudAuth.signIn()}catch(error){toast(error.message,true)}
  }
+});
+document.addEventListener('submit',async event=>{
+ if(event.target.id!=='email-login-form')return;
+ event.preventDefault();
+ const button=$('#email-login-submit'),status=$('#email-login-status');
+ if(button.disabled)return;
+ button.disabled=true;status.classList.add('hidden');
+ try{await window.OryvetaCloudAuth.signInWithEmail($('#email-login-address').value);
+  status.textContent='If email delivery is available, a one-time sign-in link has been sent. Check your inbox.';
+  status.classList.remove('hidden');
+ }catch(error){status.textContent=error.message;status.classList.remove('hidden');toast(error.message,true)}
+ finally{button.disabled=false}
 });
 document.addEventListener('input',event=>{
  if(event.target.id==='workspace-slug')event.target.dataset.edited='true';
