@@ -99,3 +99,6 @@
 @media(max-width:900px){.story-layout{grid-template-columns:1fr}.story-tabs{grid-template-columns:repeat(3,1fr)}.story-tab{padding:18px}.story-tab strong{font-size:15px}.story-tab small{font-size:10px}}
 @media(max-width:680px){.login-cover{min-height:125px!important}.login-main{min-height:calc(100svh - 125px);padding:28px}.login-footer{position:static;margin-top:24px}.story{padding:74px 22px 55px}.story-head h2{letter-spacing:-1.5px}.story-tabs{grid-template-columns:1fr}.story-tab{gap:6px}.story-panel{min-height:300px;padding:28px 24px}.story-footer{flex-direction:column;align-items:flex-start;margin-top:65px}.btn-story{width:100%}}
 @media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}.login-cover:before,.login-cover:after,.login-illustration,.orbit-heart,.story-panel{animation:none}.rise{opacity:1;transform:none;transition:none}.btn,.story-tab,.action-card,.workspace-card{transition:none!important;transform:none!important}}
+
+/* Mobile topbar: the account avatar is already in the sidebar. Prevent genuine overflow. */
+@media(max-width:680px){.topbar{gap:7px}.topbar-right{gap:8px;min-width:0}.topbar-right #avatar-top{display:none}.breadcrumb{min-width:0;white-space:nowrap}.workspace-switch{min-width:0;max-width:136px}.workspace-switch #workspace-switch-name{min-width:0}}
