@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import io
 import re
+import shutil
 import stat
 import zipfile
 from pathlib import Path, PurePosixPath
@@ -22,7 +23,8 @@ class InvalidRepository(ValueError):
 def parse_github_url(url: str) -> tuple[str, str]:
     from urllib.parse import urlsplit
     value = urlsplit(url.strip())
-    if value.scheme != "https" or value.hostname != "github.com" or value.port is not None or value.username:
+    if (value.scheme != "https" or value.hostname != "github.com" or value.port is not None
+            or value.username or value.password or value.query or value.fragment):
         raise InvalidRepository("Only public https://github.com/owner/repo URLs are supported")
     parts = [p for p in value.path.strip("/").split("/") if p]
     if len(parts) != 2:
@@ -104,7 +106,11 @@ def snapshot_zip(root: Path, payload: bytes) -> int:
 
         file_paths = [PurePosixPath(m.filename) for m in members if m.filename and not m.is_dir()]
         first = {p.parts[0] for p in file_paths if p.parts}
-        strip_root = len(first) == 1 and any(len(p.parts) > 1 for p in file_paths)
+        # GitHub ZIPs normally have a wrapper folder; user archives consisting
+        # only of src/* or tests/* must NOT silently lose that meaningful folder.
+        top = next(iter(first), "")
+        strip_root = (len(first) == 1 and any(len(p.parts) > 1 for p in file_paths)
+                      and top not in {"src", "app", "lib", "tests", "test", "docs", "packages", "public"})
         planned: list[tuple[zipfile.ZipInfo, tuple[str, ...]]] = []
         seen: set[str] = set()
         total = 0
@@ -160,7 +166,12 @@ def snapshot_zip(root: Path, payload: bytes) -> int:
                     if copied != member.file_size:
                         raise InvalidRepository("Archive file length mismatch")
         except (zipfile.BadZipFile, RuntimeError) as exc:
+            shutil.rmtree(root, ignore_errors=True)
             raise InvalidRepository("Corrupt or encrypted ZIP archive") from exc
+        except Exception:
+            # Direct users of snapshot_zip must not inherit half-written trees.
+            shutil.rmtree(root, ignore_errors=True)
+            raise
         return len(planned)
 
 

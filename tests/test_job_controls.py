@@ -12,7 +12,7 @@ from fastapi.testclient import TestClient
 
 from oryveta_api.auth import new_session
 from oryveta_api.main import MAX_ACTIVE_JOBS_PER_USER, create_app
-from oryveta_engine.worker import Worker
+from oryveta_engine.worker import MAX_ATTEMPTS, Worker
 
 
 def enqueue(client, headers, seed=42, key=None):
@@ -351,3 +351,42 @@ def test_cancel_in_flight_disallows_late_result(signed_in, monkeypatch):
         row = conn.execute("SELECT status,result_json FROM jobs WHERE id=?",
                            (job_id,)).fetchone()
     assert row["status"] == "canceled" and row["result_json"] is None
+
+
+def test_failed_initial_analysis_marks_import_failed(signed_in):
+    client, headers = signed_in
+    response = client.post("/api/projects/import/zip",
+                           headers={**headers, "Content-Type": "application/zip"},
+                           content=archive_bytes())
+    assert response.status_code == 201
+    payload = response.json()
+    worker = Worker(client.app.state.db, client.app.state.settings.workspace_root)
+    job = worker.claim()
+    assert job["id"] == payload["analysis_job_id"]
+    assert worker._fail(job, "StaticScanError")
+    project = client.get(f"/api/projects/{payload['id']}").json()
+    assert project["status"] == "analysis_failed"
+    assert project["analysis"] is None
+    assert client.get(f"/api/jobs/{job['id']}").json()["status"] == "failed"
+
+
+def test_expired_final_analysis_lease_is_failed_with_event(signed_in):
+    client, headers = signed_in
+    response = client.post("/api/projects/import/zip",
+                           headers={**headers, "Content-Type": "application/zip"},
+                           content=archive_bytes())
+    assert response.status_code == 201
+    payload = response.json()
+    with client.app.state.db.connect() as conn:
+        conn.execute(
+            "UPDATE jobs SET status='running', attempts=?,lease_until=?,lease_token='stale' WHERE id=?",
+            (MAX_ATTEMPTS, time.time()-10, payload["analysis_job_id"]),
+        )
+    worker = Worker(client.app.state.db, client.app.state.settings.workspace_root)
+    assert worker.claim() is None
+    project = client.get(f"/api/projects/{payload['id']}").json()
+    assert project["status"] == "analysis_failed"
+    job = client.get(f"/api/jobs/{payload['analysis_job_id']}").json()
+    assert job["status"] == "failed"
+    assert job["error"] == "WorkerLeaseExpired"
+    assert any(event["kind"] == "job_failed" for event in job["events"])

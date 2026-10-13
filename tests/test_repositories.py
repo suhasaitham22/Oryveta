@@ -44,3 +44,37 @@ def test_traversal_rejected(tmp_path):
 def test_archive_limits(tmp_path):
     with pytest.raises(InvalidRepository):
         snapshot_zip(tmp_path/'bad', b'x' * (12*1024*1024+1))
+
+
+def test_zip_preserves_source_only_top_level_folder(tmp_path):
+    root = tmp_path / "import"
+    assert snapshot_zip(root, zipped({"src/main.py": "print(1)"})) == 1
+    assert (root / "src" / "main.py").read_text() == "print(1)"
+    assert not (root / "main.py").exists()
+
+
+def test_zip_cleanup_if_second_file_extraction_fails(tmp_path, monkeypatch):
+    archive = zipped({"repo-main/first.py": "x=1", "repo-main/second.py": "x=2"})
+    original_open = zipfile.ZipFile.open
+    seen = {"count": 0}
+
+    def interrupted(self, name, *args, **kwargs):
+        seen["count"] += 1
+        if seen["count"] == 2:
+            raise zipfile.BadZipFile("simulated checksum error")
+        return original_open(self, name, *args, **kwargs)
+
+    monkeypatch.setattr(zipfile.ZipFile, "open", interrupted)
+    root = tmp_path / "import"
+    with pytest.raises(InvalidRepository, match="Corrupt"):
+        snapshot_zip(root, archive)
+    assert not root.exists()
+
+
+@pytest.mark.parametrize("url", [
+    "https://github.com/org/repo?tab=readme",
+    "https://github.com/org/repo#frag",
+])
+def test_rejects_ambiguous_github_urls(url):
+    with pytest.raises(InvalidRepository):
+        parse_github_url(url)

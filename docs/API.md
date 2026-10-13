@@ -62,3 +62,27 @@ Tasks contain contract version, owner, repository baseline, allowed tools/networ
 ## GitHub integration
 
 GitHub OAuth for login; GitHub App installation-token permissions for selected repositories; HMAC-validated webhooks; PR and CI workflows separate from simple login. Avoid storing broad long-lived personal access tokens.
+
+
+## Repository analysis v2 (static, local only)
+
+- Bounded ZIP import validates unsafe paths, duplicates, file/directory collisions,
+  symlinks and expanded sizes before extraction. If extraction fails, temporary
+  files are cleaned up; a single `src/` archive is not incorrectly flattened.
+- Imported repositories are **not executed**. Analysis categorizes bounded
+  source files and recognizes limited dependency/build manifests
+  (`package.json`, `pyproject.toml`, `requirements.txt`,
+  `Cargo.toml`, `go.mod`, `pom.xml` and Gradle files).
+- `analysis.summary.technology` contains deterministic ecosystem/framework
+  hints, manifest names, test-folder and CI flags. These are *manifest hints*,
+  not proof of runtime behavior or compatibility.
+- `input_fingerprint_sha256` hashes the **entire bounded content** of analyzed
+  files and recognized readable manifests with length/path framing, not
+  just their first 1000 characters; changes can be compared for stale analyses.
+  A truncated/skipped repository must not be mistaken for full coverage.
+- Python `eval`/`exec` and `shell=True` security detections are AST-based,
+  avoiding code-comment and string false positives. Findings still need
+  human triage and are not a comprehensive vulnerability scan.
+- When over 400 findings are found, `findings_truncated` and
+  `findings_returned` expose the cap. Nothing is auto-patched, pushed,
+  executed or approved based only on these heuristics.
