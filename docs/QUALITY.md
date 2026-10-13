@@ -7,7 +7,7 @@
 1. **Static checks:** Ruff Python lint, Python compilation, JavaScript syntax, dependency consistency.
 2. **Compatibility matrix:** tests on Python **3.11, 3.12 and 3.13** (all supported by the project).
 3. **Coverage:** branch-aware coverage of both the API and engine; **84% minimum** initially. Raise the gate as tests expand. Coverage is a floor, not a proof of correctness.
-4. **Security:** `pip-audit --strict --no-deps` over pinned installed third-party dependencies, excluding only the local unpublished Oryveta wheel and Bandit for medium-or-higher severity findings. Review results rather than suppressing alerts without evidence.
+4. **Security:** `pip-audit --strict --no-deps` over pinned installed third-party dependencies, excluding only the local unpublished Oryveta wheel and Bandit for medium-or-higher severity findings. React Studio also runs `npm audit --audit-level=high` after locked installation, including development dependencies, on PRs, main/preflight pushes and a weekly schedule. Review results rather than suppressing alerts without evidence.
 5. **Packaging:** build an installable wheel and import the installed packages.
 6. **Container:** build the Docker image, verify the API imports and process runs without root privileges; validate Compose configuration.
 7. **Documentation:** keep `docs/STATUS.md`, architecture decisions and user-facing limitations current when behavior changes.
@@ -47,6 +47,8 @@ Repository **Settings → Branches / Rulesets** should protect `main` by requiri
 Do not enable arbitrary repository execution or offer consultancy-grade SLA until these gaps have been addressed and tested. See [AUTH-SECURITY.md](AUTH-SECURITY.md) and [OPERATIONS.md](OPERATIONS.md).
 
 ## Preflight before opening PRs
+
+The React browser gate additionally exercises invalid starter names, creation, ZIP download, actual worker completion, persisted findings after reload and logout on desktop/mobile. Its local mode requires a dedicated database/workspace and invokes a real one-shot worker process with the same environment as the API. The local demo account is a test identity, not evidence of production OAuth or mailbox sign-in.
 
 For CI/workflow changes, push to a `ci/preflight-*` branch and verify the **same complete workflow** (static, Python 3.11–3.13, security and Docker) is green before opening a PR. Then review the PR's checks again; green preflight is evidence, not a guarantee against infrastructure outages or future dependency advisories. Keep PRs draft until required checks pass. Security scanning must fail on real vulnerabilities and may not be disabled merely to make CI green.
 

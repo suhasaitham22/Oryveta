@@ -1,5 +1,6 @@
 import io
 import zipfile
+import pytest
 from fastapi.testclient import TestClient
 from oryveta_api.config import Settings
 from oryveta_api.main import create_app
@@ -110,3 +111,51 @@ def test_origin_header_rejection(signed_in):
     assert client.post('/api/projects',json={
         'name':'Bad origin','brief':'Do not create this','blueprint':'python-api'
     },headers={**headers,'Origin':'https://attacker.invalid'}).status_code == 403
+
+
+@pytest.mark.parametrize('name,brief', [
+    ('!!!', 'A useful starter application'),
+    ('   ', 'A useful starter application'),
+    (' A ', 'A useful starter application'),
+    ('Valid name', '          '),
+])
+def test_invalid_project_input_has_no_side_effects(signed_in, name, brief):
+    client, headers = signed_in
+    response = client.post('/api/projects', json={
+        'name': name, 'brief': brief, 'blueprint': 'python-api',
+    }, headers=headers)
+    assert response.status_code == 422
+    assert client.get('/api/projects').json() == []
+    from pathlib import Path
+    assert list(Path(client.app.state.settings.workspace_root).iterdir()) == []
+
+
+@pytest.mark.parametrize('blueprint', ['web-app', 'python-api', 'ai-service'])
+def test_starter_lifecycle_preserves_normalized_brief(signed_in, blueprint):
+    client, headers = signed_in
+    response = client.post('/api/projects', json={
+        'name': '  Customer portal  ',
+        'brief': '  Track customer onboarding tasks  ',
+        'blueprint': blueprint,
+    }, headers=headers)
+    assert response.status_code == 201
+    project_id = response.json()['id']
+    detail = client.get(f'/api/projects/{project_id}').json()
+    assert detail['name'] == 'Customer portal'
+    assert detail['brief'] == 'Track customer onboarding tasks'
+    queued = client.post(f'/api/projects/{project_id}/analyze', headers=headers)
+    assert queued.status_code == 202
+    worker = Worker(client.app.state.db, client.app.state.settings.workspace_root)
+    assert worker.run_once()
+    job = client.get(f"/api/jobs/{queued.json()['id']}").json()
+    assert job['status'] == 'succeeded'
+    assert any(event['kind'] == 'job_completed' for event in job['events'])
+    detail = client.get(f'/api/projects/{project_id}').json()
+    assert detail['analysis']['summary']['source_files_analyzed'] > 0
+    exported = client.get(f'/api/projects/{project_id}/export')
+    assert exported.status_code == 200
+    with zipfile.ZipFile(io.BytesIO(exported.content)) as archive:
+        import json
+        manifest = json.loads(archive.read('oryveta.json'))
+    assert manifest['name'] == 'Customer portal'
+    assert manifest['brief'] == 'Track customer onboarding tasks'

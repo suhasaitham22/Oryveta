@@ -10,6 +10,8 @@ from __future__ import annotations
 import io
 import json
 import os
+import subprocess
+import sys
 import threading
 import zipfile
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
@@ -224,6 +226,58 @@ def _check_local(page, api_url, width):
     _assert_no_overflow(page)
 
 
+def _check_local_completion(page, api_url, width):
+    """Use a real worker process against the same isolated API database.
+
+    The API must be started with this script's ORYVETA_DATABASE_PATH and
+    ORYVETA_WORKSPACE_ROOT. Do not point this smoke at a shared runtime.
+    """
+    assert os.environ.get("ORYVETA_DATABASE_PATH"), "Use an isolated smoke database"
+    assert os.environ.get("ORYVETA_WORKSPACE_ROOT"), "Use an isolated smoke workspace"
+    _open_nav(page, "Start New", width)
+    page.get_by_role("tab", name="Brief", exact=True).click()
+    page.get_by_label("Project name").fill("!!!")
+    page.get_by_label("Describe the product").fill("Track customer onboarding tasks.")
+    page.get_by_role("tab", name="Local run", exact=True).click()
+    page.get_by_label("Starter template").select_option("python-api")
+    page.get_by_role("button", name="Create starter", exact=True).click()
+    page.get_by_role("alert").get_by_text("Project name must include letters or digits").wait_for()
+    page.get_by_role("tab", name="Brief", exact=True).click()
+    page.get_by_label("Project name").fill(f"Browser starter {width}")
+    page.get_by_role("tab", name="Local run", exact=True).click()
+    page.get_by_role("button", name="Create starter", exact=True).click()
+    page.get_by_role("link", name="Download source ZIP").wait_for()
+    with page.expect_download() as download_info:
+        page.get_by_role("link", name="Download source ZIP").click()
+    with zipfile.ZipFile(download_info.value.path()) as archive:
+        manifest = json.loads(archive.read("oryveta.json"))
+        assert manifest["name"] == f"Browser starter {width}"
+        assert "app/main.py" in archive.namelist()
+        assert "tests/test_api.py" in archive.namelist()
+    page.get_by_role("button", name="Analyze snapshot", exact=True).click()
+    page.get_by_role("heading", name="Waiting for worker", exact=True).wait_for()
+    subprocess.run(
+        [sys.executable, "-m", "oryveta_engine.worker", "--once"],
+        check=True, timeout=60,
+    )
+    page.get_by_role("heading", name="Completed", exact=True).wait_for(timeout=20000)
+    page.get_by_role("region", name="Latest project analysis").wait_for()
+    page.get_by_text("Task timeline").click()
+    page.get_by_text("Repository analysis completed", exact=True).wait_for()
+    # Reload must restore saved projects and job records from the API.
+    page.reload()
+    page.get_by_label("Selected project").select_option(label=f"Browser starter {width}")
+    runs = page.get_by_label("Analysis run")
+    runs.locator("option").nth(1).wait_for(state="attached")
+    runs.select_option(index=1)
+    page.get_by_role("heading", name="Completed", exact=True).wait_for(timeout=20000)
+    _assert_no_overflow(page)
+    page.get_by_role("button", name="Disconnect local session").click()
+    page.get_by_role("button", name="Sign in to local demo").wait_for()
+    assert page.request.get(f"{api_url}/api/projects").status == 401
+    print("PASS", width, "starter create/export, real worker completion, reload and logout")
+
+
 def run():
     assert (ROOT / "index.html").is_file(), "Run npm build in apps/web/studio before browser smoke"
     api_url = os.environ.get("ORYVETA_SMOKE_API_URL")
@@ -245,6 +299,7 @@ def run():
                 if os.environ.get("ORYVETA_SMOKE_API_URL"):
                     _check_navigation(page, api_url, "/studio", width)
                     _check_local(page, api_url, width)
+                    _check_local_completion(page, api_url, width)
                 else:
                     _check_navigation(page, api_url, width=width)
                     _check_hosted(page, api_url, width)

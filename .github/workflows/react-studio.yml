@@ -2,7 +2,9 @@ name: React Studio build and browser QA
 on:
   pull_request:
   push:
-    branches: [main]
+    branches: [main, 'ci/preflight-*']
+  schedule:
+    - cron: '29 8 * * 1'
 permissions:
   contents: read
 concurrency:
@@ -23,6 +25,9 @@ jobs:
       - name: Install locked frontend dependencies
         working-directory: apps/web/studio
         run: npm ci --no-audit --no-fund
+      - name: Fail on high or critical frontend dependency advisories
+        working-directory: apps/web/studio
+        run: npm audit --audit-level=high
       - name: Validate story contracts and browser auth boundary
         working-directory: apps/web/studio
         run: npm run check

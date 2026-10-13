@@ -14,7 +14,7 @@ import httpx
 from fastapi import Depends, FastAPI, HTTPException, Request, Response
 from fastapi.responses import FileResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 from oryveta_engine.benchmarks import CHALLENGES
 from oryveta_engine.model_runtime import (
@@ -35,6 +35,8 @@ MAX_ACTIVE_JOBS_PER_USER = 8  # Single-host fair-use admission limit.
 
 
 class ProjectInput(BaseModel):
+    model_config = ConfigDict(str_strip_whitespace=True)
+
     name: str = Field(min_length=2, max_length=90)
     brief: str = Field(min_length=10, max_length=2500)
     blueprint: str
@@ -265,7 +267,11 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     def create_project(data: ProjectInput, user=Depends(current_user), _=Depends(require_csrf)):
         if data.blueprint not in BLUEPRINTS:
             raise HTTPException(422, "Unsupported project template")
-        files = generate_files(data.name, data.brief, data.blueprint)
+        try:
+            files = generate_files(data.name, data.brief, data.blueprint)
+        except ValueError as err:
+            # Reject unusable starter names before creating directories or DB rows.
+            raise HTTPException(422, str(err)) from err
         project_id = app.state.db.new_id()
         root = project_dir(user["id"], project_id)
         root.parent.mkdir(parents=True, exist_ok=True)
