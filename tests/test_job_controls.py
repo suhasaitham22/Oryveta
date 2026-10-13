@@ -12,7 +12,7 @@ from fastapi.testclient import TestClient
 
 from oryveta_api.auth import new_session
 from oryveta_api.main import MAX_ACTIVE_JOBS_PER_USER, create_app
-from oryveta_engine.worker import Worker
+from oryveta_engine.worker import MAX_ATTEMPTS, Worker
 
 
 def enqueue(client, headers, seed=42, key=None):
