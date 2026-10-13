@@ -166,10 +166,3 @@ def run() -> None:
 
 if __name__ == "__main__":
     run()
-     server.shutdown()
-        server.server_close()
-        thread.join(timeout=3)
-
-
-if __name__ == "__main__":
-    run()
