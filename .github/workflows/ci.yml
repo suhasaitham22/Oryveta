@@ -36,7 +36,8 @@ jobs:
           python -m compileall -q apps/api engine tests
           python -m pip check
       - name: Check browser JavaScript syntax
-        run: node --check apps/web/app.js
+        run: |
+          node --check apps/web/app.js
           node --check apps/web/cloud-auth.js
           node --check apps/web/cloud-config.js
 
