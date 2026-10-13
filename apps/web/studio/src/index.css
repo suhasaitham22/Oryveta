@@ -69,8 +69,6 @@ main[tabindex="-1"]:focus { outline: none; }
 .sidebar-note strong { font-size: 12px; font-weight: 600; display: block; }
 .sidebar-note p { font-size: 11px; color: var(--muted); line-height: 1.8; margin-top: 7px; }
 .workspace-content { flex: 1; min-width: 0; }
-.workspace-topbar { min-height: 76px; display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 12px 36px; background: #f9faf5; border-bottom: 1px solid var(--border); }
-.workspace-topbar strong { font-size: 13px; font-weight: 500; }
 .workspace-switch { width: auto; max-width: 220px; min-height: 36px; padding: 6px 12px; }
 .workspace-main { max-width: 1280px; margin: auto; padding: 36px clamp(22px, 4vw, 54px) 80px; outline: none; }
 .page-heading { margin: 38px 0 36px; }
@@ -194,7 +192,6 @@ main[tabindex="-1"]:focus { outline: none; }
 @media (max-width: 1100px) {
   .section-container { width: calc(100% - 64px); }
   .workspace-sidebar { width: 210px; padding-inline: 12px; }
-  .workspace-topbar { padding-inline: 24px; }
   .brief-layout { grid-template-columns: 1fr; }
   .journey-guide { padding: 10px 0; }
   .journey-guide h3 br { display: none; }
@@ -207,12 +204,10 @@ main[tabindex="-1"]:focus { outline: none; }
   .auth-panel { padding: 24px; }
   .workspace-sidebar { display: none; }
   .workspace-main { padding-inline: 24px; }
-  .workspace-topbar { padding-inline: 20px; }
 }
 @media (max-width: 600px) {
   [id] { scroll-margin-top: 85px; }
   .section-container { width: calc(100% - 40px); }
-  .workspace-topbar { padding: 12px; }
   .workspace-switch { max-width: 110px; font-size: 10px; padding: 6px; }
   .workspace-main { padding: 20px 16px 60px; }
   .page-heading { margin-top: 28px; }

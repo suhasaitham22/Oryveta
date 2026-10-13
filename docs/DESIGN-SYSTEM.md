@@ -16,7 +16,7 @@ No paid source, template video/models, brands, customer claims, expired countdow
 
 ## Compact shared navigation
 
-A single shared header exposes **Home / About / What We Do / Workspace**, the Home logo, and the appropriate hosted sign-in action or local-edition label. It does not repeat a giant page title. A separate compact trail offers Back and semantic linked breadcrumbs. Native links support opening a route in a new tab. A direct-entry Back action falls back to Home, which resolves to `/studio/` locally, never the legacy `/` interface.
+A single shared header exposes **Home / About / What We Do / Workspace**, the Home logo, and the appropriate hosted sign-in action or local-edition label. It does not repeat a giant page title. A separate compact trail offers Back and semantic linked breadcrumbs. Workspace context controls contain only the functional workspace switcher or mobile menu trigger; there is no duplicate page/environment topbar or empty desktop bar. Native links support opening a route in a new tab. A direct-entry Back action falls back to Home, which resolves to `/studio/` locally, never the legacy `/` interface.
 
 React Router owns pathname and query history. `BrowserRouter` uses Vite's `BASE_URL` as its basename. Hosted `npm run build` uses `/` and writes `dist`; `npm run build:local` uses `--mode selfhost`, `/studio/`, and a separate `dist-local`. FastAPI serves extensionless local page URLs with the SPA index; asset-like and reserved paths remain real 404s. Unknown page routes render an honest page-not-found view. Vercel serves the hosted SPA. The same source produces both builds without relative-asset ambiguity on deep reload.
 

@@ -91,7 +91,8 @@
 .workspace-shell { min-height: calc(100svh - 122px); }
 .workspace-sidebar { top: 68px; min-height: calc(100svh - 122px); height: calc(100svh - 68px); padding-top: 24px; }
 .workspace-sidebar-title { padding: 0 12px; font-size: 14px; font-weight: 600; }
-.workspace-topbar { min-height: 54px; padding-block: 8px; }
+.workspace-controls { display: none; align-items: center; justify-content: flex-end; gap: 12px; padding: 8px 24px; }
+.workspace-controls.has-workspace-switch { display: flex; }
 .workspace-main .page-heading h1 { font-size: clamp(30px, 3.3vw, 43px); }
 @media (max-width: 850px) {
   .site-header-inner { width: calc(100% - 32px); height: 62px; }
@@ -100,6 +101,7 @@
   .home-back { padding-inline: 8px; }
   .home-back span { display: none; }
   .route-trail { padding-inline: 12px; gap: 6px; }
+  .workspace-controls { display: flex; justify-content: space-between; padding: 6px 16px; }
   .home-intro { padding-top: 32px; }
   .home-next, .editorial-split, .journey-detail, .delivery-boundaries, .signin-page { grid-template-columns: 1fr; gap: 32px; }
   .home-next { padding-block: 65px; }

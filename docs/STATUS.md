@@ -1,6 +1,6 @@
 # Oryveta implementation status
 
-Navigation and dimensional interaction milestone — 2026-10-13 (unpublished branch).
+Navigation and dimensional interaction milestone — 2026-10-13 ([PR #26](https://github.com/suhasaitham22/Oryveta/pull/26), unmerged).
 
 The `apps/web/studio` Vite React app produces the hosted product UI in `dist` and the self-hosted local UI in `dist-local`; FastAPI serves the latter at `/studio/` with extensionless deep-route fallback and strict asset/API path handling. The legacy vanilla-JS `apps/web/index.html` and root `/` path remain self-hosted compatibility paths. Hosted React and local FastAPI identity/engine sessions are deliberately separate; no hosted engine bridge exists.
 

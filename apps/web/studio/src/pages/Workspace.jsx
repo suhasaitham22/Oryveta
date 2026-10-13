@@ -92,7 +92,6 @@ export default function Workspace({
   const draft = ownsLocalSelection
     ? storedDraft
     : { ...storedDraft, projectId: null, jobId: null };
-  const navigation = [...primaryNavigation, ...secondaryNavigation];
 
   async function refresh() {
     if (preview || selfHosted) return;
@@ -220,6 +219,7 @@ export default function Workspace({
     );
   }
   const locked = preview || selfHosted;
+  const hasWorkspaceSwitch = !locked && spaces.length > 0;
   return (
     <div className="workspace-shell">
       <aside className="workspace-sidebar">{sidebar()}</aside>
@@ -240,44 +240,32 @@ export default function Workspace({
         {sidebar()}
       </dialog>
       <div className="workspace-content">
-        <div className="workspace-topbar">
-          <div className="flex items-center gap-3 min-w-0">
-            <Button
-              size="icon"
-              variant="ghost"
-              className="mobile-menu-trigger"
-              onClick={() => mobileNav.current.showModal()}
-              aria-label="Open workspace menu"
+        <div
+          className={`workspace-controls ${hasWorkspaceSwitch ? "has-workspace-switch" : ""}`}
+        >
+          <Button
+            size="icon"
+            variant="ghost"
+            className="mobile-menu-trigger"
+            onClick={() => mobileNav.current.showModal()}
+            aria-label="Open workspace menu"
+          >
+            <Menu size={20} />
+          </Button>
+          {hasWorkspaceSwitch && (
+            <select
+              className="workspace-switch"
+              aria-label="Active workspace"
+              value={active?.id || ""}
+              onChange={(event) => setSelected(event.target.value)}
             >
-              <Menu size={20} />
-            </Button>
-            <span className="section-label">
-              {navigation.find((item) => item[0] === page)?.[2]}
-            </span>
-          </div>
-          <div className="flex items-center gap-3">
-            {!locked && spaces.length > 0 && (
-              <select
-                className="workspace-switch"
-                aria-label="Active workspace"
-                value={active?.id || ""}
-                onChange={(event) => setSelected(event.target.value)}
-              >
-                {spaces.map((space) => (
-                  <option key={space.id} value={space.id}>
-                    {space.name}
-                  </option>
-                ))}
-              </select>
-            )}
-            <span className="status-tag">
-              {selfHosted
-                ? "Local environment"
-                : preview
-                  ? "Preview"
-                  : "Signed in"}
-            </span>
-          </div>
+              {spaces.map((space) => (
+                <option key={space.id} value={space.id}>
+                  {space.name}
+                </option>
+              ))}
+            </select>
+          )}
         </div>
         <main className="workspace-main" id="main-content" tabIndex={-1}>
           {!selfHosted && (

@@ -1,4 +1,4 @@
-"""Browser smoke for Oryveta's hosted auth gate and engineering workspace.
+"""Browser smoke for Oryveta's preserved legacy local UI.
 
 Tests guest sign-in, explicit preview access, mobile navigation and an
 authenticated workspace lifecycle with a deterministic mocked Auth adapter.
@@ -6,7 +6,6 @@ No real OAuth secrets or external identity calls run in CI.
 """
 from __future__ import annotations
 
-import json
 import threading
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
@@ -14,8 +13,6 @@ from pathlib import Path
 from playwright.sync_api import sync_playwright
 
 ROOT = Path(__file__).resolve().parents[1] / "apps" / "web"
-CONFIG = json.loads((ROOT / "vercel.json").read_text(encoding="utf-8"))
-REWRITES = {item["source"]: item["destination"] for item in CONFIG["rewrites"]}
 
 
 class StaticHandler(SimpleHTTPRequestHandler):
@@ -32,7 +29,10 @@ class StaticHandler(SimpleHTTPRequestHandler):
         super().do_GET()
 
     def translate_path(self, path):
-        return super().translate_path(REWRITES.get(path, path))
+        # Match FastAPI's local /static mount, not the separate hosted React build.
+        if path.startswith("/static/"):
+            path = path[len("/static"):]
+        return super().translate_path(path)
 
 
 FAKE_AUTH = """
@@ -59,8 +59,6 @@ FAKE_AUTH = """
 
 
 def run() -> None:
-    for name in ("app.js", "styles.css", "cloud-auth.js", "cloud-config.js"):
-        assert REWRITES["/static/" + name] == "/" + name
     server = ThreadingHTTPServer(("127.0.0.1", 0), StaticHandler)
     thread = threading.Thread(target=server.serve_forever, daemon=True)
     thread.start()
@@ -77,6 +75,10 @@ def run() -> None:
                 page.on("pageerror", lambda err: errors.append(str(err)))
                 response = page.goto(url, wait_until="networkidle", timeout=30000)
                 assert response is not None and response.status == 200
+                for name in ("app.js", "styles.css", "cloud-auth.js", "cloud-config.js", "experience.js"):
+                    asset = page.request.get(f"http://127.0.0.1:{server.server_port}/static/{name}")
+                    assert asset.status == 200
+                    assert asset.body() == (ROOT / name).read_bytes()
                 assert page.locator("#login").is_visible()
                 assert not page.locator("#app").is_visible()
                 assert page.locator("#github-login").is_hidden()
