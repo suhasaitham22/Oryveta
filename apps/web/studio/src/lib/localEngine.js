@@ -1,20 +1,29 @@
-import {useCallback, useEffect, useState} from "react";
+import { useCallback, useEffect, useState } from "react";
 
 // Local cookies and CSRF stay on this origin. Supabase tokens never enter this client.
-export async function engineRequest(path, {csrf, body, headers = {}, ...options} = {}) {
+export async function engineRequest(
+  path,
+  { csrf, body, headers = {}, ...options } = {},
+) {
   const response = await fetch(path, {
     ...options,
     credentials: "same-origin",
-    headers: {...(csrf ? {"X-Oryveta-CSRF": csrf} : {}), ...headers},
+    headers: { ...(csrf ? { "X-Oryveta-CSRF": csrf } : {}), ...headers },
     body,
   });
   if (response.status === 204) return null;
   if (!response.headers.get("content-type")?.includes("application/json")) {
-    throw new Error("No same-origin Oryveta engine is available. The hosted studio cannot run local jobs.");
+    throw new Error(
+      "No same-origin Oryveta engine is available. The hosted studio cannot run local jobs.",
+    );
   }
   const data = await response.json();
   if (!response.ok) {
-    const error = new Error(typeof data.detail === "string" ? data.detail : `Engine request failed (${response.status}).`);
+    const error = new Error(
+      typeof data.detail === "string"
+        ? data.detail
+        : `Engine request failed (${response.status}).`,
+    );
     error.status = response.status;
     throw error;
   }
@@ -22,19 +31,49 @@ export async function engineRequest(path, {csrf, body, headers = {}, ...options}
 }
 
 export function useLocalEngine(enabled) {
-  const [connection, setConnection] = useState({status: enabled ? "checking" : "unavailable", config: null, user: null, error: ""});
+  const [connection, setConnection] = useState({
+    status: enabled ? "checking" : "unavailable",
+    config: null,
+    user: null,
+    error: "",
+    ownerRevision: 0,
+  });
   const connect = useCallback(async (signal) => {
     try {
-      const config = await engineRequest("/api/config", {signal});
-      if (config.name !== "Oryveta" || typeof config.local_demo_enabled !== "boolean") {
-        throw new Error("This origin does not expose the Oryveta local engine.");
+      const config = await engineRequest("/api/config", { signal });
+      if (
+        config.name !== "Oryveta" ||
+        typeof config.local_demo_enabled !== "boolean"
+      ) {
+        throw new Error(
+          "This origin does not expose the Oryveta local engine.",
+        );
       }
       let user = null;
-      try { user = await engineRequest("/api/me", {signal}); }
-      catch (error) { if (error.status !== 401) throw error; }
-      setConnection({status: user ? "ready" : "signed-out", config, user, error: ""});
+      try {
+        user = await engineRequest("/api/me", { signal });
+      } catch (error) {
+        if (error.status !== 401) throw error;
+      }
+      if (!signal?.aborted)
+        setConnection((previous) => ({
+          status: user ? "ready" : "signed-out",
+          config,
+          user,
+          error: "",
+          ownerRevision:
+            previous.ownerRevision +
+            (previous.user && previous.user.id !== user?.id ? 1 : 0),
+        }));
     } catch (error) {
-      if (error.name !== "AbortError") setConnection({status: "unavailable", config: null, user: null, error: error.message});
+      if (error.name !== "AbortError")
+        setConnection((previous) => ({
+          status: "unavailable",
+          config: null,
+          user: null,
+          error: error.message,
+          ownerRevision: previous.ownerRevision + (previous.user ? 1 : 0),
+        }));
     }
   }, []);
   useEffect(() => {
@@ -44,15 +83,28 @@ export function useLocalEngine(enabled) {
     return () => controller.abort();
   }, [enabled, connect]);
   async function signIn() {
-    await engineRequest("/auth/local-demo", {method: "POST"});
+    await engineRequest("/auth/local-demo", { method: "POST" });
     await connect();
   }
   async function signOut() {
-    await engineRequest("/auth/logout", {method: "POST", csrf: connection.user?.csrf_token});
-    setConnection(value => ({...value, status: "signed-out", user: null}));
+    await engineRequest("/auth/logout", {
+      method: "POST",
+      csrf: connection.user?.csrf_token,
+    });
+    setConnection((value) => ({
+      ...value,
+      status: "signed-out",
+      user: null,
+      ownerRevision: value.ownerRevision + 1,
+    }));
   }
-  const request = useCallback((path, options = {}) => engineRequest(path, {
-    ...options, csrf: connection.user?.csrf_token,
-  }), [connection.user?.csrf_token]);
-  return {...connection, request, signIn, signOut};
+  const request = useCallback(
+    (path, options = {}) =>
+      engineRequest(path, {
+        ...options,
+        csrf: connection.user?.csrf_token,
+      }),
+    [connection.user?.csrf_token],
+  );
+  return { ...connection, request, signIn, signOut };
 }

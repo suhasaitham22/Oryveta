@@ -6,19 +6,26 @@ import {Card} from "@/components/ui/card";
 import {Input} from "@/components/ui/input";
 import {Textarea} from "@/components/ui/textarea";
 import * as chatsApi from "@/lib/privateChats.js";
+import {useWorkspaceState} from "@/lib/WorkspaceState.jsx";
 
 /* This UI never treats a workspace membership as consent to read a conversation. */
 export default function PrivateChats({user,preview,workspaceId,onExit}){
  const [conversations,setConversations]=useState([]);
  const [invitations,setInvitations]=useState([]);
  const [alias,setAlias]=useState("");
- const [selected,setSelected]=useState(null);
+ const {chatDraft,setChatDraft}=useWorkspaceState();
+ const selected=chatDraft.selected;
+ const setSelected=value=>setChatDraft(current=>({...current,selected:typeof value==="function"?value(current.selected):value}));
  const [messages,setMessages]=useState([]);
  const [shares,setShares]=useState([]);
- const [title,setTitle]=useState("");
- const [message,setMessage]=useState("");
- const [recipient,setRecipient]=useState("");
- const [permission,setPermission]=useState("viewer");
+ const title=chatDraft.title;
+ const setTitle=title=>setChatDraft(current=>({...current,title}));
+ const message=chatDraft.messages[selected]||"";
+ const recipient=chatDraft.recipients[selected]||"";
+ const permission=chatDraft.permissions[selected]||"viewer";
+ const setMessage=message=>setChatDraft(current=>({...current,messages:{...current.messages,[selected]:message}}));
+ const setRecipient=recipient=>setChatDraft(current=>({...current,recipients:{...current.recipients,[selected]:recipient}}));
+ const setPermission=permission=>setChatDraft(current=>({...current,permissions:{...current.permissions,[selected]:permission}}));
  const [busy,setBusy]=useState(false);
  const [loading,setLoading]=useState(false);
  const [error,setError]=useState("");

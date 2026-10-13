@@ -2,9 +2,9 @@
 
 ## Original visual composition and public references
 
-The current landing artwork, responsive composition and scroll transforms are original Oryveta work. The primary inspiration is the public [Galileo preview](https://galileo.shadcn.io): bright sculptural materiality, centered sans-serif hierarchy, yellow action and large product imagery. Supporting public references are [Reframe](https://reframe.shadcn.io) (editorial/product-art scale), [Lightbox](https://lightbox.shadcn.io) (contrast/process hierarchy), [Solaris](https://solaris.shadcn.io) (technical product framing), and the [catalogue](https://www.shadcn.io/template)/[Prodexa](https://prodexa.shadcn.io) (marketing-to-workspace continuity). All were viewed as public previews on 2026-10-12.
+The current page composition and dimensional product scene are original Oryveta work. The primary inspiration is the public [Galileo preview](https://galileo.shadcn.io): bright sculptural materiality, centered sans-serif hierarchy, yellow action and large product imagery. Supporting public references are [Reframe](https://reframe.shadcn.io) (editorial/product-art scale), [Lightbox](https://lightbox.shadcn.io) (contrast/process hierarchy), [Solaris](https://solaris.shadcn.io) (technical product framing), and the [catalogue](https://www.shadcn.io/template)/[Prodexa](https://prodexa.shadcn.io) (marketing-to-workspace continuity). All were viewed as public previews on 2026-10-12.
 
-No source, images, sphere/ribbon geometry, brand marks, marketing copy, customer claims or paid assets from these templates are included. Their licenses were not assumed from catalogue metadata. Preview Download/Get PRO bars are not reproduced. Reference observation does not establish or copy their motion implementations.
+No source, images, sphere/ribbon geometry, brand marks, marketing copy, customer claims or paid assets from these templates are included. Supplied Galileo HTML shows its hero using a looping muted video, translated header/word reveals and staggered sticky compositions. Those observations informed choreography, not implementation reuse: Oryveta uses its own live Three.js geometry, native scroll, semantic links and accessible visual alternatives. No video, minified Next hydration code, Lenis, expired countdown, payment claims or template assets were copied.
 
 ## Historical ShadcnStore adaptation
 
@@ -12,11 +12,11 @@ The preceding landing implementation adapted the MIT-licensed **Vite version** o
 
 Honest source-to-current mapping:
 
-- `vite-version/src/app/landing/components/hero-section.tsx`: the earlier centered badge/paired-action/bordered-product-frame adaptation has been replaced by the original product composition in `Landing.jsx` / `HeroSection`.
-- `vite-version/src/app/landing/components/features-section.tsx`: earlier alternating feature-grid adaptation is replaced by the original open use-case spread in `FeaturesSection`.
-- `vite-version/src/app/landing/components/navbar.tsx`: the earlier responsive navigation adaptation is retained conceptually as native links and a keyboard-operable mobile disclosure, restyled with the current tokens. No upstream mega-menu, theme switcher or backend is imported.
+- `vite-version/src/app/landing/components/hero-section.tsx`: the earlier centered badge/paired-action/bordered-product-frame adaptation has been replaced by `PublicPages.jsx`, `ProductScene.jsx` and original `ThreeScene.jsx` geometry.
+- `vite-version/src/app/landing/components/features-section.tsx`: the earlier feature-grid adaptation has been replaced by distinct About and What We Do route content.
+- `vite-version/src/app/landing/components/navbar.tsx`: the earlier responsive-navigation concept is now a compact shared React Router header with native links and keyboard-operable disclosure. No upstream mega-menu, theme switcher or backend is imported.
 
-The full upstream notice also ships in `public/template-license.txt`, linked from the landing footer. No unused template application is vendored. React, Vite, Tailwind, Radix/shadcn primitives and Lucide remain the existing framework/component stack.
+The full upstream notice ships in `public/template-license.txt`, linked from the site footer. No unused template application is vendored. React, Vite, Tailwind, Radix/shadcn primitives and Lucide remain the existing framework/component stack.
 
 ### Upstream license (verbatim)
 
@@ -48,7 +48,7 @@ SOFTWARE.
 
 ## Motion
 
-`motion` **14.1.0** is pinned with the npm dependency lock. Registry metadata and the installed package's `LICENSE.md` identify it as MIT. Source: [motiondivision/motion](https://github.com/motiondivision/motion), documentation: [motion.dev](https://motion.dev). Used only for scroll-linked transforms, brief spring entrances, contextual scene transitions and actual run-panel layout. A shared live reduced-motion preference hook supplements the library's mount-time preference snapshot. No WebGL, shader or second animation library is added.
+`motion` **14.1.0** is pinned with the npm dependency lock. Registry metadata and the installed package's `LICENSE.md` identify it as MIT. Source: [motiondivision/motion](https://github.com/motiondivision/motion), documentation: [motion.dev](https://motion.dev). It remains the sole DOM animation runtime: translated page entrances and actual run-panel layout. Text retains full contrast before entrance. A shared live reduced-motion subscription supplements the library's mount-time preference snapshot.
 
 ```text
 The MIT License (MIT)
@@ -73,6 +73,13 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 ```
+
+## Three.js and React Router
+
+`three` **0.180.0**, MIT ([source](https://github.com/mrdoob/three.js)), renders original box-based artifact panels, rails and a plinth with simple lights and shadows. No third-party models, textures, shaders or 3D framework are vendored. It is imported only through the lazy Home scene; frames are scheduled on demand and stop offscreen/hidden. Cleanup disposes geometry, materials, renderer and WebGL context.
+
+`react-router-dom` / `react-router` **7.9.4**, MIT ([source](https://github.com/remix-run/react-router)), supply browser-owned route/query history and basename handling. Their complete MIT notices and the Three.js notice are included in `public/template-license.txt` alongside the historical template and Motion notices. Installed package license files were the attribution source.
+
 
 
 ## Existing components

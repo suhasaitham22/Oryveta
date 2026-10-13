@@ -24,6 +24,8 @@ Record pinned seeds/data versions, model versions, hardware, cost and time. No f
 
 Keep **Start New** and **Evolve** as primary journeys and **Arena** internal. Follow the current [design system](DESIGN-SYSTEM.md): bright product-centered composition, restrained motion and a calm workspace, not the superseded Soft Modern styling. Keep labels truthful, native scroll, keyboard navigation, visible focus and no mobile overflow. UI changes need desktop/mobile captures plus actual scroll/hover/press behavior, all keyboard chapter selections and live reduced-motion preference changes. Confirm active receipts stay readable; preserve contextual exports and real local lifecycle/stale/canceled behavior. Reference public previews without copying paid source, assets, branding or fabricated customer claims.
 
+For React Studio changes, run `npm --prefix apps/web/studio run check`, `npm --prefix apps/web/studio run build`, and `npm --prefix apps/web/studio run build:local`. Verify hosted root and self-hosted `/studio/` direct reloads, browser Back/Forward, breadcrumb targets, and missing-asset behavior with the compiled bundles; extensionless route fallback must never mask dotted assets or API-like paths.
+
 ## Licensing
 
 See ../LICENSE and ../NOTICE. Contributions should include license attribution where appropriate; third-party model weights and datasets have their own independent terms.

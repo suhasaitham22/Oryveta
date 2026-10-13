@@ -4,7 +4,7 @@
 
 ### [Open Oryveta — https://oryveta.vercel.app](https://oryveta.vercel.app)
 
-**Deployment:** [Vercel production](https://oryveta.vercel.app) serves the React Studio build from `apps/web/studio`. Start New/Evolve hosted flows produce planning/storyboard drafts only; Supabase provider setup and real RLS/mailbox verification remain required for hosted account claims. The self-hosted FastAPI origin retains legacy `/` and serves the built React workspace at `/studio/` when a production dist exists; this local API/worker is not deployed to Vercel.
+**Deployment:** [Vercel production](https://oryveta.vercel.app) serves the hosted React Studio build from `apps/web/studio/dist`; extensionless browser routes fall back to the app shell while dotted asset paths remain real 404s. Start New/Evolve hosted flows produce planning/storyboard drafts only; Supabase provider setup and real RLS/mailbox verification remain required for hosted account claims. The self-hosted FastAPI origin retains legacy `/` and serves the local React workspace at `/studio/` from `apps/web/studio/dist-local` when a local build exists; this local API/worker is not deployed to Vercel.
 
 > **Documentation:** [Complete product and technical decisions](docs/INDEX.md) · [Architecture](docs/ARCHITECTURE.md) · [UI design](docs/DESIGN-SYSTEM.md) · [Roadmap](docs/ROADMAP.md) · [Verified status](docs/STATUS.md) · [Quality gates](docs/QUALITY.md)
 
@@ -51,7 +51,9 @@ For the React Studio, Vite 7 requires Node **20.19+ or 22.12+** (CI uses Node 22
 
 ```bash
 npm --prefix apps/web/studio install
-npm --prefix apps/web/studio run build
+npm --prefix apps/web/studio run check
+npm --prefix apps/web/studio run build       # hosted dist/
+npm --prefix apps/web/studio run build:local # self-hosted dist-local/
 ```
 
 Open `http://127.0.0.1:8000/studio/`, choose **Start New** or **Evolve**, open **Local run**, then choose **Sign in to local demo**. The browser and API must share the same origin/base URL; local demo sign-in is loopback-only and not permitted on public Vercel. `npm --prefix apps/web/studio run check` validates story/evidence contracts. Use `docker compose up --build` only with configured GitHub OAuth for non-demo sign-in. See [CI and quality gates](docs/QUALITY.md).
