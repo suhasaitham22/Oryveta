@@ -1,28 +1,28 @@
 [
   {
     "id": "guided-workflow",
-    "title": "A workspace with perspective",
-    "description": "Dimensional product scene → real page navigation → retained journey context",
-    "version": 2,
+    "title": "The work, in focus",
+    "description": "Readable product artifacts → deliberate perspective → retained working context",
+    "version": 3,
     "state": "storyboard",
     "scenes": [
       {
         "eyebrow": "01 / CHOOSE YOUR START",
-        "headline": "An idea or a codebase. Both are a beginning.",
-        "body": "Choose Start New or Evolve from Home. The original dimensional brief, source and story scene introduces the kind of context each journey keeps.",
-        "receipt": "Artwork is illustrative, not a running agent, customer result or completed application."
+        "headline": "Plan the product. Review the code.",
+        "body": "Choose Start New or Evolve beside the original dimensional product documents. The brief shows a customer task, acceptance criteria and a constraint; the source review and storyboard carry their own boundaries.",
+        "receipt": "Original canvas-textured example artwork, not a live run, customer result or completed application."
       },
       {
         "eyebrow": "02 / CHANGE YOUR PERSPECTIVE",
-        "headline": "Move through the product, not a stack of disconnected screens.",
-        "body": "Use the three scene viewpoint controls, then visit About or What We Do. Native Back and Forward, linked breadcrumbs and the Home logo keep navigation predictable. Reduced motion and unavailable WebGL show a labelled visual alternative.",
-        "receipt": "The 3D scene uses original geometry. It illustrates intent, source and story; it never reports completed engineering work."
+        "headline": "Bring the artifact you need into focus.",
+        "body": "Select The brief, The evidence or The handoff to bring that document forward. Native page links, Back, Forward and breadcrumbs stay predictable. Reduced motion and unavailable WebGL provide the same document content without a canvas.",
+        "receipt": "Finite scene movement illustrates document selection, not agent progress. Only real engine records drive local task states."
       },
       {
         "eyebrow": "03 / WORK IN YOUR CONTEXT",
-        "headline": "Keep the actual work separate from the illustration.",
-        "body": "Open a journey, edit its brief and contextual storyboard, and visit another page. Return to the same in-memory context. Brief, Local run and Demo Studio use real query-string URLs; real local task details still come from persisted events.",
-        "receipt": "Hosted exports remain unverified drafts. Local source analysis neither executes imported code nor proves application correctness."
+        "headline": "Return to the work, not another setup screen.",
+        "body": "Edit a journey and return to Overview to continue its open brief or selected local snapshot. Inside Local run, inspect the selected project and recorded result first; create or import another snapshot from the secondary disclosure.",
+        "receipt": "Open context is in memory, not saved across reloads. Hosted exports remain unverified drafts; source analysis does not execute imported code."
       }
     ]
   },
@@ -83,8 +83,8 @@
   {
     "id": "local-runs",
     "title": "Recorded local work",
-    "description": "Explicit local sign-in → real worker lifecycle → compact outcome",
-    "version": 1,
+    "description": "Selected project → real worker lifecycle → reviewable result",
+    "version": 2,
     "state": "storyboard",
     "scenes": [
       {
@@ -100,9 +100,9 @@
         "receipt": "No invented subtools, percentages, ETA or private reasoning. Cancel fences result delivery; computation may continue until worker return."
       },
       {
-        "eyebrow": "03 / KEEP THE OUTCOME COMPACT",
-        "headline": "One elapsed label. An honest result.",
-        "body": "On success, read a compact completion state and expand its timeline if needed. Failures and cancellations stay explicit; a lost connection preserves the last known state without claiming success.",
+        "eyebrow": "03 / REVIEW IN CONTEXT",
+        "headline": "Keep the current result in focus.",
+        "body": "Review the selected project's recorded run and latest findings in the main work area. Choose an older run from Project controls, download the source ZIP, or open the secondary disclosure to create or import another snapshot.",
         "receipt": "The latest project findings are labeled separately from older selected runs. Source analysis does not verify application behavior."
       }
     ]

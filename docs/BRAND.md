@@ -4,7 +4,7 @@
 
 **Oryveta** (previous working name: MASGENT). Brand statement: **Build thoughtfully. Evolve continuously.** Short UI tagline: **Build. Experiment. Prove.**
 
-Two primary entry points: **Start New** and **Evolve**. Minimalist **Soft Modern** design. Avoid names that imply Kaggle-only functionality.
+Two primary entry points: **Start New** and **Evolve**. The current visual direction is bright, product-focused and Galileo-led; see [DESIGN-SYSTEM.md](DESIGN-SYSTEM.md). Avoid names that imply Kaggle-only functionality.
 
 ## Domain
 
@@ -18,4 +18,4 @@ Copyright © 2026 Suhas Aitham and Oryveta contributors. Original source license
 
 ## Brand expression
 
-Warm off-white, calm surfaces, restrained blue accent, purposeful smooth motion, minimal visual noise; avoid excessive glass effects and inflated AI claims.
+Warm off-white, yellow primary actions, readable technical surfaces and purposeful finite motion. Original dimensional brief/source/story documents explain the product; working screens prioritize the current project, recorded task and result. Preserve accessible static alternatives and avoid excessive glass effects, decorative dashboards and inflated AI claims.

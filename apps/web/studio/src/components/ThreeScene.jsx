@@ -1,7 +1,81 @@
 import React, { useEffect, useRef } from "react";
 import * as THREE from "three";
+import { productArtifacts } from "./productArtifacts";
 
-// All geometry is original. No model files, image textures or animation framework.
+// Original UI artwork is drawn once, not on animation frames. The same document
+// content is available in ProductScene's semantic, non-WebGL presentation.
+function artifactTexture(artifact, index) {
+  const canvas = document.createElement("canvas");
+  canvas.width = 1200;
+  canvas.height = 840;
+  const ctx = canvas.getContext("2d");
+  const dark = index === 1;
+  const ink = dark ? "#f4f6ef" : "#232521";
+  const muted = dark ? "#b7c1ac" : "#626959";
+  const border = dark ? "#414a3b" : "#e0e4d9";
+  function text(value, x, y, size = 24, color = ink, weight = 400) {
+    ctx.fillStyle = color;
+    ctx.font = `${weight} ${size}px ${index === 1 ? "monospace" : "Arial, sans-serif"}`;
+    ctx.fillText(value, x, y);
+  }
+  function rule(y) {
+    ctx.fillStyle = border;
+    ctx.fillRect(0, y, 1200, 2);
+  }
+  ctx.fillStyle = dark ? "#242c24" : "#fdfefb";
+  ctx.fillRect(0, 0, 1200, 840);
+  ctx.fillStyle = dark ? "#30392d" : "#f0f2e9";
+  ctx.fillRect(0, 0, 1200, 84);
+  ["#87917d", "#aab29f", "#f5d84c"].forEach((color, i) => {
+    ctx.fillStyle = color;
+    ctx.beginPath();
+    ctx.arc(43 + i * 27, 42, 7, 0, Math.PI * 2);
+    ctx.fill();
+  });
+  text(artifact.file, 162, 50, 23, muted);
+  rule(84);
+  text(artifact.label.toUpperCase(), 62, 155, 22, muted, 600);
+  text(artifact.heading, 62, 226, index === 1 ? 47 : 56, ink, 600);
+  ctx.fillStyle = dark ? "#f5d84c" : "#f4e59b";
+  ctx.beginPath();
+  ctx.roundRect(62, 263, 365, 47, 10);
+  ctx.fill();
+  text(artifact.tag, 80, 295, 22, "#393a27", 600);
+  artifact.rows.forEach(([label, value], row) => {
+    const y = 368 + row * 119;
+    ctx.fillStyle = dark ? "#30392d" : "#f3f5ee";
+    ctx.beginPath();
+    ctx.roundRect(62, y - 23, 1076, 100, 10);
+    ctx.fill();
+    ctx.fillStyle = row === 0 ? "#e7cc48" : border;
+    ctx.fillRect(62, y - 9, 4, 69);
+    text(label, 90, y + 7, 23, muted, 600);
+    text(value, 90, y + 47, 25, ink);
+  });
+  rule(751);
+  text(artifact.footer, 62, 801, 22, muted);
+  text("ORYVETA", 985, 801, 20, muted, 600);
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.colorSpace = THREE.SRGBColorSpace;
+  return texture;
+}
+
+function roundedPanel(width, height, radius) {
+  const shape = new THREE.Shape();
+  const left = -width / 2;
+  const bottom = -height / 2;
+  shape.moveTo(left + radius, bottom);
+  shape.lineTo(left + width - radius, bottom);
+  shape.quadraticCurveTo(left + width, bottom, left + width, bottom + radius);
+  shape.lineTo(left + width, bottom + height - radius);
+  shape.quadraticCurveTo(left + width, bottom + height, left + width - radius, bottom + height);
+  shape.lineTo(left + radius, bottom + height);
+  shape.quadraticCurveTo(left, bottom + height, left, bottom + height - radius);
+  shape.lineTo(left, bottom + radius);
+  shape.quadraticCurveTo(left, bottom, left + radius, bottom);
+  return shape;
+}
+
 export default function ThreeScene({ selected, onUnavailable }) {
   const host = useRef(null);
   const controller = useRef(null);
@@ -9,132 +83,96 @@ export default function ThreeScene({ selected, onUnavailable }) {
     const element = host.current;
     let renderer;
     try {
-      renderer = new THREE.WebGLRenderer({
-        alpha: true,
-        antialias: true,
-        powerPreference: "low-power",
-      });
+      renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true, powerPreference: "low-power" });
     } catch {
       onUnavailable();
       return;
     }
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
-    renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    renderer.toneMappingExposure = 0.85;
     renderer.shadowMap.enabled = true;
-    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-    renderer.setClearColor(0xf0f1e9, 0);
+    renderer.shadowMap.type = THREE.PCFShadowMap;
     renderer.domElement.setAttribute("aria-hidden", "true");
     element.appendChild(renderer.domElement);
     const scene = new THREE.Scene();
-    const camera = new THREE.PerspectiveCamera(34, 1, 0.1, 60);
-    camera.position.set(0, 5.2, 10.8);
-    camera.lookAt(0, 0.65, 0);
-    scene.add(new THREE.HemisphereLight(0xffffff, 0x8e977f, 3));
-    const light = new THREE.DirectionalLight(0xfffcdf, 5);
-    light.position.set(-4, 8, 6);
+    const camera = new THREE.PerspectiveCamera(34, 1, 0.1, 40);
+    scene.add(new THREE.HemisphereLight(0xffffff, 0x8e9885, 2.5));
+    const light = new THREE.DirectionalLight(0xffffff, 3.5);
+    light.position.set(-3, 7, 6);
     light.castShadow = true;
     light.shadow.mapSize.set(1024, 1024);
-    light.shadow.camera.left = -8;
-    light.shadow.camera.right = 8;
-    light.shadow.camera.top = 8;
-    light.shadow.camera.bottom = -8;
-    light.shadow.normalBias = 0.035;
+    Object.assign(light.shadow.camera, { left: -6, right: 6, top: 6, bottom: -6 });
+    light.shadow.normalBias = 0.025;
+    light.shadow.bias = -0.0002;
+    light.shadow.radius = 4;
     scene.add(light);
+    const rim = new THREE.DirectionalLight(0xffe6a0, 2);
+    rim.position.set(5, 2, -3);
+    scene.add(rim);
     const root = new THREE.Group();
     scene.add(root);
     const geometries = new Set();
     const materials = new Set();
-    const material = (color) => {
-      const value = new THREE.MeshStandardMaterial({
-        color,
-        roughness: 0.52,
-        metalness: 0.08,
-      });
-      materials.add(value);
-      return value;
-    };
-    const white = material(0xfafbf6),
-      yellow = material(0xf5d84c),
-      dark = material(0x30392e);
-    const line = material(0xaeb7a3),
-      muted = material(0xe0e5d7);
-    function box(parent, w, h, d, x, y, z, surface) {
-      const geometry = new THREE.BoxGeometry(w, h, d);
-      geometries.add(geometry);
-      const mesh = new THREE.Mesh(geometry, surface);
-      mesh.position.set(x, y, z);
-      mesh.castShadow = true;
-      mesh.receiveShadow = true;
-      parent.add(mesh);
-      return mesh;
-    }
-    // Low plinth and offset rails make depth, occlusion and cast shadows legible.
-    box(root, 8.4, 0.26, 4.2, 0, -0.75, 0, white);
-    box(root, 8.1, 0.12, 3.9, 0.12, -0.97, -0.12, muted);
-    for (let i = 0; i < 3; i++)
-      box(root, 0.06, 0.06, 3.3, (i - 1) * 2.5, -0.58, 0, line);
-    const panels = [];
-    const surfaces = [yellow, dark, white];
-    const positions = [
-      [0, 0.6, 0.55],
-      [-2.7, 0.2, -0.45],
-      [2.7, 0.25, -0.6],
-    ];
-    for (let i = 0; i < 3; i++) {
+    const textures = new Set();
+    const width = 5.4;
+    const height = 3.78;
+    const shape = roundedPanel(width, height, 0.12);
+    const shellGeometry = new THREE.ExtrudeGeometry(shape, {
+      depth: 0.055, bevelEnabled: true, bevelSegments: 3,
+      steps: 1, bevelSize: 0.025, bevelThickness: 0.025, curveSegments: 8,
+    });
+    geometries.add(shellGeometry);
+    const faceGeometry = new THREE.ShapeGeometry(shape, 8);
+    const positions = faceGeometry.attributes.position;
+    const uv = faceGeometry.attributes.uv;
+    for (let i = 0; i < positions.count; i++)
+      uv.setXY(i, positions.getX(i) / width + 0.5, positions.getY(i) / height + 0.5);
+    geometries.add(faceGeometry);
+    const panels = productArtifacts.map((artifact, index) => {
       const panel = new THREE.Group();
+      const shellMaterial = new THREE.MeshStandardMaterial({
+        color: index === 1 ? 0x424c40 : 0xbcc3b3, roughness: 0.32, metalness: 0.55,
+      });
+      materials.add(shellMaterial);
+      const shell = new THREE.Mesh(shellGeometry, shellMaterial);
+      shell.castShadow = true;
+      shell.receiveShadow = true;
+      panel.add(shell);
+      const texture = artifactTexture(artifact, index);
+      texture.anisotropy = Math.min(4, renderer.capabilities.getMaxAnisotropy());
+      textures.add(texture);
+      // Unlit printed faces keep the actual text crisp; beveled metal edges carry the light.
+      const faceMaterial = new THREE.MeshBasicMaterial({ map: texture });
+      materials.add(faceMaterial);
+      const face = new THREE.Mesh(faceGeometry, faceMaterial);
+      face.position.z = 0.083;
+      panel.add(face);
+      panel.position.set((index - 1) * 2.5, -0.5, -2);
       root.add(panel);
-      panel.position.set(...positions[i]);
-      panel.rotation.set(-0.15, i === 1 ? 0.18 : i === 2 ? -0.2 : 0, 0);
-      box(panel, 2.28, 2.8, 0.18, 0, 0.45, 0, surfaces[i]);
-      box(panel, 2.08, 0.07, 0.1, 0, 1.62, 0.14, i === 1 ? yellow : dark);
-      const ink = i === 1 ? muted : dark;
-      box(panel, 0.3, 0.3, 0.12, -0.77, 1.23, 0.15, i === 0 ? white : yellow);
-      box(panel, 0.95, 0.12, 0.09, 0.1, 1.28, 0.15, ink);
-      box(panel, 1.75, 0.07, 0.08, 0, 0.84, 0.15, ink);
-      if (i === 2) {
-        for (let j = 0; j < 3; j++) {
-          box(
-            panel,
-            0.45,
-            0.55,
-            0.12,
-            (j - 1) * 0.6,
-            0.24,
-            0.16,
-            j === 1 ? yellow : muted,
-          );
-          box(panel, 0.34, 0.05, 0.08, (j - 1) * 0.6, -0.16, 0.16, line);
-        }
-      } else {
-        for (let j = 0; j < 4; j++)
-          box(
-            panel,
-            1.65 - (j % 3) * 0.28,
-            0.08,
-            0.08,
-            -(j % 3) * 0.14,
-            0.46 - j * 0.28,
-            0.16,
-            i === 1 && j === 2 ? yellow : ink,
-          );
-      }
-      box(panel, 1.75, 0.04, 0.08, 0, -0.61, 0.16, line);
-      box(panel, 0.58, 0.12, 0.1, -0.56, -0.77, 0.16, i === 1 ? yellow : line);
-      panels.push(panel);
+      return panel;
+    });
+    const floorGeometry = new THREE.PlaneGeometry(30, 30);
+    geometries.add(floorGeometry);
+    const floorMaterial = new THREE.ShadowMaterial({ opacity: 0.13 });
+    materials.add(floorMaterial);
+    const floor = new THREE.Mesh(floorGeometry, floorMaterial);
+    floor.rotation.x = -Math.PI / 2;
+    floor.position.y = -2.8;
+    floor.receiveShadow = true;
+    scene.add(floor);
+    let frame = 0;
+    let visible = false;
+    let stopped = false;
+    let previousTime = 0;
+    let chapter = 0;
+    let pointerX = 0;
+    let pointerY = 0;
+    let scroll = 0;
+    let ease = 0;
+    let moving = false;
+    function settle(object, property, target) {
+      object[property] += (target - object[property]) * ease;
+      if (Math.abs(target - object[property]) > 0.0004) moving = true;
     }
-    const floor = box(scene, 200, 0.08, 200, 0, -1.2, 0, material(0xf0f1e9));
-    floor.castShadow = false;
-    let frame = 0,
-      visible = false,
-      stopped = false,
-      previousTime = 0;
-    let chapter = 0,
-      pointerX = 0,
-      pointerY = 0,
-      scroll = 0,
-      entrance = 0;
-    root.rotation.y = -0.9;
     function invalidate() {
       if (!frame && visible && !document.hidden && !stopped)
         frame = requestAnimationFrame(render);
@@ -143,38 +181,31 @@ export default function ThreeScene({ selected, onUnavailable }) {
       frame = 0;
       const dt = Math.min((time - previousTime) / 1000 || 0.016, 0.05);
       previousTime = time;
-      const ease = 1 - Math.exp(-dt * 5);
-      entrance += (1 - entrance) * ease;
-      const targetY =
-        (chapter === 1 ? 0.43 : chapter === 2 ? -0.43 : -0.16) +
-        pointerX * 0.12 +
-        scroll * 0.55;
-      root.rotation.y += (targetY - root.rotation.y) * ease;
-      root.rotation.x += (pointerY * 0.045 - root.rotation.x) * ease;
-      let moving =
-        Math.abs(targetY - root.rotation.y) > 0.0005 ||
-        Math.abs(pointerY * 0.045 - root.rotation.x) > 0.0005 ||
-        entrance < 0.999;
-      for (let i = 0; i < panels.length; i++) {
-        const target =
-          positions[i][1] +
-          (i === chapter ? 0.36 : 0) +
-          scroll * (i + 1) * 0.22;
-        panels[i].position.y += (target - panels[i].position.y) * ease;
-        panels[i].position.x = positions[i][0] * (1 + (1 - entrance) * 0.5);
-        panels[i].rotation.z = (1 - entrance) * (i - 1) * 0.45;
-        moving ||= Math.abs(target - panels[i].position.y) > 0.0005;
+      ease = 1 - Math.exp(-dt * 5.5);
+      moving = false;
+      settle(root.rotation, "y", -0.12 + pointerX * 0.07 + scroll * 0.14);
+      settle(root.rotation, "x", -0.04 + pointerY * 0.035);
+      for (let index = 0; index < panels.length; index++) {
+        const panel = panels[index];
+        const slot = (index - chapter + panels.length) % panels.length;
+        const front = slot === 0;
+        const side = slot === 1 ? -1 : 1;
+        settle(panel.position, "x", front ? 0 : side * 0.72);
+        settle(panel.position, "y", front ? -0.26 : 0.45 + slot * 0.12);
+        settle(panel.position, "z", front ? 0.9 : -0.55 - slot * 0.16);
+        settle(panel.rotation, "y", front ? 0.04 : side * 0.13);
+        settle(panel.rotation, "z", front ? -0.025 : side * 0.09);
       }
       renderer.render(scene, camera);
       if (moving) invalidate();
     }
     function resize() {
-      const { width, height } = element.getBoundingClientRect();
-      if (!width || !height) return;
-      renderer.setSize(width, height);
-      camera.aspect = width / height;
-      camera.position.z = camera.aspect < 1.2 ? 17 : 10.8;
-      camera.lookAt(0, 0.65, 0);
+      const { width: viewWidth, height: viewHeight } = element.getBoundingClientRect();
+      if (!viewWidth || !viewHeight) return;
+      renderer.setSize(viewWidth, viewHeight);
+      camera.aspect = viewWidth / viewHeight;
+      camera.position.set(0, 0.55, camera.aspect < 1.15 ? 11.8 : 9.8);
+      camera.lookAt(0, 0.1, 0);
       camera.updateProjectionMatrix();
       invalidate();
     }
@@ -192,10 +223,7 @@ export default function ThreeScene({ selected, onUnavailable }) {
     }
     function onScroll() {
       if (!visible) return;
-      scroll = Math.max(
-        -0.35,
-        Math.min(1, -element.getBoundingClientRect().top / window.innerHeight),
-      );
+      scroll = Math.max(-0.25, Math.min(1, -element.getBoundingClientRect().top / window.innerHeight));
       invalidate();
     }
     function onVisibility() {
@@ -208,19 +236,16 @@ export default function ThreeScene({ selected, onUnavailable }) {
       event.preventDefault();
       onUnavailable();
     }
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        visible = entry.isIntersecting && entry.intersectionRatio >= 0.35;
-        if (visible) {
-          onScroll();
-          invalidate();
-        } else {
-          cancelAnimationFrame(frame);
-          frame = 0;
-        }
-      },
-      { threshold: [0, 0.35] },
-    );
+    const observer = new IntersectionObserver(([entry]) => {
+      visible = entry.isIntersecting && entry.intersectionRatio >= 0.25;
+      if (visible) {
+        onScroll();
+        invalidate();
+      } else {
+        cancelAnimationFrame(frame);
+        frame = 0;
+      }
+    }, { threshold: [0, 0.25] });
     observer.observe(element);
     const sizing = new ResizeObserver(resize);
     sizing.observe(element);
@@ -247,12 +272,14 @@ export default function ThreeScene({ selected, onUnavailable }) {
       document.removeEventListener("visibilitychange", onVisibility);
       geometries.forEach((value) => value.dispose());
       materials.forEach((value) => value.dispose());
+      textures.forEach((value) => value.dispose());
+      light.shadow.dispose();
       renderer.dispose();
       renderer.forceContextLoss();
       renderer.domElement.remove();
     };
   }, [onUnavailable]);
-  // Synchronize a React control with the external renderer; no mirrored UI state.
+  // Only the external renderer is synchronized; artifact selection belongs to React.
   useEffect(() => {
     controller.current?.(selected);
   }, [selected]);
