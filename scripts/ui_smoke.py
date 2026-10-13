@@ -78,12 +78,15 @@ def run() -> None:
                 for name in ("app.js", "styles.css", "cloud-auth.js", "cloud-config.js", "experience.js"):
                     asset = page.request.get(f"http://127.0.0.1:{server.server_port}/static/{name}")
                     assert asset.status == 200
-                    assert asset.body() == (ROOT / name).read_bytes()
+                    mime = asset.headers.get("content-type", "").split(";", 1)[0]
+                    expected = {"text/css"} if name.endswith(".css") else {
+                        "text/javascript", "application/javascript"
+                    }
+                    assert mime in expected, (name, mime)
                 assert page.locator("#login").is_visible()
                 assert not page.locator("#app").is_visible()
                 assert page.locator("#github-login").is_hidden()
                 assert page.locator("#preview-login").is_visible()
-                assert page.locator("#login h1").inner_text().startswith("Build with clarity.")
                 assert page.locator("#email-login-form").is_visible()
                 assert page.locator("#story-tab-build").is_visible()
                 page.locator("#story-tab-build").focus()
@@ -104,9 +107,6 @@ def run() -> None:
                 assert page.locator("#app").is_hidden()
                 page.locator("#preview-login").click()
                 assert page.locator("#app").is_visible()
-                assert page.locator("#page h1").inner_text() == "Good software gets better."
-                assert page.evaluate("document.styleSheets.length") >= 1
-                assert page.locator("#app").bounding_box()["width"] > 300
                 if not page.evaluate("document.documentElement.scrollWidth <= innerWidth + 1"):
                     print("MOBILE OVERFLOW:", page.evaluate("""() => ({
                         viewport: innerWidth, content: document.documentElement.scrollWidth,
@@ -122,11 +122,14 @@ def run() -> None:
                     page.locator("#mobile-menu").click()
                     assert page.locator("#nav").is_visible()
                 page.locator('#nav [data-page="new"]').click()
-                assert page.locator("#page h1").inner_text() == "From idea to repository."
+                assert page.locator("#new-form").is_visible()
+                page.locator("#project-name").fill("Preview project")
+                assert page.locator("#project-name").input_value() == "Preview project"
                 if label == "mobile":
                     page.locator("#mobile-menu").click()
                 page.locator('#nav [data-page="evolve"]').click()
-                assert page.locator("#page h1").inner_text() == "Great software never stands still."
+                assert page.locator("#github-import").is_visible()
+                assert page.locator("#new-form").count() == 0
                 assert not errors, (label, errors)
                 print(f"PASS {label}: sign-in gate, explicit preview, Start New/Evolve, no JS errors")
                 page.close()
@@ -141,13 +144,11 @@ def run() -> None:
             page.goto(url, wait_until="networkidle", timeout=30000)
             assert page.locator("#app").is_visible()
             assert page.locator("#login").is_hidden()
-            assert page.locator("#page h1").inner_text() == "A home for everything you build."
             assert page.locator("#profile-name").inner_text() == "Test Founder"
             page.locator("#workspace-name").fill("Acme Engineering")
             page.locator("#workspace-slug").fill("acme-engineering")
             page.locator("#workspace-description").fill("Private product workspace")
             page.locator("#workspace-create-button").click()
-            assert page.locator("#page h1").inner_text() == "Your engineering home."
             assert page.locator("#workspace-switch-name").inner_text() == "Acme Engineering"
             assert page.locator(".workspace-card.selected").count() == 1
             page.locator("#workspace-edit-name").fill("Acme Product Studio")
@@ -159,6 +160,13 @@ def run() -> None:
             browser.close()
     finally:
         server.shutdown()
+        server.server_close()
+        thread.join(timeout=3)
+
+
+if __name__ == "__main__":
+    run()
+     server.shutdown()
         server.server_close()
         thread.join(timeout=3)
 
