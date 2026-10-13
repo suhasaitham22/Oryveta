@@ -21,3 +21,11 @@ See `docs/DEMO-STUDIO.md`, `docs/EVALUATION.md` and `docs/IDENTITY-WORKSPACES.md
 **Local verification for this milestone:** hosted and genuine self-hosted browser smoke passed desktop/mobile navigation, direct reload, Home Back/draft restoration, query history, contextual exports and cancellation. A separate isolated runtime created/exported a starter, ran the real worker to completion, displayed findings, restored selected project/run after Home/Back, canceled another job and cleared drafts on disconnect. Temporary axe checks found no WCAG A/AA violations on seven changed routes at desktop/mobile sizes. Python: 145 tests passed, 88.24% branch-aware coverage, Ruff/compilation/dependency checks passed. Hosted/local Vite builds pass without the old oversized-chunk advisory. These are local results, not remote CI, deployment, mailbox or two-account auth verification.
 
 **Chat sharing milestone (merged base #23):** Dedicated Supabase has owner-private chat/message storage, verified-email or immutable alias invitations, explicit acceptance and viewer/editor/revocation RLS. Synthetic role-level SQL tests pass; real mailbox delivery, two-user browser authorization and hosted AI responses remain unverified. No email notification delivery is claimed.
+
+
+**Backend Evolve hardening (2026-10-12):** Static analyzer improvements include
+complete bounded file fingerprints, manifest-derived framework inventory,
+AST-based Python security checks (avoid comment/string false positives),
+explicit findings truncation, safer ZIP root retention and rollback cleanup.
+This hardening **does not** add hosted repository imports, GitHub App/private
+repository permissions, sandbox execution, or autonomous verified fixes.
