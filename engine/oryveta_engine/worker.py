@@ -35,12 +35,25 @@ class Worker:
         with self.db.connect() as conn:
             conn.execute("BEGIN IMMEDIATE")
             # An expired final attempt must not remain 'running' indefinitely.
+            expired = conn.execute(
+                """SELECT id,user_id,project_id,kind FROM jobs
+                   WHERE status='running' AND lease_until<? AND attempts>=?""",
+                (now, MAX_ATTEMPTS),
+            ).fetchall()
             conn.execute(
                 """UPDATE jobs SET status='failed',error='WorkerLeaseExpired',
                    lease_until=NULL,lease_token=NULL,updated_at=?
                    WHERE status='running' AND lease_until<? AND attempts>=?""",
                 (now, now, MAX_ATTEMPTS),
             )
+            for failed in expired:
+                conn.execute(
+                    """INSERT INTO events(user_id,job_id,kind,detail,created_at)
+                       VALUES(?,?,'job_failed','Worker lease expired',?)""",
+                    (failed["user_id"], failed["id"], now),
+                )
+                if failed["kind"] == "analyze":
+                    self._mark_failed_import(conn, failed["user_id"], failed["project_id"])
             row = conn.execute(
                 """SELECT * FROM jobs WHERE kind IN ('benchmark','analyze') AND
                    (status='queued' OR (status='running' AND lease_until<?))
@@ -112,15 +125,34 @@ class Worker:
             conn.commit()
         return True
 
+    @staticmethod
+    def _mark_failed_import(conn, user_id: str, project_id: str | None) -> None:
+        if project_id is None:
+            return
+        # Only fail the imported project's pending first analysis. A separate
+        # active analysis job or previous successful project must remain intact.
+        conn.execute(
+            """UPDATE projects SET status='analysis_failed'
+               WHERE id=? AND user_id=? AND status='analyzing'
+               AND NOT EXISTS (
+                 SELECT 1 FROM jobs WHERE project_id=? AND kind='analyze'
+                 AND status IN ('queued','running'))""",
+            (project_id, user_id, project_id),
+        )
+
     def _fail(self, job: dict, error_name: str) -> bool:
         now = time.time()
         with self.db.connect() as conn:
+            conn.execute("BEGIN IMMEDIATE")
             updated = conn.execute(
                 """UPDATE jobs SET status='failed',error=?,lease_until=NULL,
                    lease_token=NULL,updated_at=?
                    WHERE id=? AND status='running' AND lease_token=? AND lease_until>=?""",
                 (error_name, now, job["id"], job["lease_token"], now),
             )
+            if updated.rowcount == 1 and job["kind"] == "analyze":
+                self._mark_failed_import(conn, job["user_id"], job["project_id"])
+            conn.commit()
         return updated.rowcount == 1
 
     def run_once(self) -> bool:
