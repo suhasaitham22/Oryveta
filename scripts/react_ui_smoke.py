@@ -218,6 +218,20 @@ def _check_local(page, api_url, width):
     })
     page.get_by_role("button", name="Import & analyze").click()
     page.get_by_text("Task timeline").wait_for(timeout=20000)
+    page.get_by_text("Import another snapshot", exact=True).click()
+    archive_input = page.get_by_label("Repository ZIP")
+    import_button = page.get_by_role("button", name="Import & analyze", exact=True)
+    assert archive_input.evaluate("(input) => input.files.length") == 0
+    assert import_button.is_disabled(), "A new import must require a fresh file selection"
+    archive_input.set_input_files({
+        "name": "another-snapshot.zip",
+        "mimeType": "application/zip",
+        "buffer": _archive(),
+    })
+    assert import_button.is_enabled()
+    archive_input.set_input_files([])
+    assert import_button.is_disabled()
+    page.get_by_text("Import another snapshot", exact=True).click()
     page.get_by_role("button", name="Cancel analysis").click()
     page.get_by_role("heading", name="Canceled").wait_for(timeout=20000)
     page.get_by_text("recorded events").wait_for()
@@ -270,6 +284,13 @@ def run():
                 scene.get_by_role("button", name="The evidence", exact=True).click()
                 assert scene.get_by_text("02 / Source", exact=True).is_visible()
                 assert scene.locator(".scene-alternative").is_visible()
+                document = scene.get_by_role("article").bounding_box()
+                frame = scene.locator(".scene-viewport").bounding_box()
+                assert document and frame
+                assert document["y"] >= frame["y"]
+                assert document["y"] + document["height"] <= frame["y"] + frame["height"], (
+                    "The static document must remain readable without canvas clipping"
+                )
                 print("PASS reduced-motion React scene controls and static alternative")
             reduced.close()
             browser.close()

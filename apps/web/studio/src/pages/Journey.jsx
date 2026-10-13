@@ -80,18 +80,21 @@ export default function Journey({
     );
   return (
     <div className="journey-workspace">
-      <div className="page-heading">
-        <div className="section-label">
-          {isNew
-            ? "From idea to a clear foundation"
-            : "From existing code to a review queue"}
+      <div className="page-heading journey-heading">
+        <div>
+          <h1>{title}</h1>
+          <p>
+            {isNew
+              ? "Define the product, prepare a local starter, and shape the handoff."
+              : "Set a change goal, inspect source locally, and explain the findings."}
+          </p>
         </div>
-        <h1>{title}</h1>
-        <p>
-          {isNew
-            ? "Describe the product, prepare a starter locally, and explain what comes next."
-            : "Set a change goal, inspect an authorized snapshot locally, and tell the change story."}
-        </p>
+        {draft.name && (
+          <div className="journey-context">
+            <FileText size={17} />
+            <div><strong>{draft.name}</strong><span>Current brief · in this workspace</span></div>
+          </div>
+        )}
       </div>
       <Tabs value={tab} onValueChange={selectTab} activationMode="manual">
         <TabsList className="journey-tab-list" aria-label={`${title} workflow`}>
@@ -171,12 +174,9 @@ export default function Journey({
                 keep a copy; they are not saved to your account.
               </p>
             </form>
-            <aside className="journey-guide">
-              <div className="section-label">Your working agreement</div>
-              <h3>
-                A smaller handoff.
-                <br />A clearer next step.
-              </h3>
+            <aside className="journey-guide" aria-label="Workflow guidance">
+              <div className="section-label">Keep the scope useful</div>
+              <h3>What happens next?</h3>
               <ol>
                 <li>
                   <span>01</span>
@@ -206,6 +206,9 @@ export default function Journey({
                   </div>
                 </li>
               </ol>
+              <Button variant="outline" onClick={() => selectTab("local")}>
+                {isNew ? "Prepare locally" : "Inspect locally"} <ArrowRight size={15} />
+              </Button>
               <div className="boundary-note">
                 <Info size={17} />
                 <p>

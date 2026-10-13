@@ -37,55 +37,48 @@ export function Home() {
   return (
     <main id="main-content" tabIndex={-1} className="public-page home-page">
       <section className="home-intro section-container">
-        <Reveal>
-          <span className="section-label">
-            Software work. Made understandable.
-          </span>
-        </Reveal>
-        <Reveal delay={0.08}>
-          <h1>
-            From a good idea
-            <br />
-            to a clearer next move.
-          </h1>
-        </Reveal>
-        <Reveal delay={0.16}>
-          <p>
-            Bring intent, source evidence and the story together.
-            <br className="desktop-break" /> An open workspace for people
-            building useful software.
-          </p>
-        </Reveal>
-        <Reveal delay={0.24} className="home-actions">
-          <Button asChild size="lg">
-            <Link to="/workspace/new">
-              Start something new <ArrowRight size={17} />
-            </Link>
-          </Button>
-          <Button asChild variant="outline" size="lg">
-            <Link to="/workspace/evolve">
-              Improve what exists <GitBranch size={17} />
-            </Link>
-          </Button>
-        </Reveal>
+        <div className="home-copy">
+          <Reveal>
+            <span className="section-label">An open workspace for software work</span>
+          </Reveal>
+          <Reveal delay={0.08}>
+            <h1>Plan the product.<br />Review the code.</h1>
+          </Reveal>
+          <Reveal delay={0.16}>
+            <p className="home-deck">
+              Write a focused brief. Prepare a starter or inspect an existing
+              codebase. Keep the story beside the work.
+            </p>
+          </Reveal>
+          <Reveal delay={0.24} className="home-actions">
+            <Button asChild size="lg">
+              <Link to="/workspace/new">
+                Start something new <ArrowRight size={17} />
+              </Link>
+            </Button>
+            <Button asChild variant="outline" size="lg">
+              <Link to="/workspace/evolve">
+                Improve what exists <GitBranch size={17} />
+              </Link>
+            </Button>
+          </Reveal>
+          <div className="home-editions">
+            <div><span>In your browser</span><strong>Briefs & storyboards</strong></div>
+            <div><span>On your machine</span><strong>Starters & source analysis</strong></div>
+          </div>
+        </div>
         <ProductScene />
       </section>
       <section className="home-next section-container">
         <Reveal>
-          <span className="section-label">
-            Shared context. Better decisions.
-          </span>
-          <h2>
-            Keep the work
-            <br />
-            and the explanation close.
-          </h2>
+          <span className="section-label">Something you can inspect</span>
+          <h2>A better handoff<br />starts with the artifacts.</h2>
         </Reveal>
         <Reveal delay={0.12}>
           <p>
-            A useful handoff says what you intended, what you actually checked,
-            and what still needs a human decision. Oryveta gives those three
-            things a place to live.
+            A brief you can edit. Source you can download. A storyboard with
+            the limits still in view. Choose the work you need—not a promise
+            that an invisible agent has finished it.
           </p>
           <Link className="text-link" to="/what-we-do">
             See the two journeys <ArrowRight size={17} />

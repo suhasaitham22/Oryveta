@@ -220,9 +220,18 @@ export default function Workspace({
   }
   const locked = preview || selfHosted;
   const hasWorkspaceSwitch = !locked && spaces.length > 0;
+  const openWork = [
+    { page: "new", kind: "start-new", title: "Start New" },
+    { page: "evolve", kind: "evolve", title: "Evolve" },
+  ].flatMap((journey) => {
+    const value = drafts[`${selfHosted ? "local" : active?.id || "guest"}:${journey.kind}`];
+    if (!value || (!value.name && !value.brief && !value.projectId)) return [];
+    const hasLocalProject = selfHosted && value.localOwnerId === engine.user?.id && value.projectId;
+    return [{ ...journey, draft: value, tab: hasLocalProject ? "local" : "brief" }];
+  });
   return (
     <div className="workspace-shell">
-      <aside className="workspace-sidebar">{sidebar()}</aside>
+      <aside className="workspace-sidebar" aria-label="Workspace menu">{sidebar()}</aside>
       <dialog
         className="mobile-workspace-nav"
         ref={mobileNav}
@@ -291,16 +300,29 @@ export default function Workspace({
           {page === "overview" && (
             <>
               <div className="page-heading">
-                <div className="section-label">
-                  Less ambiguity. More useful work.
-                </div>
-                <h1>What are you working on?</h1>
-                <p>
-                  Two ways in. A clear brief, honest evidence, and a story you
-                  can share.
-                </p>
+                <div className="section-label">{active?.name || "Your working space"}</div>
+                <h1>{openWork.length ? "Pick up the work." : "What are you working on?"}</h1>
+                <p>{openWork.length ? "Your open briefs and selected local projects, kept in context." : "Start with a product brief or a codebase you want to understand."}</p>
               </div>
-              <div className="overview-journeys">
+              {openWork.length > 0 && (
+                <section className="open-work" aria-label="Continue your work">
+                  <div className="section-label">Open in this workspace</div>
+                  {openWork.map((work) => (
+                    <div className="open-work-row" key={work.kind}>
+                      <div className="open-work-icon"><Layers3 size={20} /></div>
+                      <div className="open-work-copy">
+                        <span>{work.title} · {work.tab === "local" ? "Local snapshot selected" : "Planning draft"}</span>
+                        <h2>{work.draft.name || "Untitled brief"}</h2>
+                        {work.draft.brief && <p>{work.draft.brief}</p>}
+                      </div>
+                      <Link className="text-link" to={`${workspacePaths[work.page]}?tab=${work.tab}`}>
+                        Continue <ArrowRight size={16} />
+                      </Link>
+                    </div>
+                  ))}
+                </section>
+              )}
+              <div className={`overview-journeys ${openWork.length ? "has-open-work" : ""}`}>
                 <JourneyCard
                   icon={Sparkles}
                   number="01"

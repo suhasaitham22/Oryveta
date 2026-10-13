@@ -2,9 +2,9 @@
 
 ## Original visual composition and public references
 
-The current page composition and dimensional product scene are original Oryveta work. The primary inspiration is the public [Galileo preview](https://galileo.shadcn.io): bright sculptural materiality, centered sans-serif hierarchy, yellow action and large product imagery. Supporting public references are [Reframe](https://reframe.shadcn.io) (editorial/product-art scale), [Lightbox](https://lightbox.shadcn.io) (contrast/process hierarchy), [Solaris](https://solaris.shadcn.io) (technical product framing), and the [catalogue](https://www.shadcn.io/template)/[Prodexa](https://prodexa.shadcn.io) (marketing-to-workspace continuity). All were viewed as public previews on 2026-10-12.
+The current page composition and dimensional product scene are original Oryveta work. The primary inspiration is the public [Galileo preview](https://galileo.shadcn.io): bright sculptural materiality, deliberate sans-serif hierarchy, yellow action and large product imagery. Supporting public references are [Reframe](https://reframe.shadcn.io) (editorial/product-art scale), [Lightbox](https://lightbox.shadcn.io) (contrast/process hierarchy), [Solaris](https://solaris.shadcn.io) (technical product framing), and the [catalogue](https://www.shadcn.io/template)/[Prodexa](https://prodexa.shadcn.io) (marketing-to-workspace continuity). All were viewed as public previews on 2026-10-12; Galileo and the actual Oryveta surfaces were inspected again for this product-focused refinement.
 
-No source, images, sphere/ribbon geometry, brand marks, marketing copy, customer claims or paid assets from these templates are included. Supplied Galileo HTML shows its hero using a looping muted video, translated header/word reveals and staggered sticky compositions. Those observations informed choreography, not implementation reuse: Oryveta uses its own live Three.js geometry, native scroll, semantic links and accessible visual alternatives. No video, minified Next hydration code, Lenis, expired countdown, payment claims or template assets were copied.
+No source, images, sphere/ribbon geometry, brand marks, marketing copy, customer claims or paid assets from these templates are included. Supplied Galileo HTML shows its hero using a looping muted video, translated header/word reveals and staggered sticky compositions. Those observations informed choreography, not implementation reuse: Oryveta uses its own live Three.js geometry, original canvas-drawn document textures, native scroll, semantic links and accessible document alternatives. No video, minified Next hydration code, Lenis, expired countdown, payment claims or template assets were copied. Example brief/source/story text is original and labelled illustrative; it is not engine output or customer data.
 
 ## Historical ShadcnStore adaptation
 
@@ -76,11 +76,9 @@ SOFTWARE.
 
 ## Three.js and React Router
 
-`three` **0.180.0**, MIT ([source](https://github.com/mrdoob/three.js)), renders original box-based artifact panels, rails and a plinth with simple lights and shadows. No third-party models, textures, shaders or 3D framework are vendored. It is imported only through the lazy Home scene; frames are scheduled on demand and stop offscreen/hidden. Cleanup disposes geometry, materials, renderer and WebGL context.
+`three` **0.180.0**, MIT ([source](https://github.com/mrdoob/three.js)), renders original rounded extruded document panels with lit beveled edges, canvas-textured faces and cast shadows. `productArtifacts.js` supplies the same original example content to the textures and semantic alternative. No third-party models, images, shaders or 3D framework are vendored. It is imported only through the lazy Home scene; frames are scheduled on demand and stop offscreen/hidden. Cleanup disposes geometry, materials, textures, shadow targets, renderer and WebGL context.
 
 `react-router-dom` / `react-router` **7.9.4**, MIT ([source](https://github.com/remix-run/react-router)), supply browser-owned route/query history and basename handling. Their complete MIT notices and the Three.js notice are included in `public/template-license.txt` alongside the historical template and Motion notices. Installed package license files were the attribution source.
-
-
 
 ## Existing components
 
