@@ -75,3 +75,17 @@ def test_truncation_is_reported_not_silently_hidden(tmp_path):
     assert result["summary"]["findings_count"] > len(result["findings"])
     assert result["summary"]["findings_truncated"] is True
     assert result["summary"]["findings_returned"] == 400
+
+
+def test_repository_profile_is_reproducible_independent_of_directory_creation_order(tmp_path):
+    first = tmp_path / "a"
+    second = tmp_path / "b"
+    first.mkdir()
+    second.mkdir()
+    for folder, order in ((first, ("a", "b")), (second, ("b", "a"))):
+        for name in order:
+            (folder / f"{name}.py").write_text(f"{name} = 1\n", encoding="utf-8")
+    first_result = analyze_repository(first)["summary"]
+    second_result = analyze_repository(second)["summary"]
+    assert first_result["input_fingerprint_sha256"] == second_result["input_fingerprint_sha256"]
+    assert first_result["language"] == "Python"
