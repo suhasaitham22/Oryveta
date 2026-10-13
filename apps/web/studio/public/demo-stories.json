@@ -160,5 +160,33 @@
         "receipt": "Database verification passed for viewer/editor separation and owner revocation; real browser accounts untested."
       }
     ]
+  },
+  {
+    "id": "evolve-analysis-v2",
+    "title": "Evolve repository intelligence",
+    "description": "Reviewable repository inventory → scoped static findings → content-addressed evidence",
+    "version": 1,
+    "state": "storyboard",
+    "verified": false,
+    "scenes": [
+      {
+        "eyebrow": "01 / REPOSITORY SNAPSHOT",
+        "headline": "Know what is inside before you change it.",
+        "body": "On the self-hosted Evolve journey, import a public GitHub repository or an authorized ZIP under a strict size and path policy. Unsupported hosted imports remain visibly unavailable.",
+        "receipt": "Static repository parsing only. ZIP validation and rollback are covered by regression tests; the Vercel frontend has no hosted importer."
+      },
+      {
+        "eyebrow": "02 / FRAMEWORK AND RISK MAP",
+        "headline": "Identify the stack, with the limits in sight.",
+        "body": "Inspect manifest-derived framework/package-manager hints, source language counts, test and CI presence, and confidence-labelled heuristic findings. Python security checks examine AST calls instead of guessing from comments.",
+        "receipt": "Framework hints derive from non-executed manifests. Analysis is bounded and never proves a dependency is installed or a vulnerability exploitable."
+      },
+      {
+        "eyebrow": "03 / BASELINE AND REVIEW",
+        "headline": "Trace what changed, without inventing a fix.",
+        "body": "A complete bounded source fingerprint and explicit findings-truncation flag tell reviewers whether an analysis is stale or partial. Read-only patches still require human approval and independent tests.",
+        "receipt": "The source hash is scoped to analyzed files and supported readable manifests. No deployed agent, behavioral proof, automatic PR or real customer gain is claimed."
+      }
+    ]
   }
 ]
