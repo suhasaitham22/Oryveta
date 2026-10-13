@@ -322,8 +322,8 @@ function SignIn({ user, selfHosted }) {
             {sent && (
               <p role="status" className="notice">
                 If email delivery is configured, a single-use link has been
-                sent. It returns to this sign-in page, where you can continue to
-                your workspace.
+                sent. It returns to Home; use Workspace in the shared navigation
+                to continue after signing in.
               </p>
             )}
             {error && (

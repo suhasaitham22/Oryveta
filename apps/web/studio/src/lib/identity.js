@@ -29,7 +29,7 @@ export async function sendEmailLink(email) {
   const { error } = await supabase.auth.signInWithOtp({
     email: clean,
     options: {
-      emailRedirectTo: window.location.origin + "/sign-in",
+      emailRedirectTo: window.location.origin + "/",
       shouldCreateUser: true,
     },
   });
@@ -40,7 +40,7 @@ export async function signInWithGitHub() {
   const { error } = await supabase.auth.signInWithOAuth({
     provider: "github",
     options: {
-      redirectTo: window.location.origin + "/sign-in",
+      redirectTo: window.location.origin + "/",
       scopes: "read:user user:email",
     },
   });
