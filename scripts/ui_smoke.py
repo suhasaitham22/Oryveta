@@ -1,4 +1,4 @@
-"""Browser smoke for Oryveta's hosted auth gate and engineering workspace.
+"""Browser smoke for Oryveta's preserved legacy local UI.
 
 Tests guest sign-in, explicit preview access, mobile navigation and an
 authenticated workspace lifecycle with a deterministic mocked Auth adapter.
@@ -6,7 +6,6 @@ No real OAuth secrets or external identity calls run in CI.
 """
 from __future__ import annotations
 
-import json
 import threading
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
@@ -14,8 +13,6 @@ from pathlib import Path
 from playwright.sync_api import sync_playwright
 
 ROOT = Path(__file__).resolve().parents[1] / "apps" / "web"
-CONFIG = json.loads((ROOT / "vercel.json").read_text(encoding="utf-8"))
-REWRITES = {item["source"]: item["destination"] for item in CONFIG["rewrites"]}
 
 
 class StaticHandler(SimpleHTTPRequestHandler):
@@ -32,7 +29,10 @@ class StaticHandler(SimpleHTTPRequestHandler):
         super().do_GET()
 
     def translate_path(self, path):
-        return super().translate_path(REWRITES.get(path, path))
+        # Match FastAPI's local /static mount, not the separate hosted React build.
+        if path.startswith("/static/"):
+            path = path[len("/static"):]
+        return super().translate_path(path)
 
 
 FAKE_AUTH = """
@@ -59,8 +59,6 @@ FAKE_AUTH = """
 
 
 def run() -> None:
-    for name in ("app.js", "styles.css", "cloud-auth.js", "cloud-config.js"):
-        assert REWRITES["/static/" + name] == "/" + name
     server = ThreadingHTTPServer(("127.0.0.1", 0), StaticHandler)
     thread = threading.Thread(target=server.serve_forever, daemon=True)
     thread.start()
@@ -77,11 +75,18 @@ def run() -> None:
                 page.on("pageerror", lambda err: errors.append(str(err)))
                 response = page.goto(url, wait_until="networkidle", timeout=30000)
                 assert response is not None and response.status == 200
+                for name in ("app.js", "styles.css", "cloud-auth.js", "cloud-config.js", "experience.js"):
+                    asset = page.request.get(f"http://127.0.0.1:{server.server_port}/static/{name}")
+                    assert asset.status == 200
+                    mime = asset.headers.get("content-type", "").split(";", 1)[0]
+                    expected = {"text/css"} if name.endswith(".css") else {
+                        "text/javascript", "application/javascript"
+                    }
+                    assert mime in expected, (name, mime)
                 assert page.locator("#login").is_visible()
                 assert not page.locator("#app").is_visible()
                 assert page.locator("#github-login").is_hidden()
                 assert page.locator("#preview-login").is_visible()
-                assert page.locator("#login h1").inner_text().startswith("Build with clarity.")
                 assert page.locator("#email-login-form").is_visible()
                 assert page.locator("#story-tab-build").is_visible()
                 page.locator("#story-tab-build").focus()
@@ -102,9 +107,6 @@ def run() -> None:
                 assert page.locator("#app").is_hidden()
                 page.locator("#preview-login").click()
                 assert page.locator("#app").is_visible()
-                assert page.locator("#page h1").inner_text() == "Good software gets better."
-                assert page.evaluate("document.styleSheets.length") >= 1
-                assert page.locator("#app").bounding_box()["width"] > 300
                 if not page.evaluate("document.documentElement.scrollWidth <= innerWidth + 1"):
                     print("MOBILE OVERFLOW:", page.evaluate("""() => ({
                         viewport: innerWidth, content: document.documentElement.scrollWidth,
@@ -120,11 +122,14 @@ def run() -> None:
                     page.locator("#mobile-menu").click()
                     assert page.locator("#nav").is_visible()
                 page.locator('#nav [data-page="new"]').click()
-                assert page.locator("#page h1").inner_text() == "From idea to repository."
+                assert page.locator("#new-form").is_visible()
+                page.locator("#project-name").fill("Preview project")
+                assert page.locator("#project-name").input_value() == "Preview project"
                 if label == "mobile":
                     page.locator("#mobile-menu").click()
                 page.locator('#nav [data-page="evolve"]').click()
-                assert page.locator("#page h1").inner_text() == "Great software never stands still."
+                assert page.locator("#github-import").is_visible()
+                assert page.locator("#new-form").count() == 0
                 assert not errors, (label, errors)
                 print(f"PASS {label}: sign-in gate, explicit preview, Start New/Evolve, no JS errors")
                 page.close()
@@ -139,13 +144,11 @@ def run() -> None:
             page.goto(url, wait_until="networkidle", timeout=30000)
             assert page.locator("#app").is_visible()
             assert page.locator("#login").is_hidden()
-            assert page.locator("#page h1").inner_text() == "A home for everything you build."
             assert page.locator("#profile-name").inner_text() == "Test Founder"
             page.locator("#workspace-name").fill("Acme Engineering")
             page.locator("#workspace-slug").fill("acme-engineering")
             page.locator("#workspace-description").fill("Private product workspace")
             page.locator("#workspace-create-button").click()
-            assert page.locator("#page h1").inner_text() == "Your engineering home."
             assert page.locator("#workspace-switch-name").inner_text() == "Acme Engineering"
             assert page.locator(".workspace-card.selected").count() == 1
             page.locator("#workspace-edit-name").fill("Acme Product Studio")

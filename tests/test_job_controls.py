@@ -227,7 +227,45 @@ def test_studio_redirect_and_missing_build(monkeypatch, tmp_path):
     assert client.get("/studio/").status_code == 503
     assert client.get("/studio/demo-stories.json").status_code == 503
     assert client.get("/studio/template-license.txt").status_code == 503
+    assert client.get("/studio/about").status_code == 503
     assert client.get("/studio/assets/%2E%2E/index.html").status_code == 404
+
+
+def test_studio_partial_build_does_not_break_api_startup(monkeypatch, tmp_path):
+    import oryveta_api.main as main_module
+
+    monkeypatch.setattr(main_module, "WEB_DIR", tmp_path / "web")
+    (tmp_path / "web" / "studio" / "dist-local").mkdir(parents=True)
+    settings = main_module.Settings(database_path=str(tmp_path / "db.sqlite"),
+                                    workspace_root=str(tmp_path / "workspaces"),
+                                    local_demo=True)
+    client = TestClient(create_app(settings))
+    assert client.get("/api/health").status_code == 200
+    assert client.get("/studio/").status_code == 503
+    assert client.get("/studio/assets/missing.js").status_code == 404
+
+
+def test_studio_deep_routes_fallback_without_masking_assets(monkeypatch, tmp_path):
+    import oryveta_api.main as main_module
+
+    monkeypatch.setattr(main_module, "WEB_DIR", tmp_path / "web")
+    dist = tmp_path / "web" / "studio" / "dist-local"
+    (dist / "assets").mkdir(parents=True)
+    (dist / "index.html").write_text("<!doctype html><div id='root'></div>", encoding="utf-8")
+    (dist / "assets" / "app.js").write_text("console.log('ok')", encoding="utf-8")
+    settings = main_module.Settings(database_path=str(tmp_path / "db.sqlite"),
+                                    workspace_root=str(tmp_path / "workspaces"),
+                                    local_demo=True)
+    client = TestClient(create_app(settings))
+
+    deep = client.get("/studio/about")
+    assert deep.status_code == 200
+    assert deep.text.startswith("<!doctype html>")
+    assert client.get("/studio/workspace/evolve").status_code == 200
+    assert client.get("/studio/assets/app.js").text == "console.log('ok')"
+    assert client.get("/studio/assets/missing.js").status_code == 404
+    assert client.get("/studio/missing.js").status_code == 404
+    assert client.get("/studio/api/projects").status_code == 404
 
 
 def test_cancel_imported_analysis_updates_project(signed_in):

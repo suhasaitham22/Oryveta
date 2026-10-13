@@ -15,7 +15,7 @@ Status: **Merged local API and React Studio frontend; hosted React/Supabase inte
 | `engine/oryveta_engine/scaffold.py` | Portable runnable project templates, tests and CI skeleton |
 | `engine/oryveta_engine/benchmarks.py` | Deterministic local classification baselines; not Kaggle |
 | `engine/oryveta_engine/worker.py` | SQLite lease-based background worker, retry limits and status |
-| `apps/web/` | Legacy standalone Soft Modern local UI served at `/`; built React Studio is served at `/studio/` when `apps/web/studio/dist` exists, while missing builds return `503` without replacing the legacy path |
+| `apps/web/` | Legacy standalone Soft Modern local UI served at `/`; hosted React Studio builds to `apps/web/studio/dist`, while the self-hosted React Studio uses the separate `apps/web/studio/dist-local` build at `/studio/`. Extensionless `/studio/*` page routes receive the app shell; dotted assets and reserved API-like paths do not. Missing local builds return `503` without replacing the legacy path |
 | `preview/` | Archived standalone static prototype; **not deployed** to Vercel |
 | `apps/web/vercel.json` | Vercel asset rewrites and restrictive security headers for the real app UI |
 | `apps/web/cloud-auth.js` | Supabase Auth PKCE adapter and owner-scoped workspace data client; inactive until configured |
@@ -40,12 +40,13 @@ python -m oryveta_engine.worker
 Build the React Studio separately with Node 20+:
 
 ```bash
-npm --prefix apps/web/studio install
+npm --prefix apps/web/studio ci
 npm --prefix apps/web/studio run check
 npm --prefix apps/web/studio run build
+npm --prefix apps/web/studio run build:local
 ```
 
-Open `http://127.0.0.1:8000/studio/`, sign in to local demo, and use Start New/Evolve. `pytest -q`, coverage and `ruff check apps/api engine tests` provide Python gates.
+The hosted build writes `apps/web/studio/dist`; `build:local` writes `apps/web/studio/dist-local` for the FastAPI `/studio/` surface. Open `http://127.0.0.1:8000/studio/`, sign in to local demo, and use Start New/Evolve. `pytest -q`, coverage and `ruff check apps/api engine tests` provide Python gates.
 
 Python 3.11+ is supported by metadata; GitHub CI tests Python 3.12. No paid model keys required.
 

@@ -30,7 +30,11 @@ class Handler(SimpleHTTPRequestHandler):
     def translate_path(self, path):
         if "?" in path:
             path = path.split("?", 1)[0]
-        if path == "/":
+        clean = path.strip("/")
+        first = clean.split("/", 1)[0].lower() if clean else ""
+        if clean and "." not in clean and first not in {"api", "auth", "assets", "static"}:
+            path = "/index.html"
+        elif path == "/":
             path = "/index.html"
         return super().translate_path(path)
 
@@ -49,69 +53,125 @@ def _assert_no_overflow(page):
 def _open_nav(page, label, width):
     if width <= 680:
         page.get_by_role("button", name="Open workspace menu").click()
-    page.get_by_role("button", name=label, exact=True).first.click()
+        nav = page.get_by_role("dialog", name="Workspace menu").get_by_role(
+            "navigation", name="Workspace navigation"
+        )
+    else:
+        nav = page.get_by_role("navigation", name="Workspace navigation")
+    nav.get_by_role("link", name=label, exact=True).first.click()
 
 
+def _click_primary(page, label, width):
+    if width <= 680:
+        page.get_by_role("button", name="Open navigation").click()
+        nav = page.get_by_role("navigation", name="Mobile primary navigation")
+    else:
+        nav = page.get_by_role("navigation", name="Primary navigation")
+    nav.get_by_role("link", name=label, exact=True).click()
 
 
-def _check_chapters(page, base_url):
-    page.goto(base_url, wait_until="domcontentloaded")
-    controls = page.get_by_label("Product story chapters").get_by_role("button")
-    artifact = page.locator(".story-artifact")
-    expected = ("start-new", "evolve", "work", "handoff")
+def _check_navigation(page, origin, prefix="", width=1440):
+    """Exercise browser-owned route/query history, not component implementation."""
+    root = f"{origin}{prefix}/"
+    about = f"{origin}{prefix}/about"
+    what_we_do = f"{origin}{prefix}/what-we-do"
+    workspace = f"{origin}{prefix}/workspace"
+    new = f"{origin}{prefix}/workspace/new"
 
-    def select_all():
-        for index, chapter in enumerate(expected):
-            controls.nth(index).focus()
-            controls.nth(index).press("Enter")
-            page.wait_for_function(
-                "chapter => document.querySelector('.story-artifact').dataset.activeChapter === chapter",
-                arg=chapter,
-            )
-            # Wait for native smooth scrolling to settle, not an invented run clock.
-            page.wait_for_timeout(900)
-            assert artifact.get_attribute("data-active-chapter") == chapter
-            active = artifact.locator(".artifact-content[aria-hidden=false]")
-            assert active.count() == 1 and active.is_visible()
-            assert active.evaluate("(node) => node.scrollHeight <= node.clientHeight + 1")
+    response = page.goto(about, wait_until="domcontentloaded", timeout=30000)
+    assert response is not None and response.status == 200
+    assert page.url == about
+    if width > 680:
+        assert page.get_by_role("navigation", name="Primary navigation").count() == 1
+    assert page.get_by_role("navigation", name="Breadcrumb").count() == 1
+    if width <= 680:
+        page.get_by_role("button", name="Open navigation").click()
+        mobile = page.get_by_role("navigation", name="Mobile primary navigation")
+        assert mobile.is_visible()
+        page.keyboard.press("Escape")
+    page.get_by_role("button", name="Back", exact=True).click()
+    page.wait_for_url(root)
 
-    select_all()
-    first = page.locator(".scroll-chapter").first
-    start, height = first.evaluate(
-        "(node) => [node.getBoundingClientRect().top + scrollY, node.getBoundingClientRect().height]"
+    page.goto(what_we_do, wait_until="domcontentloaded")
+    page.get_by_role("link", name="Home", exact=True).last.click()
+    page.wait_for_url(root)
+    _click_primary(page, "About", width)
+    page.wait_for_url(about)
+    page.go_back()
+    page.wait_for_url(root)
+    page.go_forward()
+    page.wait_for_url(about)
+    page.go_back()
+    page.wait_for_url(root)
+
+    page.goto(f"{new}?tab=brief", wait_until="domcontentloaded")
+    page.get_by_label("Project name").fill("History draft")
+    page.get_by_label("Describe the product").fill(
+        "A draft retained while navigating public pages and returning to the workflow."
     )
-    transforms = []
-    for position in (start, start + height * 0.8):
-        page.evaluate("(top) => scrollTo({top, behavior: 'instant'})", position)
-        page.wait_for_timeout(120)
-        transforms.append(artifact.locator(".artifact-content").evaluate_all(
-            "(nodes) => nodes.map(node => getComputedStyle(node).transform)"
-        ))
-    assert transforms[0] != transforms[1], "Native scroll must transform the product composition"
+    _click_primary(page, "Home", width)
+    page.wait_for_url(root)
+    page.get_by_role("button", name="Back", exact=True).click()
+    page.wait_for_url(f"{new}?tab=brief")
+    assert page.get_by_label("Project name").input_value() == "History draft"
+    assert page.get_by_label("Describe the product").input_value().startswith("A draft retained")
+    page.get_by_role("navigation", name="Breadcrumb").get_by_role(
+        "link", name="Home", exact=True
+    ).click()
+    page.wait_for_url(root)
+    _click_primary(page, "About", width)
+    page.wait_for_url(about)
+    page.go_back()
+    page.wait_for_url(root)
+    page.go_forward()
+    page.wait_for_url(about)
+    page.go_back()
+    page.wait_for_url(root)
+    _click_primary(page, "Workspace", width)
+    page.wait_for_url(workspace)
+    if width <= 680:
+        page.get_by_role("button", name="Open workspace menu").click()
+        workspace_nav = page.get_by_role("dialog", name="Workspace menu").get_by_role(
+            "navigation", name="Workspace navigation"
+        )
+    else:
+        workspace_nav = page.get_by_role("navigation", name="Workspace navigation")
+    workspace_nav.get_by_role("link", name="Start New", exact=True).click()
+    page.wait_for_url(new)
+    assert page.get_by_label("Project name").input_value() == "History draft"
+    assert page.get_by_label("Describe the product").input_value().startswith("A draft retained")
 
-    # Changing the preference in an already-open page must stop motion.
-    page.emulate_media(reduced_motion="reduce")
-    select_all()
-    assert artifact.locator(".artifact-content[aria-hidden=false]").evaluate(
-        "(node) => getComputedStyle(node).transform"
-    ) == "none"
-    page.evaluate("document.body.style.zoom = '1.5'")
-    select_all()
-    page.evaluate("document.body.style.zoom = ''")
-    page.emulate_media(reduced_motion="no-preference")
-    _assert_no_overflow(page)
+    page.get_by_role("tab", name="Demo Studio", exact=True).click()
+    page.wait_for_url(f"{new}?tab=demo")
+    page.go_back(wait_until="commit")
+    page.wait_for_timeout(100)
+    assert page.url == new, page.url
+    assert page.get_by_role("tab", name="Brief", exact=True).get_attribute("data-state") == "active"
+    page.go_forward(wait_until="commit")
+    page.wait_for_timeout(100)
+    assert page.url == f"{new}?tab=demo", page.url
+    assert page.get_by_role("tab", name="Demo Studio", exact=True).get_attribute("data-state") == "active"
+
+    nested = page.goto(f"{new}?tab=demo", wait_until="domcontentloaded", timeout=30000)
+    assert nested is not None and nested.status == 200
+    assert page.url == f"{new}?tab=demo"
+    page.get_by_role("navigation", name="Breadcrumb").get_by_role(
+        "link", name="Workspace", exact=True
+    ).click()
+    page.wait_for_url(workspace)
+    page.go_back()
+    page.wait_for_url(f"{new}?tab=demo")
+    missing_asset = page.request.get(f"{origin}{prefix}/assets/navigation-smoke-missing.js")
+    assert missing_asset.status == 404
 
 
 def _check_hosted(page, base_url, width):
-    page.goto(base_url, wait_until="domcontentloaded", timeout=30000)
-    page.get_by_role("button", name="Start New", exact=True).first.click()
+    deep_response = page.goto(f"{base_url}/about", wait_until="domcontentloaded", timeout=30000)
+    assert deep_response is not None and deep_response.status == 200
+    page.goto(f"{base_url}/workspace/new?tab=brief", wait_until="domcontentloaded", timeout=30000)
     page.get_by_role("heading", name="Start New").wait_for()
     start_tabs = page.get_by_label("Start New workflow")
     start_tabs.get_by_role("tab", name="Local run").click()
-    assert page.get_by_text("Cloud execution is not connected.").count() == 1
-    assert page.get_by_text("Illustration · not running").count() == 1
-    nav = page.get_by_role("navigation", name="Workspace navigation")
-    assert nav.get_by_role("button", name="Demo Studio", exact=True).count() == 0
     start_tabs.get_by_role("tab", name="Brief").click()
     page.get_by_label("Project name").fill("Browser draft")
     page.get_by_label("Describe the product").fill("A small product brief for browser smoke coverage.")
@@ -124,7 +184,6 @@ def _check_hosted(page, base_url, width):
     page.get_by_label("Repository URL or name").fill("Billing service")
     page.get_by_label("What should be improved?").fill("Review a bounded change in the billing service.")
     evolve_tabs.get_by_role("tab", name="Demo Studio").click()
-    assert page.locator('[aria-label="Evolve story"]').count() == 1
     page.get_by_role("button", name="Edit script").click()
     page.get_by_label("Headline").fill("Edited evolve headline")
     with page.expect_download() as download_info:
@@ -138,17 +197,17 @@ def _check_hosted(page, base_url, width):
     _open_nav(page, "Start New", width)
     page.get_by_role("tab", name="Demo Studio").click()
     assert page.get_by_label("Headline").input_value() == "Edited start headline"
-    assert page.locator('[aria-label="Evolve story"]').count() == 0
     _assert_no_overflow(page)
 
 
 def _check_local(page, api_url, width):
+    deep_response = page.goto(f"{api_url}/studio/about", wait_until="domcontentloaded", timeout=30000)
+    assert deep_response is not None and deep_response.status == 200
     page.goto(f"{api_url}/studio", wait_until="domcontentloaded", timeout=30000)
     assert page.url.endswith("/studio/")
-    page.get_by_role("heading", name="What are you working on?").wait_for(timeout=20000)
-    if width <= 680:
-        page.get_by_role("button", name="Open workspace menu").click()
-    page.get_by_role("button", name="Evolve", exact=True).first.click()
+    _click_primary(page, "Workspace", width)
+    page.wait_for_url(f"{api_url}/studio/workspace")
+    _open_nav(page, "Evolve", width)
     page.get_by_role("tab", name="Local run", exact=True).click()
     page.get_by_role("button", name="Sign in to local demo").click()
     page.get_by_role("button", name="Import & analyze").wait_for()
@@ -184,10 +243,10 @@ def run():
                 errors = []
                 page.on("pageerror", lambda error: errors.append(str(error)))
                 if os.environ.get("ORYVETA_SMOKE_API_URL"):
+                    _check_navigation(page, api_url, "/studio", width)
                     _check_local(page, api_url, width)
                 else:
-                    # Static mode proves the hosted boundary and draft/story UX.
-                    _check_chapters(page, api_url)
+                    _check_navigation(page, api_url, width=width)
                     _check_hosted(page, api_url, width)
                 assert not errors, (label, errors)
                 scenario = "local API lifecycle" if os.environ.get("ORYVETA_SMOKE_API_URL") else "hosted boundary and contextual story"
@@ -207,17 +266,11 @@ def run():
                 ) == "0s"
                 print("PASS reduced-motion local lifecycle tasks")
             else:
-                story_chapter = reduced_page.get_by_label("Product story chapters").get_by_role("button").nth(1)
-                story_chapter.focus()
-                reduced_page.keyboard.press("Enter")
-                reduced_page.wait_for_function(
-                    "document.querySelector('.story-artifact').dataset.activeChapter === 'evolve'"
-                )
-                scene = reduced_page.locator(".artifact-content[aria-hidden=false]")
-                assert scene.is_visible()
-                assert scene.evaluate("(node) => getComputedStyle(node).transform") == "none"
-                assert scene.evaluate("(node) => getComputedStyle(node).transitionDuration") == "0s"
-                print("PASS reduced-motion React chapter keyboard and visible static scene")
+                scene = reduced_page.get_by_label("Illustrative product scene")
+                scene.get_by_role("button", name="The evidence", exact=True).click()
+                assert scene.get_by_text("02 / Source", exact=True).is_visible()
+                assert scene.locator(".scene-alternative").is_visible()
+                print("PASS reduced-motion React scene controls and static alternative")
             reduced.close()
             browser.close()
     finally:

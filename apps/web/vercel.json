@@ -2,27 +2,7 @@
   "version": 2,
   "rewrites": [
     {
-      "source": "/static/experience.js",
-      "destination": "/experience.js"
-    },
-    {
-      "source": "/static/app.js",
-      "destination": "/app.js"
-    },
-    {
-      "source": "/static/styles.css",
-      "destination": "/styles.css"
-    },
-    {
-      "source": "/static/cloud-config.js",
-      "destination": "/cloud-config.js"
-    },
-    {
-      "source": "/static/cloud-auth.js",
-      "destination": "/cloud-auth.js"
-    },
-    {
-      "source": "/((?!assets/|favicon.ico).*)",
+      "source": "/((?!assets/|favicon.ico|.*\\..*).*)",
       "destination": "/index.html"
     }
   ],
@@ -53,7 +33,7 @@
       ]
     }
   ],
-  "installCommand": "cd studio && npm install --no-audit --no-fund",
+  "installCommand": "cd studio && npm ci --no-audit --no-fund",
   "buildCommand": "cd studio && npm run build",
   "outputDirectory": "studio/dist"
 }

@@ -26,9 +26,12 @@ jobs:
       - name: Validate story contracts and browser auth boundary
         working-directory: apps/web/studio
         run: npm run check
-      - name: Build React Vite product
+      - name: Build React Vite hosted product
         working-directory: apps/web/studio
         run: npm run build
+      - name: Build React Vite self-hosted product
+        working-directory: apps/web/studio
+        run: npm run build:local
       - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # pinned
         with:
           python-version: '3.12'

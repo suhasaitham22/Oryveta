@@ -18,9 +18,10 @@ The published FastAPI source supports health/config, GitHub identity OAuth callb
 
 ## Self-hosted React Studio
 
-- `/studio` redirects to canonical `/studio/`, which serves the built Vite app from `apps/web/studio/dist`.
+- `/studio` redirects to canonical `/studio/`, which serves the self-hosted Vite build from `apps/web/studio/dist-local`.
+- Extensionless page paths such as `/studio/about` and `/studio/workspace/evolve` serve the same app shell for client-side routing. Paths containing a dot, reserved API/auth prefixes, and missing `/studio/assets/*` files return `404` rather than HTML.
 - `/studio/assets/*`, `/studio/demo-stories.json` and `/studio/template-license.txt` are same-origin built distribution files.
-- If the production build is absent, Studio routes return HTTP `503` while legacy `/` remains available. Escaped asset paths return `404`.
+- If the self-hosted build is absent, Studio page and distribution routes return HTTP `503` while legacy `/` remains available. Escaped asset paths return `404`.
 
 ## Optional local model gateway (self-hosted only)
 

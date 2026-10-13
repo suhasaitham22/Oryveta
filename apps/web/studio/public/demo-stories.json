@@ -1,27 +1,27 @@
 [
   {
     "id": "guided-workflow",
-    "title": "A clear direction",
-    "description": "Product intent → scroll-linked context → accessible workspace",
-    "version": 1,
+    "title": "A workspace with perspective",
+    "description": "Dimensional product scene → real page navigation → retained journey context",
+    "version": 2,
     "state": "storyboard",
     "scenes": [
       {
         "eyebrow": "01 / CHOOSE YOUR START",
         "headline": "An idea or a codebase. Both are a beginning.",
-        "body": "Choose Start New or Evolve from the product-centered landing. The brief, source finding and story artwork show the kind of context each journey keeps.",
+        "body": "Choose Start New or Evolve from Home. The original dimensional brief, source and story scene introduces the kind of context each journey keeps.",
         "receipt": "Artwork is illustrative, not a running agent, customer result or completed application."
       },
       {
-        "eyebrow": "02 / FOLLOW THE CONTEXT",
-        "headline": "One continuous thread from intent to explanation.",
-        "body": "Scroll through the brief, source review, local work and handoff chapters, or select any chapter with the keyboard. Reduced motion keeps the active scene visible without transforms.",
-        "receipt": "The four scenes describe workflow options. Start New and Evolve are alternatives, not simulated execution steps."
+        "eyebrow": "02 / CHANGE YOUR PERSPECTIVE",
+        "headline": "Move through the product, not a stack of disconnected screens.",
+        "body": "Use the three scene viewpoint controls, then visit About or What We Do. Native Back and Forward, linked breadcrumbs and the Home logo keep navigation predictable. Reduced motion and unavailable WebGL show a labelled visual alternative.",
+        "receipt": "The 3D scene uses original geometry. It illustrates intent, source and story; it never reports completed engineering work."
       },
       {
         "eyebrow": "03 / WORK IN YOUR CONTEXT",
         "headline": "Keep the actual work separate from the illustration.",
-        "body": "Open a journey, edit its brief and contextual storyboard, or use the separately authenticated local engine. Real task details expand from persisted events and keep one elapsed label.",
+        "body": "Open a journey, edit its brief and contextual storyboard, and visit another page. Return to the same in-memory context. Brief, Local run and Demo Studio use real query-string URLs; real local task details still come from persisted events.",
         "receipt": "Hosted exports remain unverified drafts. Local source analysis neither executes imported code nor proves application correctness."
       }
     ]

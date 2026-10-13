@@ -1,62 +1,84 @@
 # Oryveta Studio — clear direction
 
-This redesign supersedes the previous Soft Modern direction. The primary visual reference is the public **Galileo** preview: a bright material-like canvas, centered bold sans-serif hierarchy, a yellow primary action, and large product imagery. Oryveta's relief loops, brief, source finding and storyboard are original CSS/HTML artwork. No paid template source, sphere assets, brand marks, waitlist claims, countdowns or customer metrics are reused.
+The primary visual reference remains the public **Galileo** preview: a bright canvas, bold sans-serif hierarchy, yellow primary actions and a product-centered composition. This navigation/interaction redesign replaces the old state-only landing/workspace switch and CSS relief loops with real pages and an original, genuinely rendered 3D product scene.
 
-## Reference synthesis
+## Reference synthesis and attribution
 
-Public previews were inspected in Chromium on 2026-10-12, not just read as sales descriptions:
+Public previews were inspected in Chromium on 2026-10-12:
 
-- [Galileo](https://galileo.shadcn.io): primary light/sculptural composition, centered hierarchy and yellow action. The original Oryveta context loops are lightweight CSS, not copied geometry or WebGL.
-- [Reframe](https://reframe.shadcn.io): oversized typography, generous space and product artwork carrying the page. Its blue CTAs, customer logos and showcase assets are not copied.
-- [Lightbox](https://lightbox.shadcn.io): contrast and process-oriented section hierarchy. Its purple/cyan ribbon, branding and agency content are not copied.
-- [Solaris](https://solaris.shadcn.io): product-proof framing and technical diagrams. Oryveta shows its own brief/source/story semantics, not fictional hosted agent capabilities or dashboard metrics.
-- [Catalogue](https://www.shadcn.io/template) / [Prodexa](https://prodexa.shadcn.io): the transition from product-focused marketing to a calmer working interface, without floating people/cursor decorations.
+- [Galileo](https://galileo.shadcn.io): primary light/sculptural composition and yellow action. Supplied rendered HTML identifies its hero as a looping muted video, plus a translated header, word reveals and staggered sticky sections. These informed motion hierarchy, not copied implementation.
+- [Reframe](https://reframe.shadcn.io): editorial scale and product artwork carrying the page.
+- [Lightbox](https://lightbox.shadcn.io): contrast and process-oriented hierarchy.
+- [Solaris](https://solaris.shadcn.io): technical product framing, without fictional execution metrics.
+- [Catalogue](https://www.shadcn.io/template) / [Prodexa](https://prodexa.shadcn.io): continuity between marketing and a calmer working interface.
 
-These are reference observations, not claims about the templates' animation implementations or licenses. Historical ShadcnStore attribution remains intact; see [THIRD_PARTY.md](../apps/web/studio/THIRD_PARTY.md).
+No paid source, template video/models, brands, customer claims, expired countdowns or payment assertions are reused. No Lenis, scroll hijacking, minified Next hydration code or text-selection restrictions are imported. Historical ShadcnStore notices remain; see [THIRD_PARTY.md](../apps/web/studio/THIRD_PARTY.md). All new 3D geometry is original.
+
+## Compact shared navigation
+
+A single shared header exposes **Home / About / What We Do / Workspace**, the Home logo, and the appropriate hosted sign-in action or local-edition label. It does not repeat a giant page title. A separate compact trail offers Back and semantic linked breadcrumbs. Workspace context controls contain only the functional workspace switcher or mobile menu trigger; there is no duplicate page/environment topbar or empty desktop bar. Native links support opening a route in a new tab. A direct-entry Back action falls back to Home, which resolves to `/studio/` locally, never the legacy `/` interface.
+
+React Router owns pathname and query history. `BrowserRouter` uses Vite's `BASE_URL` as its basename. Hosted `npm run build` uses `/` and writes `dist`; `npm run build:local` uses `--mode selfhost`, `/studio/`, and a separate `dist-local`. FastAPI serves extensionless local page URLs with the SPA index; asset-like and reserved paths remain real 404s. Unknown page routes render an honest page-not-found view. Vercel serves the hosted SPA. The same source produces both builds without relative-asset ambiguity on deep reload.
+
+Public content is deliberately divided:
+
+| Route | Purpose |
+| --- | --- |
+| `/` | Short product story, dimensional scene and two entry CTAs |
+| `/about` | Purpose, audience, open-source principles and current stage |
+| `/what-we-do` | Detailed Start New/Evolve journeys, deliverables and boundaries |
+| `/sign-in` | Real hosted identity setup, or a clear local-identity explanation |
+| `/workspace` | Choose and do work, not another marketing page |
+| `/workspace/new`, `/workspace/evolve` | Brief, Local run and contextual Demo Studio |
+| `/workspace/settings`, `/workspace/chats`, `/workspace/activity` | Existing workspace functionality with actual URLs |
+
+Journey tabs use `?tab=brief|local|demo`; unknown tab values show an explicit error. Radix tabs use manual activation: arrow keys move focus, Enter/Space activate. This avoids duplicate history entries from simultaneous pointer/focus activation. There is no global Demo Studio navigation option.
 
 ## Tokens and typography
 
 | Token | Value | Role |
 | --- | --- | --- |
 | Canvas | `#F8F9F6` | Bright neutral page |
-| Ink | `#232521` | Headings and dark technical surfaces |
-| Muted | `#58604F` | Secondary readable text |
-| Signal | `#F5D84C` | Primary actions and selected details |
+| Ink | `#232521` | Headings and technical surfaces |
+| Muted | `#58604F` | Readable secondary text |
+| Signal | `#F5D84C` | Primary actions |
 | Border | `#DCE0D5` | Quiet dividers |
 
-The deliberately **system-font** stack is Helvetica Neue, Helvetica, Arial, sans-serif. No unshipped Inter assumption or external font request. Main hero type uses restrained `-.035em` tracking; mobile uses `-.03em`. Forms use solid, labeled fields and visible focus. Status green/red remains semantic, not a decorative success claim.
+Use the shipped system-font stack: Helvetica Neue, Helvetica, Arial, sans-serif. No external font request or unshipped Inter assumption. Forms are solid and labelled, navigation has visible keyboard focus, and status colors remain semantic rather than decorative success claims.
 
-## Composition and motion
+## Dimensional composition and motion
 
-- The centered hero places an original dimensional context backdrop behind large type. A brief, code finding and storyboard form the product artwork. All are explicitly illustrative.
-- Hero artwork has one short spring entrance from a visible state; the brief gently responds to native scroll. No loading splash, looping ornament, scroll hijack or simulated job completion.
-- A sticky evidence stage retains four sheets in one composition. Scroll position directly transforms their translation, rotation and scale rather than just swapping faded text. Each actual chapter's geometry determines the active sheet, including unequal heights and zoom. Four keyboard-operable controls provide direct navigation.
-- Use cases form an open dark spread; capabilities use rules and whitespace rather than repeated floating cards. The workspace carries quieter neutral surfaces, one yellow action vocabulary, stronger forms and a clear contextual Demo Studio stage.
-- Buttons/cards use restrained spring-like hover and press responses. Real run panels use Motion size-layout transitions; native task-timeline disclosure uses progressive CSS size interpolation (immediate native fallback in browsers without support). State and elapsed values still come only from the API.
-- **Motion 14.1.0**, MIT, is the only added runtime library. It is pinned in package.json and package-lock.json. CI installs the lock using `npm ci`.
+`ProductScene` is the single accessible scene boundary. Its lazily imported `ThreeScene` uses **Three.js 0.180.0**: three solid artifact panels, raised diagram bars, offset rails and a two-level plinth, with perspective, simple lights, occlusion and cast shadows. There are no image textures, imported models, complex shaders or additional 3D framework.
 
-## Accessibility and responsive behavior
+A finite entrance assembles the panels from visibly displaced positions. Three keyboard-operable viewpoint controls rotate the composition and elevate the selected artifact. Native scroll separates the layers and changes perspective; mouse depth is restrained, and touch scrolling remains native. At least 35% of the scene must intersect before its animation starts. The compact desktop hero puts the panels into the ordinary first viewport rather than finishing their entrance below the fold.
 
-Native document scrolling, labeled forms, skip links, visible focus, Radix keyboard tabs and the native workspace dialog remain. Mobile menu Escape returns focus to its trigger. Mobile sheets keep receipts in frame; short viewports use non-sticky narrative content.
+Rendering is demand-driven: frames stop once interpolation settles, when the scene is sufficiently offscreen, or when the document is hidden. Cleanup disconnects observers/listeners, cancels the frame, disposes geometry/materials/renderer, and releases the WebGL context. Route-level lazy loading keeps Three out of direct workspace loads; no bundle-size warning threshold is raised.
 
-Reduced motion is a live `matchMedia` subscription, including preference changes while the page is open. Motion 14's own hook snapshots on mount, so the small shared hook uses React's `useSyncExternalStore`. Reduced mode removes scroll transforms and spring entrances, keeps the selected sheet fully visible, and preserves keyboard chapter selection. CSS disables continuous indicators, transitions and hover movement. No essential content depends on animation.
+**Motion 14.1.0** remains the only DOM animation runtime. Public copy enters through visible translation, not unreadable low-opacity text. The working UI retains quieter hover/press responses and real run-panel layout transitions. No splash, invented completion, percentages, ETAs or private reasoning are animated into existence.
+
+## Accessibility and React state
+
+Reduced motion is a live `useSyncExternalStore` media-query subscription. Enabling it removes the WebGL scene and its resources, displays a labelled static visual alternative, and stops DOM entrance transforms. Disabling it may restore the scene. WebGL unavailability, context loss and lazy-load errors also show an explicitly labelled alternative; no information or navigation depends on a canvas. All scene meaning and controls exist in accessible DOM outside it.
+
+Effects synchronize external systems only: Supabase/network subscriptions with stale-response guards, browser title/focus/scroll, real engine polling, renderer/observer lifetime and renderer control updates. Pathnames, tabs, breadcrumbs, active workspaces and draft lookup are derived during render. Navigation and mutations happen in handlers. Keyed identity trees reset owner data without chains of state-synchronizing Effects. Mobile menu state resets by route key and closes explicitly on selection/Escape; Escape returns focus to its trigger. Route presentation waits for lazy content before moving focus.
+
+Workspace drafts, settings edits, selected context and unsent chat composition live above the route switch, so internal navigation does not discard them. Local anonymous brief/story edits survive the first explicit local sign-in. Local sign-out or identity change clears the owner tree; hosted identity changes do likewise. Nothing persists those drafts across a full reload. Hosted accounts may freely visit public pages without an automatic workspace redirect. `/sign-in` is the UI entry page; email/provider callbacks retain the established hosted root URL. Home restores the verified session and Workspace remains available through shared navigation, with no provider-configuration migration.
 
 ## Product contracts preserved
 
-**Start New** and **Evolve** are the only work starts. Each has Brief, Local run and contextual Demo Studio tabs. There is no standalone Demo entry or fallback to another journey's story. Brief/scene/tab drafts remain scoped to their workspace and journey within the mounted workspace, not persisted across reload/sign-out. Storyboard exports keep `storyboard_only_not_rendered`, `verified: false`, and exact journey/brief/project context.
+Hosted Supabase workspaces and private human chats stay separate from self-hosted same-origin cookie/CSRF APIs. Local sessions are never forwarded. Legacy `/` remains intentionally supported but is not the React Home destination.
 
-Hosted Supabase identity/workspaces/private human chats remain separate from the self-hosted same-origin `/studio/` cookie/CSRF API. Hosted preview has no coding engine. Local users can create deterministic starters, export ZIPs, import authorized snapshots and request read-only static analysis. Imported code is never executed; findings do not prove security/correctness or apply patches. Legacy `/` remains intentionally supported.
+Start New retains deterministic starter creation and ZIP export. Evolve retains authorized ZIP import and read-only static analysis. Both retain cancel/results, owner-bound project/run selections, contextual brief/story exports and editable drafts. Imported code is not executed. Static findings do not prove correctness/security or apply changes. Storyboard exports remain `storyboard_only_not_rendered` and `verified: false` with their exact journey/brief/project context.
 
-Run status is persisted queued/running/succeeded/failed/canceled truth. The UI retains one elapsed label, actual event records, stale/disconnected behavior, owner-bound selections and user-opened details across polls. Lifecycle rows mean queue acceptance, source analysis and result persistence only. No percentages, ETAs, invented tool counts, fine-grained agent steps or private reasoning. Latest project findings remain distinct from an older selected run.
+Persisted queued/running/succeeded/failed/canceled states, event records, stale/disconnected behavior, user-opened details and the single elapsed label remain real engine data. A selected old run is not confused with the latest project findings. Hosted coding, automatic patches and deployments remain unavailable.
 
-## Visual evidence
+## Browser evidence
 
-Intentional PR assets are local browser captures of this implementation, not deployment or customer-execution claims:
+Intentional media records the compiled implementation, not customer usage or deployment claims:
 
-![Bright product-centered landing](media/studio-landing.png)
+- [Desktop Home](media/studio-landing.png) and [mobile Home](media/studio-mobile.png).
+- [3D viewpoint](media/studio-story.png), an illustrative product composition.
+- [Short browser recording](media/studio-navigation.webm) and [timestamped decoded frames](media/studio-motion-contact.png), showing entrance, viewpoints and actual About/Back navigation.
+- [Real local analysis](media/studio-local-run.png), using isolated synthetic source and persisted worker state; not a security certification or performance benchmark.
 
-![Scroll-linked source review scene](media/studio-story.png)
-
-![Self-hosted real local analysis](media/studio-local-run.png)
-
-The landing/story images are explicitly illustrative. The local-run capture uses an isolated synthetic repository and real persisted worker state; it is not a performance benchmark, application-test result or security certification. Exact runtime checks and their limitations belong in the PR verification report.
+Record exact verification commands and environment limitations in the PR evidence. Browser screenshots and animation are not proof of live email delivery, OAuth configuration, two-account Supabase authorization or rendered storyboard video.

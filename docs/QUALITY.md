@@ -12,6 +12,10 @@
 6. **Container:** build the Docker image, verify the API imports and process runs without root privileges; validate Compose configuration.
 7. **Documentation:** keep `docs/STATUS.md`, architecture decisions and user-facing limitations current when behavior changes.
 
+## React Studio route/build gate
+
+The React Studio gate must build both deployment targets: `npm --prefix apps/web/studio run build` (`dist`, hosted root) and `npm --prefix apps/web/studio run build:local` (`dist-local`, self-hosted `/studio/`). Compiled browser checks must cover direct route reloads, Back/Forward, breadcrumb navigation, draft retention, keyboard/mobile headers, and reduced-motion behavior. HTTP checks must confirm extensionless routes receive the app shell while missing dotted assets and reserved API-like paths remain `404`; an absent self-hosted build remains an honest `503`.
+
 GitHub Actions workflows use minimal read permissions, SHA-pinned official actions, no credentials persisted by checkout, per-job timeouts, and pull-request concurrency cancellation. Dependabot checks Python, GitHub Actions and Docker dependencies weekly. A scheduled weekly security scan runs even when there are no PRs.
 
 ## Verified local hardening tests

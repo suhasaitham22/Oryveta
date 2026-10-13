@@ -627,10 +627,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
                                 (user["id"],)).fetchall()
         return [dict(row) for row in rows]
 
-    studio_dist = WEB_DIR / "studio" / "dist"
-    if studio_dist.is_dir():
-        app.mount("/studio/assets", StaticFiles(directory=studio_dist / "assets"),
-                  name="studio-assets")
+    studio_dist = WEB_DIR / "studio" / "dist-local"
 
     def studio_unavailable():
         raise HTTPException(503, "React Studio build is unavailable")
@@ -671,6 +668,19 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         if not asset.is_file():
             raise HTTPException(404, "Studio asset not found")
         return FileResponse(asset)
+
+    @app.get("/studio/{studio_path:path}")
+    def studio_page(studio_path: str):
+        """Serve extensionless React routes without masking missing assets."""
+        path = studio_path.strip("/")
+        if not path or "." in path or path.split("/", 1)[0].lower() in {
+            "api", "auth", "static", "assets",
+        }:
+            raise HTTPException(404, "Studio route not found")
+        index = studio_dist / "index.html"
+        if not index.is_file():
+            return studio_unavailable()
+        return FileResponse(index)
 
     app.mount("/static", StaticFiles(directory=WEB_DIR), name="static")
 
