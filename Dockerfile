@@ -1,6 +1,6 @@
 # Portable deployment image for one Oryveta API or worker process.
 # This image is not a production multi-tenant security boundary.
-FROM python:3.12-slim
+FROM python:3.14-slim
 WORKDIR /service
 COPY pyproject.toml README.md LICENSE ./
 COPY apps ./apps
