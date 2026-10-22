@@ -1,23 +1,69 @@
 import { createClient } from "@supabase/supabase-js";
-const url = "https://nydtmiseclkwauiepqxn.supabase.co";
-const key = "sb_publishable_-iMwv7z7moDQ2l84q64K5g_8NopqeMg"; // public browser key, never a secret/service-role key
-export const oauthGitHubEnabled = false; // manually enable after registering GitHub OAuth App and configuring Supabase provider
+import { DEFAULT_SUPABASE_URL, DEFAULT_SUPABASE_PUBLISHABLE_KEY } from "./publicConfig.js";
+/* Public browser configuration. Defaults are the deployed Oryveta project values;
+   never a secret/service-role key. */
+const url =
+  (import.meta.env.VITE_SUPABASE_URL || DEFAULT_SUPABASE_URL).replace(/\/+$/, "");
+const key =
+  import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY ||
+  DEFAULT_SUPABASE_PUBLISHABLE_KEY;
 export const supabase = createClient(url, key, {
   auth: {
     flowType: "pkce",
     detectSessionInUrl: true,
     persistSession: true,
     autoRefreshToken: true,
-    storage: window.sessionStorage,
+    // Shared browser storage lets an emailed PKCE link open in a new tab.
+    storage: window.localStorage,
   },
 });
+/* Provider availability is read from the project's own auth settings, never declared
+   by a hard-coded flag. Resolves to the GoTrue "external" map; rejects when the real
+   configuration cannot be confirmed so the UI can say so instead of guessing. */
+let providerRequest = null;
+export function authProviders() {
+  if (!providerRequest)
+    providerRequest = fetch(`${url}/auth/v1/settings`, {
+      headers: { apikey: key },
+      credentials: "omit",
+    })
+      .then((response) =>
+        response.ok
+          ? response.json()
+          : Promise.reject(
+              Error(
+                `Sign-in providers could not be confirmed (HTTP ${response.status})`,
+              ),
+            ),
+      )
+      .then((settings) => {
+        const external = settings?.external;
+        if (!external || typeof external !== "object")
+          throw Error("Sign-in providers could not be confirmed");
+        return external;
+      })
+      .catch((error) => {
+        providerRequest = null;
+        throw error;
+      });
+  return providerRequest;
+}
+export async function providerEnabled(name) {
+  const external = await authProviders();
+  return external[name] === true;
+}
 export async function verifiedUser() {
+  const { error: initializationError } = await supabase.auth.initialize();
   const {
     data: { session },
     error: e1,
   } = await supabase.auth.getSession();
   if (e1) throw e1;
-  if (!session) return null;
+  if (!session) {
+    if (initializationError || new URLSearchParams(window.location.search).has("code"))
+      throw Error("Sign-in did not complete. Request a new link in this browser.");
+    return null;
+  }
   const { data, error } = await supabase.auth.getUser();
   if (error) throw error;
   return data.user || null;
@@ -36,7 +82,10 @@ export async function sendEmailLink(email) {
   if (error) throw error;
 }
 export async function signInWithGitHub() {
-  if (!oauthGitHubEnabled) throw Error("GitHub OAuth has not been activated");
+  if (!(await providerEnabled("github")))
+    throw Error(
+      "GitHub sign-in is not enabled for this Supabase project. Use the email link instead.",
+    );
   const { error } = await supabase.auth.signInWithOAuth({
     provider: "github",
     options: {

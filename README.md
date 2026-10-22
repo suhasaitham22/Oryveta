@@ -21,6 +21,8 @@ Kaggle and related benchmarks are **internal evaluation scenarios**, not a third
 
 **Early development.** The functional Python/FastAPI + SQLite MVP, tests, background worker, Docker Compose and CI are merged into `main`. The React Studio is the hosted UI and also an optional self-hosted `/studio/` surface; local jobs expose coarse worker states/events only. Autonomous code execution, test-backed AI fixes, GitHub publishing, hosted inference and 24/7 execution are not implemented.
 
+The auth/collaboration source adds persisted project briefs, explicit project roles and invitations, and private conversations that remain private when linked to a project. Real local Supabase email/PKCE, SQL authorization and headless browser flows are verified; production schema/provider rollout and external email delivery remain separate gates. See [identity, permissions and the reproducible test setup](docs/IDENTITY-WORKSPACES.md).
+
 See [current status](docs/STATUS.md) and [open-source policy](docs/OPEN-SOURCE.md).
 
 ## Engineering principles

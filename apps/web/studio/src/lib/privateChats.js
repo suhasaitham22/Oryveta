@@ -1,8 +1,12 @@
 /* Data access for private chats. PostgreSQL RLS—not client filters—authorizes reads/writes. */
 import {supabase} from "./identity.js";
-function data(result,context){if(result.error)throw new Error(result.error.message||context);return result.data;}
-export async function listChats(){return data(await supabase.from("chats").select("id,title,owner_id,workspace_id,created_at").order("created_at",{ascending:false}).limit(100),"Could not load chats")||[];}
-export async function createChat(user,workspaceId,title){if(!user?.id)throw Error("Authentication required");return data(await supabase.from("chats").insert({owner_id:user.id,workspace_id:workspaceId||null,title}).select("id,title,owner_id,workspace_id,created_at").single(),"Could not create chat");}
+/* Missing-column/relation codes mean the private chats or projects migration is not applied yet. */
+const MISSING_SCHEMA=["42P01","42703","PGRST204","PGRST205"];
+function data(result,context){if(!result.error)return result.data;if(MISSING_SCHEMA.includes(result.error.code))throw Error("Conversations are unavailable until the private chats and projects migrations are applied to this Supabase project.");throw new Error(result.error.message||context);}
+export async function listChats(){return data(await supabase.from("chats").select("id,title,owner_id,workspace_id,project_id,created_at").order("created_at",{ascending:false}).limit(100),"Could not load chats")||[];}
+/* projectId is an explicit association chosen by the creator; it grants no one else access to this chat.
+   Association is set at creation only: there is no client-side project reassignment. */
+export async function createChat(user,workspaceId,title,projectId){if(!user?.id)throw Error("Authentication required");return data(await supabase.from("chats").insert({owner_id:user.id,workspace_id:workspaceId||null,project_id:projectId||null,title}).select("id,title,owner_id,workspace_id,project_id,created_at").single(),"Could not create chat");}
 export async function deleteChat(id){data(await supabase.from("chats").delete().eq("id",id),"Could not delete conversation");}
 export async function listMessages(id){return data(await supabase.from("chat_messages").select("id,chat_id,author_id,content,created_at").eq("chat_id",id).order("created_at").limit(200),"Could not load messages")||[];}
 export async function sendMessage(user,id,content){if(!user?.id)throw Error("Authentication required");return data(await supabase.from("chat_messages").insert({chat_id:id,author_id:user.id,role:"user",content}).select("id,content").single(),"Could not send message");}

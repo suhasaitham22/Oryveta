@@ -1,6 +1,6 @@
 # ADR 0002: Portable local MVP and cloud control plane
 
-Status: **Direction accepted, implementation pending**. Date: 2026-10-09.
+Status: **Direction accepted; auth/collaboration implemented, factory execution pending**. Updated: 2026-10-22.
 
 ## Context
 
@@ -8,8 +8,8 @@ Oryveta should work when browsers close and be self-hostable without mandatory c
 
 ## Decision
 
-Begin with a portable, inspectable Python/FastAPI + SQLite MVP and independent worker. Publish a static UI preview; do not conflate it with a hosted API. Proposed production control plane uses Cloudflare Workers/Hono, D1/Drizzle and durable coordination with replaceable adapters. Proposed supervisor uses Rust/Tokio and sandboxed Python processes. Allow local SQLite and PostgreSQL/Supabase adapters instead of tying users to one provider.
+Retain the Python/FastAPI + SQLite local engine and independent worker. Hosted collaboration uses Supabase Auth and PostgreSQL RLS; future durable factory metadata extends that same authority. Extend the Python worker with scoped tools, disposable execution and verification instead of requiring Hono, D1 or a Rust rewrite. Web, mobile and Slack share one authorization/work-item contract. Hosting and inference providers remain replaceable; actual availability depends on the chosen deployment.
 
 ## Consequences
 
-Users can bring their own compute, databases and inference. We must maintain explicit protocol, migration and test boundaries; 24/7 production use depends on real worker availability and provider quotas. Rust and Cloudflare choices remain subject to prototype evidence.
+Users can bring their own compute and inference. Maintain explicit protocol, migration and test boundaries; 24/7 production use depends on real worker availability and provider quotas. Add another service or runtime only for a measured requirement. A local test, hosted frontend and operated factory are distinct deliverables.

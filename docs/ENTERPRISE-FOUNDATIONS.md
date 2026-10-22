@@ -10,7 +10,7 @@
 4. **Every task has bounds.** Per-user admission, execution deadline, token and compute budget, retry limit, artifact limit and explicit cancellation.
 5. **Every action is traceable.** Record correlation IDs, code revision, model/tool versions, approval, budgets, tests and evidence. Do not log secrets or sensitive prompts by default.
 6. **Every state change is durable and idempotent.** Lease fencing prevents stale workers from publishing; transactional event writes prevent orphaned activity records. External side effects need reconciliation before retries.
-7. **Portability beats premature distribution.** Begin with Python/SQLite on one host; introduce PostgreSQL, distributed queues, Rust, Kubernetes or GPUs only after workload measurements justify them.
+7. **Portability beats premature distribution.** Keep the Python/SQLite local engine and use the existing Supabase/PostgreSQL authority for hosted collaboration. Add queues, runtimes or orchestration services only for measured requirements; do not introduce parallel identity/data systems.
 
 ## Architecture
 

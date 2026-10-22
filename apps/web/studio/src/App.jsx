@@ -17,7 +17,7 @@ import {
   verifiedUser,
   sendEmailLink,
   signInWithGitHub,
-  oauthGitHubEnabled,
+  authProviders,
 } from "@/lib/identity";
 import { WorkspaceState } from "@/lib/WorkspaceState.jsx";
 import { useLocalEngine } from "@/lib/localEngine";
@@ -94,7 +94,7 @@ function Application() {
         if (live && request === revision) {
           setUser(null);
           setToast(
-            "We couldn't restore your session. You can try signing in again.",
+            "We couldn't complete sign-in or restore your session. Request a new link in this browser.",
           );
         }
       } finally {
@@ -183,6 +183,7 @@ function Application() {
               "/workspace/new",
               "/workspace/evolve",
               "/workspace/settings",
+              "/workspace/projects",
               "/workspace/chats",
               "/workspace/activity",
             ].map((path) => (
@@ -230,6 +231,28 @@ function SignIn({ user, selfHosted }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [sent, setSent] = useState(false);
+  /* Provider availability comes from the project's own auth settings. Until it is
+     confirmed, or if it cannot be confirmed, OAuth stays disabled and says why. */
+  const [providers, setProviders] = useState({ state: "checking" });
+  useEffect(() => {
+    if (selfHosted) return;
+    let live = true;
+    authProviders()
+      .then((external) => {
+        if (live) setProviders({ state: "known", external });
+      })
+      .catch((problem) => {
+        if (live)
+          setProviders({ state: "unconfirmed", message: problem.message });
+      });
+    return () => {
+      live = false;
+    };
+  }, [selfHosted]);
+  const githubEnabled =
+    providers.state === "known" && providers.external.github === true;
+  const emailDisabled =
+    providers.state === "known" && providers.external.email === false;
   async function submit(event) {
     event.preventDefault();
     setBusy(true);
@@ -314,11 +337,21 @@ function SignIn({ user, selfHosted }) {
                 }}
               />
             </label>
-            <Button type="submit" className="w-full" disabled={busy}>
+            <Button
+              type="submit"
+              className="w-full"
+              disabled={busy || emailDisabled}
+            >
               <Mail size={16} />
               {busy ? "Requesting secure link…" : "Continue with email"}
               <ArrowRight size={15} />
             </Button>
+            {emailDisabled && (
+              <p role="status" className="notice">
+                Email sign-in is switched off for this project's Supabase Auth
+                settings. No link can be sent until it is enabled.
+              </p>
+            )}
             {sent && (
               <p role="status" className="notice">
                 If email delivery is configured, a single-use link has been
@@ -335,7 +368,7 @@ function SignIn({ user, selfHosted }) {
           <Button
             className="w-full mt-3"
             variant="outline"
-            disabled={!oauthGitHubEnabled || busy}
+            disabled={!githubEnabled || busy}
             onClick={async () => {
               try {
                 await signInWithGitHub();
@@ -347,9 +380,21 @@ function SignIn({ user, selfHosted }) {
             <Github size={16} />
             Continue with GitHub
           </Button>
-          {!oauthGitHubEnabled && (
+          {providers.state === "checking" && (
+            <p className="fine-print text-center" role="status">
+              Checking which sign-in providers this project has enabled…
+            </p>
+          )}
+          {providers.state === "unconfirmed" && (
             <p className="fine-print text-center">
-              GitHub sign-in needs OAuth setup.
+              GitHub sign-in is unavailable: {providers.message}. Email link
+              sign-in is unaffected.
+            </p>
+          )}
+          {providers.state === "known" && !githubEnabled && (
+            <p className="fine-print text-center">
+              GitHub sign-in is not enabled in this project's Supabase Auth
+              providers.
             </p>
           )}
           <Button asChild variant="ghost" className="w-full">

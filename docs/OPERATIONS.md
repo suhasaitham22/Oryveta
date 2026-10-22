@@ -34,4 +34,4 @@ Encrypted backups for SQL and artifacts, regular restore drills, schema migratio
 
 ## Current limitation
 
-Public Vercel site has no authenticated backend, no actual incident tracking and no managed autonomous worker. These are roadmap requirements.
+Hosted collaboration uses Supabase identity and project/session policies after the target migrations are applied; local real-service/browser checks do not prove production rollout. There is still no hosted autonomous worker, operated incident system or guaranteed availability. Those remain roadmap gates.

@@ -1,0 +1,56 @@
+# Local verification only. Never push this configuration to the hosted project.
+# Supabase CLI 2.121.0 supports this native stack on macOS arm64 and Linux.
+project_id = "oryveta-auth-tests"
+
+[experimental]
+stack = true
+
+[api]
+enabled = true
+schemas = ["public"]
+extra_search_path = ["public", "extensions"]
+
+[db]
+major_version = 17
+health_timeout = "2m"
+
+[db.migrations]
+enabled = false
+
+[db.seed]
+enabled = false
+
+[auth]
+enabled = true
+site_url = "http://127.0.0.1:4173"
+additional_redirect_urls = ["http://127.0.0.1:4173/", "http://127.0.0.1:5173/"]
+enable_signup = true
+enable_anonymous_sign_ins = false
+
+[auth.email]
+enable_signup = true
+enable_confirmations = true
+double_confirm_changes = true
+max_frequency = "1s"
+
+[auth.rate_limit]
+# Messages stay in the isolated local Mailpit inbox; no external email is sent.
+email_sent = 100
+
+[local_smtp]
+enabled = true
+
+[realtime]
+enabled = false
+
+[storage]
+enabled = false
+
+[studio]
+enabled = false
+
+[edge_runtime]
+enabled = false
+
+[analytics]
+enabled = false

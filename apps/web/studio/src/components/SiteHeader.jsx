@@ -9,6 +9,7 @@ export const workspacePaths = {
   new: "/workspace/new",
   evolve: "/workspace/evolve",
   workspace: "/workspace/settings",
+  projects: "/workspace/projects",
   chats: "/workspace/chats",
   activity: "/workspace/activity",
 };
@@ -20,6 +21,7 @@ const labels = {
   new: "Start New",
   evolve: "Evolve",
   settings: "Workspaces",
+  projects: "Projects",
   chats: "Private chats",
   activity: "Activity",
 };

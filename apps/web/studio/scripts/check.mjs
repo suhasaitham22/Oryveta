@@ -27,21 +27,29 @@ for (const story of stories) {
   }
 }
 
+function checkCredentials(path) {
+  const text = readFileSync(path, "utf8");
+  if (/\bsb_secret_[A-Za-z0-9_-]{20,}/.test(text)) throw new Error(`Privileged Supabase credential in browser source: ${path}`);
+  for (const match of text.matchAll(/\beyJ[A-Za-z0-9_-]+\.([A-Za-z0-9_-]+)\.[A-Za-z0-9_-]+/g)) {
+    let payload;
+    try {payload = JSON.parse(Buffer.from(match[1], "base64url").toString("utf8"));} catch {continue;}
+    if (payload.role === "service_role") throw new Error(`Service-role JWT in browser source: ${path}`);
+  }
+}
+
 // A narrow credential check, not a general security audit or an auth-config assertion.
 function scan(directory) {
   for (const entry of readdirSync(directory, {withFileTypes: true})) {
     const path = join(directory, entry.name);
     if (entry.isDirectory()) {scan(path); continue;}
     if (!/\.(jsx?|tsx?|json|html)$/.test(entry.name)) continue;
-    const text = readFileSync(path, "utf8");
-    if (/\bsb_secret_[A-Za-z0-9_-]{20,}/.test(text)) throw new Error(`Privileged Supabase credential in browser source: ${path}`);
-    for (const match of text.matchAll(/\beyJ[A-Za-z0-9_-]+\.([A-Za-z0-9_-]+)\.[A-Za-z0-9_-]+/g)) {
-      let payload;
-      try {payload = JSON.parse(Buffer.from(match[1], "base64url").toString("utf8"));} catch {continue;}
-      if (payload.role === "service_role") throw new Error(`Service-role JWT in browser source: ${path}`);
-    }
+    checkCredentials(path);
   }
 }
 scan(join(base, "src"));
 scan(join(base, "public"));
+for (const entry of readdirSync(join(base, ".."), {withFileTypes: true})) {
+  if (entry.isFile() && /\.(js|json|html)$/.test(entry.name))
+    checkCredentials(join(base, "..", entry.name));
+}
 console.log(`Validated ${stories.length} story schemas, scene receipts and completion evidence references; no recognized privileged Supabase credentials in browser source.`);

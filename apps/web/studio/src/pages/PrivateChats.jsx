@@ -1,11 +1,12 @@
 import React,{useEffect,useState} from "react";
-import {AtSign,ArrowRight,CheckCircle2,LockKeyhole,MessageSquareText,Plus,Send,ShieldCheck,Trash2,UserPlus,UsersRound} from "lucide-react";
+import {AtSign,ArrowRight,CheckCircle2,FolderGit2,LockKeyhole,MessageSquareText,Plus,Send,ShieldCheck,Trash2,UserPlus,UsersRound} from "lucide-react";
 import {Button} from "@/components/ui/button";
 import {Badge} from "@/components/ui/badge";
 import {Card} from "@/components/ui/card";
 import {Input} from "@/components/ui/input";
 import {Textarea} from "@/components/ui/textarea";
 import * as chatsApi from "@/lib/privateChats.js";
+import * as projectsApi from "@/lib/projects.js";
 import {useWorkspaceState} from "@/lib/WorkspaceState.jsx";
 
 /* This UI never treats a workspace membership as consent to read a conversation. */
@@ -13,12 +14,16 @@ export default function PrivateChats({user,preview,workspaceId,onExit}){
  const [conversations,setConversations]=useState([]);
  const [invitations,setInvitations]=useState([]);
  const [alias,setAlias]=useState("");
- const {chatDraft,setChatDraft}=useWorkspaceState();
+ const {chatDraft,setChatDraft,spaces}=useWorkspaceState();
+ const [projects,setProjects]=useState([]);
+ const [projectNotice,setProjectNotice]=useState("");
  const selected=chatDraft.selected;
  const setSelected=value=>setChatDraft(current=>({...current,selected:typeof value==="function"?value(current.selected):value}));
  const [messages,setMessages]=useState([]);
  const [shares,setShares]=useState([]);
  const title=chatDraft.title;
+ const project=chatDraft.project||"";
+ const setProject=project=>setChatDraft(current=>({...current,project}));
  const setTitle=title=>setChatDraft(current=>({...current,title}));
  const message=chatDraft.messages[selected]||"";
  const recipient=chatDraft.recipients[selected]||"";
@@ -36,8 +41,13 @@ export default function PrivateChats({user,preview,workspaceId,onExit}){
  const canWrite=isOwner||shares.some(s=>s.status==="accepted"&&s.accepted_by===user?.id&&s.permission==="editor");
  async function refresh(prefer){
   if(preview||!user)return;
-  const [items,inbox,handle]=await Promise.all([chatsApi.listChats(),chatsApi.listInvitations(user),chatsApi.getAlias(user)]);
+  const [items,inbox,handle,readable]=await Promise.all([chatsApi.listChats(),chatsApi.listInvitations(user),chatsApi.getAlias(user),projectsApi.listProjects().then(rows=>({rows}),problem=>({problem:problem.message}))]);
   setConversations(items);setInvitations(inbox);setAlias(handle);
+  /* Projects are listed only to offer an association and to name the one already chosen.
+     A failure here never blocks conversations, and names are resolved from this
+     RLS-filtered list rather than joined onto a chat we may not be allowed to link. */
+  setProjects(readable.rows||[]);setProjectNotice(readable.problem||"");
+  setChatDraft(current=>current.project&&!(readable.rows||[]).some(p=>p.id===current.project)?{...current,project:""}:current);
   setSelected(old=>items.some(c=>c.id===(prefer||old))?(prefer||old):items[0]?.id||null);
   setRev(x=>x+1);
  }
@@ -64,13 +74,23 @@ export default function PrivateChats({user,preview,workspaceId,onExit}){
   <div className="grid xl:grid-cols-[310px_minmax(0,1fr)] gap-5 items-start">
    <div className="space-y-4">
     <Card className="p-5">
-     <form onSubmit={e=>{e.preventDefault();action(async()=>{const clean=title.trim();if(!clean||clean.length>120)throw Error("Enter a title up to 120 characters");const created=await chatsApi.createChat(user,workspaceId,clean);setTitle("");await refresh(created.id);setNotice("Private conversation created.");});}}>
+     <form onSubmit={e=>{e.preventDefault();action(async()=>{const clean=title.trim();if(!clean||clean.length>120)throw Error("Enter a title up to 120 characters");const chosen=project?projects.find(p=>p.id===project):null;if(project&&!chosen)throw Error("That project is no longer available to you");
+      /* Only claim the workspace when this account actually belongs to it: a project-only
+         invitee links the conversation to the project without joining the workspace. */
+      const scope=chosen?(spaces.some(s=>s.id===chosen.workspace_id)?chosen.workspace_id:null):workspaceId;
+      const created=await chatsApi.createChat(user,scope,clean,chosen?.id||null);setTitle("");setProject("");await refresh(created.id);setNotice(chosen?`Private conversation created and linked to ${chosen.name}. The link grants nobody else access.`:"Private conversation created.");});}}>
       <label htmlFor="chat-title" className="block text-xs font-bold text-slate-600 mb-2">New private conversation</label>
       <Input id="chat-title" required maxLength={120} placeholder="What are we deciding?" value={title} onChange={e=>setTitle(e.target.value)}/>
+      <label htmlFor="chat-project" className="block text-xs font-bold text-slate-600 mt-4 mb-2">Related project (optional)</label>
+      <select id="chat-project" className="w-full h-10 rounded-xl border border-slate-200 px-2 text-xs text-slate-600 bg-white" value={project} onChange={e=>setProject(e.target.value)}>
+       <option value="">No project</option>
+       {projects.map(p=><option key={p.id} value={p.id}>{p.name}</option>)}
+      </select>
+      <p className="text-[11px] text-slate-400 leading-5 mt-2">{projectNotice?projectNotice:projects.length?"Linking records which project this conversation belongs to. It stays private: project members gain no access to it.":"You have no projects to link yet."}</p>
       <Button type="submit" disabled={busy} className="w-full mt-3"><Plus size={16}/> Create conversation</Button>
      </form>
      <div className="eyebrow mt-9 mb-3">YOUR CONVERSATIONS · {conversations.length}</div>
-     <div className="grid gap-2" aria-label="Conversations">{conversations.length?conversations.map(c=><button type="button" key={c.id} onClick={()=>setSelected(c.id)} className={"rounded-xl border p-3.5 text-left transition-all "+(selected===c.id?"bg-indigo-50 border-indigo-300":"bg-white/70 border-slate-100 hover:border-indigo-200")}><strong className="text-xs font-bold text-slate-700 block truncate">{c.title}</strong><small className="text-[11px] text-slate-400 mt-2 block">{c.owner_id===user.id?"Private · Owner":"Shared with you"}</small></button>):<p className="text-xs text-slate-400 leading-6">Your conversations will appear here.</p>}</div>
+     <div className="grid gap-2" aria-label="Conversations">{conversations.length?conversations.map(c=><button type="button" key={c.id} onClick={()=>setSelected(c.id)} className={"rounded-xl border p-3.5 text-left transition-all "+(selected===c.id?"bg-indigo-50 border-indigo-300":"bg-white/70 border-slate-100 hover:border-indigo-200")}><strong className="text-xs font-bold text-slate-700 block truncate">{c.title}</strong><small className="text-[11px] text-slate-400 mt-2 block">{c.owner_id===user.id?"Private · Owner":"Shared with you"}</small>{c.project_id&&<small className="text-[11px] text-indigo-500 mt-1 block truncate">{projects.find(p=>p.id===c.project_id)?.name||"Linked project not visible to you"}</small>}</button>):<p className="text-xs text-slate-400 leading-6">Your conversations will appear here.</p>}</div>
     </Card>
     <Card className="p-5">
      <div className="eyebrow mb-4">INVITATIONS · {invitations.length}</div>
@@ -82,7 +102,7 @@ export default function PrivateChats({user,preview,workspaceId,onExit}){
    </div>
    <Card className="p-6 md:p-8 min-h-[540px] bg-white/85">
     {loading?<p className="text-sm text-slate-400">Loading private conversations…</p>:!active?<div className="flex flex-col items-center justify-center text-center min-h-[450px]"><span className="w-16 h-16 rounded-2xl bg-indigo-50 text-indigo-500 grid place-items-center"><MessageSquareText size={29}/></span><h2 className="font-display font-bold text-2xl text-slate-800 mt-5">A private place for your best thinking.</h2><p className="text-sm text-slate-500 mt-3 max-w-md leading-7">Create a conversation to keep decisions, plans and reviews in one place. No one else can see it until you share.</p></div>:<>
-     <header className="flex gap-3 justify-between items-center border-b border-slate-100 pb-5"><div><div className="eyebrow">PROTECTED CONVERSATION</div><h2 className="font-display text-xl md:text-2xl font-bold tracking-tight text-slate-800 mt-2">{active.title}</h2></div><Badge variant="outline">{isOwner?"Owner":canWrite?"Editor":"Viewer"}</Badge></header>
+     <header className="flex gap-3 justify-between items-center border-b border-slate-100 pb-5"><div><div className="eyebrow">PROTECTED CONVERSATION</div><h2 className="font-display text-xl md:text-2xl font-bold tracking-tight text-slate-800 mt-2">{active.title}</h2>{active.project_id&&<p className="text-[11px] text-slate-400 flex items-center gap-1.5 mt-2"><FolderGit2 size={13}/> {projects.find(p=>p.id===active.project_id)?.name||"Linked project not visible to you"} · project members do not get this conversation</p>}</div><Badge variant="outline">{isOwner?"Owner":canWrite?"Editor":"Viewer"}</Badge></header>
      <div role="log" aria-label="Chat messages" aria-live="polite" className="min-h-[180px] max-h-[400px] overflow-y-auto py-6 flex flex-col gap-3">
       {messages.length?messages.map(m=><article key={m.id} className={"rounded-2xl px-4 py-3 text-sm max-w-[90%] border "+(m.author_id===user.id?"self-end bg-indigo-50 border-indigo-100":"self-start bg-white border-slate-100")}><small className="text-indigo-500 text-[10px] font-bold">{m.author_id===user.id?"You":"Collaborator"}</small><p className="whitespace-pre-wrap break-words leading-6 text-slate-700 mt-1">{m.content}</p></article>):<p className="text-xs text-slate-400">No messages yet. You can start with a decision or a project brief.</p>}
      </div>

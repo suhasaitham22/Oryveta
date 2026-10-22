@@ -1,39 +1,79 @@
-# Identity and workspace foundations (Phase 1)
+# Identity, projects and private sessions
 
-**State (2026-10-12):** Dedicated Oryveta Supabase project is provisioned, workspace schema and RLS applied, security advisors clear. During a transactional authenticated-role test, a real `INSERT ... RETURNING` onboarding failure was found and corrected by the `workspace_owner_select_returning_fix` migration (already applied to the Oryveta project). Cross-tenant SQL tests passed for owner provisioning, read/update/delete isolation and denied membership writes using simulated users, with **ROLLBACK** leaving zero test rows. These are not a substitute for live independent OAuth-account end-to-end tests. GitHub OAuth provider is **not configured**, so production login remains gated off.
+## Current boundary
 
-## Product decision
+The hosted React Studio uses Supabase Auth and PostgreSQL RLS. Its public configuration lives in `apps/web/studio/src/lib/publicConfig.js`; `VITE_SUPABASE_URL` and `VITE_SUPABASE_PUBLISHABLE_KEY` can override it. Only publishable/anon keys belong in browser configuration. Vite rejects secret/user keys, and Vercel builds reject a configured origin absent from `apps/web/vercel.json`'s explicit `connect-src` policy.
 
-Oryveta is an engineering workspace with public Home/About/What We Do pages and an explicit `/sign-in` entry. Visitors may explore the workspace without a fake account or saved workspace. GitHub identity remains gated on provider setup, and repository permissions require separate GitHub App consent; they must not be inferred from identity login.
+GitHub provider availability is read from the project's real `/auth/v1/settings` response. An unavailable or unconfirmed provider stays disabled; the frontend cannot enable an unconfigured OAuth provider. Sign-in identifies a person, not repository authority. Repository access still requires a separate GitHub App, which is not implemented by this collaboration change.
 
-After sign-in, the first meaningful action is to create/select a workspace. An account may own multiple workspaces, and the data model reserves owner/admin/engineer/reviewer/viewer roles for later verified invitations. **V1 only provisions the owner membership**. Do not render pretend collaborators, connected repositories, job runs, invoices or usage data.
+The self-hosted FastAPI/SQLite engine retains a separate local identity. Hosted tokens are not forwarded into that engine and a cloud project is not an executed local project.
 
-## Stack and rationale
+## Browser sessions and email links
 
-- **Identity:** Supabase Auth with GitHub OAuth and PKCE via pinned supabase-js SDK. Public static Vercel frontend; no hosted FastAPI or worker in this phase.
-- **Storage:** dedicated Supabase PostgreSQL project. `supabase/schema.sql` contains RLS-enforced `workspaces` and `workspace_memberships`. All exposed tables have RLS.
-- **Sessions:** sessionStorage-backed PKCE session for the browser MVP, with SDK refresh/revocation; not long-lived HttpOnly server cookies. This is a conscious security/UX tradeoff until a first-party BFF is deployed. Never store provider secrets or service-role keys in the browser.
-- **Authorization:** PostgreSQL RLS controls workspace read/write, not hidden UI. Direct client mutations of membership are disallowed. Security-definer helpers live in non-exposed `private` schema with explicit grants and search paths.
-- **Separation:** local FastAPI GitHub OAuth remains unchanged for self-hosted mode. The hosted frontend uses Supabase Auth only when explicitly configured; it must never silently fall back to demo login.
+The Supabase browser SDK uses PKCE, shared browser `localStorage`, automatic token refresh and server-verified `getUser()` identity. Shared storage is necessary for an email link opened in a new tab of the same browser. The original `sessionStorage` configuration failed that common flow; the regression now follows the actual Mailpit email in a separate tab and verifies restoration in the original tab.
 
-## Setup checklist (requires owner actions)
+PKCE remains bound to the requesting browser/device. A different browser/device has no verifier: request a new link there. Initialization/callback failures produce an actionable sign-in error rather than silently appearing successful. This release does not claim cross-device magic-link completion or a first-party HttpOnly BFF session.
 
-1. **Completed:** Dedicated project `nydtmiseclkwauiepqxn` created in the `oryveta` Free-plan organization (US West, $0/month base). [Project dashboard](https://supabase.com/dashboard/project/nydtmiseclkwauiepqxn).
-2. **Partially complete:** `supabase/schema.sql` applied as migration `initial_workspace_identity_rls`. Both workspace tables have RLS (4 workspace policies, 1 membership policy); Supabase security advisors report zero findings. Transactional simulated-account database isolation passed (see `supabase/tests/workspace_rls.sql`); cross-account isolation with two **actual signed-in** users is **still pending**. Performance advisor reports one expected unused index on the empty membership table.
-3. In [GitHub Developer Settings](https://github.com/settings/developers), create an **OAuth App** for Oryveta. Homepage: `https://oryveta.vercel.app`. Callback: `https://<project-ref>.supabase.co/auth/v1/callback`. Store its **client secret only in Supabase Auth provider settings**, never in GitHub or frontend files.
-4. In Supabase Auth, enable GitHub provider, set Site URL `https://oryveta.vercel.app` and retain the exact production callback destination `https://oryveta.vercel.app/`. For previews, allowlist explicit preview root URLs only. The navigation redesign does not change these provider settings.
-5. **Staged safely:** `apps/web/studio/src/lib/identity.js` contains only the project URL and **publishable** browser key. `oauthGitHubEnabled = false` keeps the provider action disabled until setup is configured and checked. Enable it through a reviewed PR after steps 3–4. Local cookie/CSRF sessions remain separate.
-6. Verify sign-in, callback, refresh, logout, denied consent, unauthorized data access, workspace create/rename and a cross-account isolation attempt. Do not mark auth production-ready without this integration test.
-7. Configure incident logging, abuse/rate controls, MFA/SSO requirements, session lifecycle and recovery before serving enterprise clients.
+Browser-managed tokens remain readable by same-origin JavaScript. Restrictive CSP, safe rendering, no untrusted scripts and explicit sign-out are important controls; localStorage is not a substitute for XSS prevention. Workspace state is keyed by the verified user and remounts on identity changes. Sign-out clears protected application state; use it on shared devices.
 
-## Current limitations
+## Workspace, project and session access
 
-The UI can be reviewed without provider credentials, but real GitHub sign-in cannot complete until GitHub OAuth provider setup and a controlled enablement PR. Vercel still hosts only a frontend: creating/importing actual code repositories, agent execution and Ollama remain self-hosted. Team invitation, organization transfer, billing, audit history and hosted job execution are **future milestones**.
+`supabase/schema.sql` creates workspaces and provisions their creator's owner membership. Direct membership mutation remains unavailable to browser clients. Workspace-wide invitation administration is not added here.
 
-## Passwordless sign-in and routed workspace (2026-10-13)
-The frontend offers Supabase email magic links in addition to gated GitHub OAuth. `/sign-in` is the new UI entry, while both callback destinations remain the established hosted origin plus `/`. Home restores the verified session and the shared Workspace link provides the next step; authenticated users are not redirected away from Home/About. No redirect-allowlist migration is required for this redesign. Email sending alone is not completed sign-in: real clickthrough and two-account isolation remain unverified. Supabase Free email limits/default delivery are unsuitable for a large launch without custom SMTP; private credentials remain out of browser code.
+`supabase/migrations/projects_and_project_membership.sql` adds persisted project briefs and explicit project membership:
 
-Public routes and workspace tabs use native browser history. In-memory drafts survive internal navigation, not a full reload or identity change. Local anonymous planning drafts survive first local-demo sign-in, then clear on disconnect/owner change. Neither React routing nor the 3D illustration connects a hosted agent executor. Repository access still requires a separate GitHub App installation.
+| Project role | Read project | Edit brief | Invite/revoke members |
+| --- | --- | --- | --- |
+| Owner | Yes | Yes | Yes; owner cannot be removed/demoted |
+| Admin | Yes | Yes | Yes; cannot remove the owner |
+| Engineer | Yes | Yes | No |
+| Reviewer | Yes | No | No |
+| Viewer | Yes | No | No |
 
-## Private chats and explicit collaboration
-Private chats are user-owned: workspace membership grants no implicit visibility. The sender may invite an existing user alias (prefixed by @) or a verified email (including Outlook/enterprise email). An invitation stays pending until the authenticated recipient accepts it. Viewer permissions are read-only; editor permissions allow appending human messages. Revocation immediately removes access. RLS, narrow grants and confirmed Auth emails protect the underlying database. In-app invitation discovery exists; **automatic Outlook/Gmail notifications are not implemented**. End-to-end tests with two actually signed-in users and email redirect configuration are still mandatory.
+Project creation requires owner/admin/engineer membership in the target workspace. Joining a project does not join its workspace. Pending invitations disclose the project name to the intended recipient but grant no project access until accepted. Email acceptance requires the currently verified address; alias invitations bind to an immutable user ID. If an alias changes owners, an old invitation cannot be upgraded or retargeted: cancel it explicitly before inviting the new owner. Replaying an accepted invitation never recreates revoked membership.
+
+`/workspace/projects` lists all projects the user may read, including projects from workspaces they cannot read. Privileged mutations use narrow security-definer RPCs with fixed search paths and explicit actor checks. Project tables expose SELECT only to authenticated roles, with RLS; browser clients have no direct mutation grants. Project audit events record IDs, actions, roles and timestamps, not briefs, prompts, addresses or secrets.
+
+Conversations continue to use `chats`, `chat_shares` and `chat_messages`. A nullable `chats.project_id` associates a private conversation with a readable project. It does not change the conversation's audience. A project-only invitee may create a linked private conversation with `workspace_id = null`; an explicit workspace must match and be readable. Clients cannot reassign the project, workspace or owner through UPDATE.
+
+Private chat invitations remain explicit viewer/editor grants with acceptance. Project/workspace membership grants no chat visibility. A session-only recipient can read the shared conversation without reading the linked project. In-app invitations do not send external notification emails.
+
+## Applying the schema
+
+Use a dedicated project and inspect its existing schema before applying changes:
+
+1. Apply `supabase/schema.sql` if the workspace foundation is absent.
+2. Apply `supabase/migrations/private_chats_and_explicit_sharing.sql` if the private-chat foundation is absent. Its initial policy creation is not a repeatable migration runner.
+3. Apply `supabase/migrations/projects_and_project_membership.sql` after those prerequisites. It is additive and preserves existing conversations.
+4. Run the transactional RLS regressions on a controlled development/test database before rollout.
+5. Deploy the frontend only after the target schema exists. A missing migration is shown as an actionable error, never replaced with pretend data.
+
+These SQL files follow the repository's manual migration convention; do not assume `supabase db push` automatically applies unnumbered files. `supabase/config.toml` is for isolated local verification, not a production auth configuration to push remotely.
+
+## Real local auth and browser verification
+
+Supabase CLI 2.121.0 provides an experimental native runtime for macOS arm64 and supported Linux hosts; no Docker or cloud credentials are required. The script runs actual PostgreSQL/RLS, GoTrue, PostgREST and Mailpit. Test emails stay in Mailpit and are never delivered externally.
+
+```sh
+npm --prefix apps/web/studio ci
+python -m pip install 'httpx==0.28.1' 'playwright==1.64.1'
+python -m playwright install chromium
+export SUPABASE_HOME="$(mktemp -d)"
+export SUPABASE_EXPERIMENTAL_STACK=1
+umask 077
+npx --yes supabase@2.121.0 start --runtime native --eager --output-format json > "$SUPABASE_HOME/connections.json"
+python scripts/auth_ui_smoke.py --connections "$SUPABASE_HOME/connections.json"
+npx --yes supabase@2.121.0 stack destroy --yes
+```
+
+The connection file contains local test secrets; never commit or upload it. The script refuses non-loopback endpoints and compiles a separate temporary Studio build using the local public configuration. SQL fixtures roll back; browser fixtures are removed with the isolated stack. `--skip-sql` is only for iterating against an already bootstrapped test stack. CI runs this same real-service path.
+
+Exercised checks: new-tab email/PKCE login, reload, three independent accounts, project creation/invite/accept through the UI, read-only denial through real user tokens, private-session isolation, session-only sharing, revocation/replay, self-removing admin, sign-out, desktop and mobile-width Chromium rendering. SQL additionally covers anonymous callers, role escalation, owner protection, workspace mismatch and alias reassignment.
+
+## Hosted setup and unverified boundaries
+
+The configured project is `nydtmiseclkwauiepqxn`. During verification on 2026-10-22 its public auth settings responded with email enabled and GitHub disabled after the owner resumed it. Administrative access was not available to apply the new migration or change provider configuration. No production schema rollout is claimed.
+
+To enable GitHub sign-in, register/configure the OAuth provider, keep its client secret only in Supabase, and allowlist the exact production/preview callback destinations. The deployed app returns to its origin plus `/`. External email delivery, live GitHub consent, production redirects and hosted multi-user tests still require real hosted setup; local Mailpit success is not proof of those services.
+
+The default hosted Supabase email service has restrictions and is not a general-purpose production mail provider. Before launch, verify delivery configuration, rate limits, recovery, MFA/SSO requirements, backup/restore and incident controls. Factory execution, Slack integration and recursive learning remain separate roadmap milestones.
