@@ -2,7 +2,7 @@ name: React Studio build and browser QA
 on:
   pull_request:
   push:
-    branches: [main]
+    branches: [main, 'ci/preflight-*']
 permissions:
   contents: read
 concurrency:
