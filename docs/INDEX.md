@@ -53,7 +53,7 @@ Oryveta name; current Galileo-led bright product direction; Start New + Evolve a
 
 ## What is not yet locked or built
 
-Final distributed database selection, remote Rust supervisor, hosted Supabase auth/database, production GitHub App integration, autonomous model-backed software changes, tenant-safe CI/worker sandboxes, proven benchmark wins and enterprise deployment.
+Hosted factory execution, GitHub App repository publication, tenant-safe runner isolation, autonomous verified changes, Slack/mobile delivery, controlled recursive learning and enterprise operational guarantees. Supabase identity/project/session collaboration has local real-service verification; production rollout is tracked separately in STATUS.md.
 
 ## Review and updates
 

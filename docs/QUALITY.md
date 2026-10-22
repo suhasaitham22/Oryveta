@@ -18,6 +18,12 @@ The React Studio gate must build both deployment targets: `npm --prefix apps/web
 
 GitHub Actions workflows use minimal read permissions, SHA-pinned official actions, no credentials persisted by checkout, per-job timeouts, and pull-request concurrency cancellation. Dependabot checks Python, GitHub Actions and Docker dependencies weekly. A scheduled weekly security scan runs even when there are no PRs.
 
+## Real hosted-auth boundary tests
+
+The auth integration job starts isolated Supabase CLI 2.121.0 native PostgreSQL, Auth, PostgREST and Mailpit, applies the schema and transactional RLS cases, then runs `scripts/auth_ui_smoke.py` against a production-built Studio. The browser requests real email links and opens them in a new tab; three users exercise project/session grants, denial, revocation and replay. No auth responses are mocked. Setup is maintained in [IDENTITY-WORKSPACES.md](IDENTITY-WORKSPACES.md).
+
+Local captured email is not external mailbox delivery, GitHub consent or a production deployment. Vercel builds also reject privileged browser keys and Supabase origins absent from the deployed CSP. The source credential scanner covers both React source and legacy browser configuration.
+
 ## Verified local hardening tests
 
 - Browser-bound OAuth state, callback success and one-time replay rejection; auth responses must not be cached.
@@ -38,10 +44,10 @@ Repository **Settings → Branches / Rulesets** should protect `main` by requiri
 ## Production gates not yet satisfied
 
 - No verified production GitHub OAuth credentials or GitHub App repository grants.
-- No multi-tenant RBAC, hardened sandbox isolation or network policy for executing imported code.
-- Long-running worker heartbeats and per-user single-host job admission are proposed in the current enterprise-foundations change. Remote lease store, HTTP rate limiting, secrets manager and autoscaling remain unimplemented.
+- Project/session RLS and roles are implemented and locally exercised; production rollout and broader enterprise administration remain gated. Hardened isolation/network policy for executing customer code is not implemented.
+- The single-host worker has heartbeats and admission limits. Remote execution, secrets management, infrastructure rate limits and autoscaling remain unimplemented.
 - No signed/pinned fully reproducible Python dependency lockfile or pinned Docker base-image digest yet.
-- No authenticated browser e2e suite, load test, disaster recovery drill, external security review or canary/rollback deployment.
+- Local authenticated browser tests pass, but hosted-provider e2e, load tests, disaster recovery and canary/rollback deployment remain separate gates.
 - No evidence of autonomous coding performance or Kaggle leaderboard success.
 
 Do not enable arbitrary repository execution or offer consultancy-grade SLA until these gaps have been addressed and tested. See [AUTH-SECURITY.md](AUTH-SECURITY.md) and [OPERATIONS.md](OPERATIONS.md).

@@ -4,6 +4,7 @@ import {
   Activity,
   ArrowRight,
   ArrowUpRight,
+  FolderGit2,
   GitBranch,
   HardDrive,
   Layers3,
@@ -27,6 +28,7 @@ import {
 import { useWorkspaceState } from "@/lib/WorkspaceState.jsx";
 import Journey, { emptyDraft } from "./Journey.jsx";
 import PrivateChats from "./PrivateChats.jsx";
+import Projects from "./Projects.jsx";
 
 const primaryNavigation = [
   ["overview", LayoutDashboard, "Overview"],
@@ -35,6 +37,7 @@ const primaryNavigation = [
 ];
 const secondaryNavigation = [
   ["workspace", Layers3, "Workspaces"],
+  ["projects", FolderGit2, "Projects"],
   ["chats", MessageSquareText, "Private chats"],
   ["activity", Activity, "Activity"],
 ];
@@ -493,6 +496,30 @@ export default function Workspace({
               )}
             </>
           )}
+          {page === "projects" &&
+            (selfHosted ? (
+              <>
+                <div className="page-heading">
+                  <div className="section-label">Separate identities</div>
+                  <h1>Projects live in the hosted workspace.</h1>
+                  <p>
+                    This local engine session has no Supabase identity, so it
+                    cannot read hosted projects or accept their invitations.
+                  </p>
+                </div>
+                <div className="surface-panel">
+                  <FolderGit2 size={26} />
+                  <h2>Hosted projects keep their own membership.</h2>
+                  <p>
+                    Sign in to the hosted edition to create a project brief and
+                    invite people explicitly. Your local cookie and repository
+                    snapshots are never forwarded to that account.
+                  </p>
+                </div>
+              </>
+            ) : (
+              <Projects user={user} preview={preview} onExit={onExit} />
+            ))}
           {page === "chats" &&
             (selfHosted ? (
               <>

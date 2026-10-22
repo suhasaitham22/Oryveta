@@ -19,6 +19,10 @@ Oryveta must perform verifiable software work in Start New and Evolve, while rem
 
 **Context Compiler:** Tree-sitter, language server data, symbol/call graphs, Git history, relevant tests, semantic retrieval and compact evidence-linked context windows.
 
+**Knowledge graph:** an explicit delivery before full Evolve. Start with typed PostgreSQL relationships linking repositories/packages, modules/APIs, services, releases, tests, findings, incidents, sessions, changes and evidence. Every relationship carries source/revision, scope and verification/confidence metadata. Derive access from the trusted principal and current grants before retrieval; a model-provided namespace is not authorization. Do not store every raw log line as a graph node or introduce a separate graph database without a demonstrated query need.
+
+Use the graph for change impact, test selection, deployed-source lookup, incident/bug links and evidence-backed lessons. Track unsupported/stale sources, invalidate changed/deleted facts and keep uncertain causal links separate from confirmed relationships. Graph memory does not itself constitute learning.
+
 **Model Adapter:** a typed, text-only `ModelProvider` contract and an operator-configured local `OllamaProvider` now exist in the source. Bounded input/output and SQLite daily token reservations are implemented, but no live Ollama model is provisioned. Tool calling, llama.cpp, vLLM and customer-provider adapters are future work. Large model inference requires user-provided compute.
 
 **Adaptive Router:** versions of model-to-task policies; choose by observed quality, speed, cost and hardware constraints, not model brand. Permit splitting/defer rather than exceeding budget or silently using a paid service.
@@ -32,6 +36,8 @@ Oryveta must perform verifiable software work in Start New and Evolve, while rem
 **Experience Memory:** working memory, project decisions, reusable experience and evaluation history with tenant isolation, retention and human override.
 
 **Harness Lab:** propose policy/tool/context changes, test blinded evaluations, reject regressions, stage rollout and enable rollback.
+
+**On-call investigator:** consumes scoped incident work from the same orchestrator, queries bounded read-only evidence, records hypotheses and, when supported, starts the existing isolated repair/verifier path. Its telemetry credentials have no production write authority. Incident outcomes enter the learning lab only with provenance and verified/uncertain status; an agent's diagnosis is not self-authenticating training data.
 
 ## Rewrite to Rust
 

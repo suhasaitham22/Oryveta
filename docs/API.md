@@ -2,7 +2,25 @@
 
 ## Current public website
 
-The deployed preview is a static site. Navigation and project brief drafting run in the browser, with no live server calls for Oryveta project creation or Evolve analysis. Do not document a static form submit as a real backend success.
+The hosted frontend uses Supabase for identity, persisted project briefs, membership and private conversations once the required schema is applied. Start New/Evolve execution remains unavailable online: a saved brief is not a generated application or a completed analysis.
+
+## Hosted project collaboration
+
+These calls target the configured Supabase project's `/rest/v1` API with the user's authenticated token, not the separate local FastAPI API. PostgreSQL RLS authorizes reads; project mutations use the following RPCs. Apply the schema prerequisites in [IDENTITY-WORKSPACES.md](IDENTITY-WORKSPACES.md) before deploying the client.
+
+| RPC | Parameters | Authorization / result |
+| --- | --- | --- |
+| `create_project` | `p_workspace_id`, `p_name`, `p_brief`, `p_kind`, optional `p_source_url` | Workspace owner/admin/engineer; atomically returns project and provisions creator ownership |
+| `update_project` | `p_project_id`, `p_name`, `p_brief`, optional `p_source_url` | Project owner/admin/engineer; cannot reassign workspace/owner/kind |
+| `invite_project_member` | `p_project_id`, `p_recipient`, `p_role` | Owner/admin; verified-email target or immutable alias identity, non-owner role; returns invitation ID/status |
+| `list_project_invitations` | None | Only the intended recipient's pending invitations; minimal project-name disclosure |
+| `accept_project_invitation` | `p_invitation_id` | Intended verified recipient; atomic acceptance/membership; accepted replay never recreates a revoked grant |
+| `revoke_project_member` | `p_project_id`, `p_user_id` | Owner/admin; owner is protected |
+| `cancel_project_invitation` | `p_invitation_id` | Owner/admin; cancels pending access without granting membership |
+
+Authenticated SELECT on `projects`, `project_memberships`, `project_invitations` and `project_audit_events` is RLS-filtered; direct browser mutation grants are absent. Project name is 2–80 characters, brief at most 2,000, source URL at most 500 with HTTP(S) scheme, and kind is `new` or `evolve`. Invalid/forbidden RPC calls fail rather than returning fabricated success.
+
+Existing private-chat endpoints keep their separate viewer/editor sharing contract. `chats.project_id` is an optional creation-time association, not a permission grant. Null workspace is permitted for a project-only guest; a non-null workspace must be readable and match the project. Chat owner/workspace/project columns cannot be reassigned by the client.
 
 ## Current GitHub API implementation (local/self-hosted; not deployed on the static preview)
 

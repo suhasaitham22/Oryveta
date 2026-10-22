@@ -136,28 +136,28 @@
   },
   {
     "id": "private-chats",
-    "title": "Private chats",
-    "description": "Private message → consent-based invite → controlled collaboration",
-    "version": 1,
+    "title": "Project and private-session access",
+    "description": "Verified identity → explicit project membership → separately shared conversations",
+    "version": 2,
     "state": "storyboard",
     "scenes": [
       {
         "eyebrow": "01 / PRIVATE BY DEFAULT",
-        "headline": "Your conversations belong to you.",
-        "body": "Only the authenticated creator can read a new conversation. Workspace membership alone never unlocks it.",
-        "receipt": "PostgreSQL row policies tested against simulated authenticated users; real login remains pending."
+        "headline": "Sign in across tabs. Keep work private.",
+        "body": "A same-browser email link restores your verified identity. New conversations remain private to their creator.",
+        "receipt": "Real local Supabase Auth and headless new-tab login passed; hosted provider rollout is a separate gate."
       },
       {
         "eyebrow": "02 / SHARE WITH INTENTION",
-        "headline": "Invite the right person—not the whole team.",
-        "body": "Address a verified Outlook/work email or existing @alias. A pending invitation reveals no content until it is accepted.",
-        "receipt": "Synthetic multi-account test verified pending isolation and explicit acceptance; in-app invitations only."
+        "headline": "Project membership is not conversation access.",
+        "body": "Accept a project invitation to gain its assigned role. Linking a private conversation to that project does not share its messages.",
+        "receipt": "Distinct users exercised pending isolation, project roles, read-only denial and session-only sharing."
       },
       {
         "eyebrow": "03 / ALWAYS IN CONTROL",
-        "headline": "Viewer, editor, revoke.",
-        "body": "Choose read-only or contribution access. Revoke a share to remove access without exposing messages by public link.",
-        "receipt": "Database verification passed for viewer/editor separation and owner revocation; real browser accounts untested."
+        "headline": "Revoke access without reviving old grants.",
+        "body": "Remove project or conversation access explicitly. An accepted invitation cannot restore a revoked grant, and alias changes cannot redirect it.",
+        "receipt": "Real SQL and browser checks cover revocation and replay; these collaboration controls do not run a hosted coding agent."
       }
     ]
   },

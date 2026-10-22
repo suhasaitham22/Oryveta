@@ -15,3 +15,4 @@ playwright-report/
 .coverage
 apps/web/studio/dist/
 apps/web/studio/dist-local/
+supabase/.temp/

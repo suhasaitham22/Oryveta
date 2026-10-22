@@ -10,7 +10,7 @@
 4. **Every task has bounds.** Per-user admission, execution deadline, token and compute budget, retry limit, artifact limit and explicit cancellation.
 5. **Every action is traceable.** Record correlation IDs, code revision, model/tool versions, approval, budgets, tests and evidence. Do not log secrets or sensitive prompts by default.
 6. **Every state change is durable and idempotent.** Lease fencing prevents stale workers from publishing; transactional event writes prevent orphaned activity records. External side effects need reconciliation before retries.
-7. **Portability beats premature distribution.** Begin with Python/SQLite on one host; introduce PostgreSQL, distributed queues, Rust, Kubernetes or GPUs only after workload measurements justify them.
+7. **Portability beats premature distribution.** Keep the Python/SQLite local engine and use the existing Supabase/PostgreSQL authority for hosted collaboration. Add queues, runtimes or orchestration services only for measured requirements; do not introduce parallel identity/data systems.
 
 ## Architecture
 
@@ -31,13 +31,13 @@ flowchart LR
 
 **Implemented in this change:** an opt-in local Ollama text-generation adapter and SQLite per-user token reservations. No model is deployed or exercised against a live inference server by CI.
 
-**Not implemented:** production AI coding agent, hard sandbox isolation, GitHub App writes, distributed orchestration, cost billing, enterprise RBAC, independent runtime verification or cryptographic proof receipts.
+**Not implemented:** production coding/modernization agents, hard sandbox isolation, knowledge graph, operational on-call automation, GitHub App publication, recursive learning or enterprise operational guarantees. Project/session roles have local real-service verification; this is not comprehensive enterprise identity/governance or a production rollout.
 
 ## Enterprise AI release gates
 
 | Foundation | Required contract | Proof before enabling |
 | --- | --- | --- |
-| Model adapter | Versioned provider interface, structured tool calls, timeouts, retry taxonomy | Two swappable providers; deterministic mock tests |
+| Model adapter | Versioned model/tool interface with bounded inputs, outputs and execution | Real approved-model task, failure/denial behavior and independent outcome verification; mocks alone are not proof |
 | Security | Explicit capability allowlist, secrets isolation, GitHub App least privilege | Prompt-injection and authorization adversarial tests |
 | Sandbox | Ephemeral filesystem, non-root, CPU/memory/wall limits, controlled egress | Escape/egress tests, kill and cleanup on timeout |
 | Evaluation | External acceptance tests and independent reviewer | Held-out success metrics and regression rejection |
@@ -69,12 +69,28 @@ Scale only when evidence demands it: shared SQL for multi-host writes, a durable
 
 ## Next implementation order
 
-1. Job quotas, heartbeat, cancellation, owner isolation and atomic activity (**this change**).
-2. Provider-neutral, text-only local model interface and durable per-account token budgets (**this change**). Tool permission policy, per-task compute budgets and a killable executor are still pending.
-3. AI-assisted, read-only Evolve patch proposals using the existing hash/syntax preview and local model budget (**this change**). No code is executed.
-4. Disposable, killable sandboxes and egress controls.
-5. Independent verifier and content-addressed proof receipts.
-6. GitHub App with explicit approval and idempotent PR publication.
-7. Tracing, disaster recovery drills and load tests; distribute workers only when needed.
+Use the canonical [PR roadmap](ROADMAP.md), not a second parallel implementation sequence. Resource authorization is foundational. Durable execution, isolated tools, GitHub access and the knowledge graph precede full Evolve; modernization and on-call reuse that same verified engine. Enterprise identity integrations and operated launch gates do not defer baseline security to the end.
 
-See [QUALITY.md](QUALITY.md), [SECURITY.md](SECURITY.md), [ROADMAP.md](ROADMAP.md) and [OPERATIONS.md](OPERATIONS.md).
+See [QUALITY.md](QUALITY.md), [AUTH-SECURITY.md](AUTH-SECURITY.md), [ROADMAP.md](ROADMAP.md) and [OPERATIONS.md](OPERATIONS.md).
+
+## Enterprise completion criteria
+
+“Enterprise-ready” is an evidence threshold, not a UI style or a claim derived from passing a small auth suite. Each launch contract names the relevant requirements, operational owner and evidence:
+
+| Area | Required enterprise evidence |
+| --- | --- |
+| Identity and lifecycle | Real sign-in/session recovery, required MFA/federation/provisioning, service identity rotation and deprovisioning/revocation across UI, APIs and workers |
+| Tenant and data isolation | Negative tests across projects, private sessions, graph retrieval, logs, evidence, previews, caches and integration destinations; no permission inherited merely from a Slack channel |
+| Secure execution | Adversarial code cannot reach host credentials, another tenant or unauthorized networks; enforced process/resource limits and reliable cancellation |
+| Modernization | Contract/consumer and data migration checks, approved breaking changes, performance/AI-quality gates, rollout/rollback and decommissioning evidence |
+| On-call | Genuine operational fault -> correlated reports -> scoped session -> cited diagnosis -> verified fix -> authorized release -> observed recovery; storm and false-correlation tests |
+| Governance and audit | Attributable actions/approvals, protected audit records, provenance, retention/deletion and exports; hashes alone are not proof of truthful execution |
+| Supply chain | Dependency/model/recipe licenses and provenance, vulnerability checks, pinned releases where practical and no unapproved managed-service redistribution |
+| Reliability | Agreed SLO/RPO/RTO, backup/restore and failure-recovery drills, monitored dependencies, human escalation and ownership when the agent platform itself fails |
+| Learning | Trusted outcome inputs, protected holdouts, no unauthorized cross-tenant reuse, bounded experiments, reviewed activation and working rollback |
+| User experience | Accessible web/mobile chat, stable streaming/history, real task/evidence states and unambiguous errors, approvals and escalation |
+| Economics | Measured inference, execution, telemetry query/retention and storage use; quotas and backpressure; no implicit paid fallback |
+
+Use the [NIST AI Risk Management Framework](https://www.nist.gov/itl/ai-risk-management-framework) to organize risk ownership and measurement, and [OWASP GenAI risks](https://genai.owasp.org/llm-top-10/) to guide adversarial tests for injection, disclosure, supply chain, poisoning, unsafe output, excessive agency and unbounded consumption. Following guidance is not a certification claim.
+
+Open-source software and self-hosted models can remove mandatory license/API bills. They do not remove hardware, power, maintenance, backup or availability costs. Managed enterprise features and telemetry providers may have paid entitlements. A zero-new-service-bill pilot must remain functional within explicit capacity limits; it must not be sold as unlimited or contractually highly available without the supporting deployment.

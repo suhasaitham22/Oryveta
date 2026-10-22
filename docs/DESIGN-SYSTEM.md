@@ -32,6 +32,7 @@ Public content is deliberately divided:
 | `/sign-in` | Real hosted identity setup, or a clear local-identity explanation |
 | `/workspace` | Choose and do work, not another marketing page |
 | `/workspace/new`, `/workspace/evolve` | Brief, Local run and contextual Demo Studio |
+| `/workspace/projects` | Persisted briefs, explicit project roles, invitations and membership administration |
 | `/workspace/settings`, `/workspace/chats`, `/workspace/activity` | Existing workspace functionality with actual URLs |
 
 Journey tabs use `?tab=brief|local|demo`; unknown tab values show an explicit error. Radix tabs use manual activation: arrow keys move focus, Enter/Space activate. This avoids duplicate history entries from simultaneous pointer/focus activation. There is no global Demo Studio navigation option.
@@ -95,3 +96,11 @@ Intentional media records the compiled implementation, not customer usage or dep
 - [Real local analysis](media/studio-local-run.png), using isolated synthetic source and persisted worker state; not a security certification or performance benchmark.
 
 Record exact verification commands and environment limitations in the PR evidence. Browser screenshots and animation are not proof of live email delivery, OAuth configuration, two-account Supabase authorization or rendered storyboard video.
+
+## Agent chat direction
+
+The next chat iteration keeps the existing shadcn/Radix foundation: a compact project/session sidebar, readable conversation and optional task/file/diff/evidence inspector. On mobile, secondary panes become sheets and the composer stays keyboard-safe.
+
+Use stable message/run IDs, concise decision summaries, real agent todos, grouped tool results, source links, exact-artifact approvals and clear cancellation/error/reconnect states. Summary blocks are not raw private model reasoning. No invented percentages, task completion or background execution claims may be rendered.
+
+Premium means consistent spacing/typography, restrained color, safe Markdown, accessible focus/contrast, reduced motion and stable scroll while streaming—not more decorative animation or duplicate status panels. These are roadmap requirements; the current private conversations store human messages and do not run an AI agent.

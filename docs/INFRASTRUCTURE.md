@@ -13,19 +13,19 @@ The browser may close while an approved task continues. A lightweight cloud coor
 
 ## Target architecture, not a committed vendor lock-in
 
-**Cloudflare** Workers/Hono + D1 + Queues/Cron as free-tier control-plane candidate; suitable for metadata and brief API calls, not continuous GPU/CPU-heavy coding agents.
+**Static hosting / integration ingress:** retain the current Vercel GitHub preview integration within its applicable terms. Cloudflare is a candidate for compliant free static hosting and bounded integration endpoints, not a reason to duplicate identity/data in D1 or to run long coding jobs in request handlers.
 
-**Remote worker** initially a bring-your-own server/VM with Rust/Tokio supervisor (planned), sandboxed code execution and Python research/ML processes. Oracle Always Free may help experimental workloads but has eligibility/capacity/reclamation constraints and no guaranteed availability.
+**Remote worker:** a supervised Python service on authorized, continuously available compute, with disposable isolated execution and local model access. No free VM allowance guarantees capacity or uptime; do not depend on promotional credits or idle-resource reclamation exceptions.
 
-**Self-hosted alternative:** single-host SQLite and worker; PostgreSQL adapter for large consultancies. Object storage/isolated disk for datasets, model weights, source snapshots and large logs. Users should own their infrastructure when scale exceeds free-tier quotas.
+**Data:** Supabase Auth/PostgreSQL is the hosted collaboration authority; a self-hosted deployment is an alternative with operator-owned maintenance/backups. SQLite remains the local engine's store. Keep large datasets, models, source and logs in permission-scoped artifact storage, not a duplicate metadata database.
 
-**Supabase:** an optional PostgreSQL, storage and possibly auth provider if deliberately chosen. Not used for Oryveta yet. Supabase Free projects may pause after inactivity; no implied 24/7 guarantee.
+**Free-service limits:** Supabase Free projects may pause and impose capacity quotas. An authenticated account and a reachable static site are not proof of worker uptime or unlimited execution capacity.
 
 **Vercel:** acceptable for static public preview and approved usage, but Vercel Hobby has restrictions for commercial work; consultancies should verify plan entitlement or choose another permissible hosting option. Vercel functions are not a substitute for unlimited long-running sandbox workers. Project can be moved to Cloudflare, self-hosted or appropriately licensed commercial infrastructure later.
 
 ## Expected service-to-service flow
 
-UI → authenticated API → central SQL metadata → durable jobs/queues → remote worker lease → isolated sandbox → Python/Rust tool execution → verifier → artifact store + audit receipt → progress API/notifications.
+Web/mobile/Slack → shared authenticated operations → PostgreSQL work and grants → scoped Python worker lease → isolated tool execution → independent verifier → artifacts and audit receipts → permission-checked progress/notifications.
 
 ## $0 software vs $0 infrastructure
 

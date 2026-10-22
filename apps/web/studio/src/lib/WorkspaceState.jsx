@@ -15,6 +15,14 @@ export function WorkspaceState({ children }) {
     messages: {},
     recipients: {},
     permissions: {},
+    project: "",
+  });
+  const [projectDraft, setProjectDraft] = useState({
+    selected: "",
+    workspaceId: "",
+    forms: {},
+    recipients: {},
+    roles: {},
   });
   return (
     <Context.Provider
@@ -29,6 +37,8 @@ export function WorkspaceState({ children }) {
         setSettings,
         chatDraft,
         setChatDraft,
+        projectDraft,
+        setProjectDraft,
       }}
     >
       {children}

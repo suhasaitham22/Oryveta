@@ -12,6 +12,10 @@ Organization Owner, Admin, Engineer, Reviewer and Viewer; per-client/per-engagem
 
 OAuth state and redirect validation; PKCE where applicable; session expiry/revocation; secure HttpOnly/SameSite cookies over HTTPS; CSRF protection; brute-force/rate protections; MFA/SSO options for consultancy deployments; safe error handling. Never enable local/demo login on the production host.
 
+The current hosted client uses Supabase-managed browser sessions with shared browser storage so PKCE email links work in a new tab. It verifies identity with `getUser()` and handles callback failure; it is not a first-party HttpOnly BFF. Same-origin JavaScript can read these tokens, so restrictive CSP, safe rendering and no untrusted scripts remain mandatory. Production browser/session policy and MFA/SSO are separate launch requirements.
+
+Project grants are enforced by PostgreSQL RLS and narrow RPCs. Alias invitations bind to immutable user IDs; a reassigned alias cannot amend the former recipient's offer. Accepted-invitation replay cannot restore revoked membership. Project membership does not expose a private chat, and a chat invitation does not expose its project.
+
 ## Agent privileges
 
 A model may recommend a tool call but cannot authorize it. The host enforces tenant scope, path/network policies, compute budget, secrets scope, repository installation permissions and approved side effects.
@@ -28,4 +32,4 @@ Cross-tenant IDOR; leaking code into prompts/training; compromised GitHub App; f
 
 ## Release gates
 
-Independent tenant access tests, threat modeling, secret scanners, dependency audits, critical-path e2e, rollback drills, monitored auth, incident response and backup restoration. **Hosted GitHub OAuth is not yet enabled.** The hosted sign-in gate and workspace UI are implemented in a review branch; production sign-in requires a dedicated Supabase project, configured GitHub OAuth provider and live isolation tests. See [IDENTITY-WORKSPACES.md](IDENTITY-WORKSPACES.md).
+Independent tenant access tests, threat modeling, secret scanners, dependency audits, critical-path e2e, rollback drills, monitored auth, incident response and backup restoration remain release gates. Local real Supabase email/PKCE and multi-user SQL/browser checks pass; hosted provider/schema rollout and external email delivery are not established by those tests. The resumed project's public settings advertised GitHub disabled during verification. See [IDENTITY-WORKSPACES.md](IDENTITY-WORKSPACES.md) for setup, exact permission boundaries and test evidence.

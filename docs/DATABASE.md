@@ -2,23 +2,23 @@
 
 ## Decision
 
-**SQLite-first** as an open, portable baseline. Separate high-value identity/workspace/task metadata from high-volume agent trajectories, code, benchmark artifacts and training datasets. Avoid introducing unnecessary databases before evidence demands them.
+**PostgreSQL for hosted collaboration; SQLite for the local engine.** Separate high-value identity/workspace/project/run metadata from high-volume trajectories, code, artifacts and datasets. Do not add a second hosted database or duplicate identity authority without a concrete requirement.
 
 ## Current local state
 
-The local FastAPI MVP uses SQLite for users, sessions, OAuth state, projects, project analyses, jobs and events; background jobs use leases and bounded retries. SQLite WAL supports multiple readers but a single writer and is not suited to multi-host shared-network-filesystem state. Current public static preview has no database and stores no user projects.
+The local FastAPI engine uses SQLite for users, sessions, OAuth state, projects, analyses, jobs and events; its worker uses leases and bounded retries. SQLite WAL is not a multi-host shared-network-filesystem store. Hosted React collaboration instead uses the configured Supabase Auth/PostgreSQL project once its migrations are applied.
 
 ## Target hosted control-plane DB
 
-Cloudflare D1 + Drizzle was the initial free-tier control-plane proposal. **For the first hosted authentication/workspace milestone, Supabase Auth + PostgreSQL is the selected implementation** because a single managed identity and RLS boundary is simpler and auditable. Avoid splitting identity and workspace data across D1 and Supabase before evidence justifies it. Model tables: organizations, memberships, clients, engagements, projects, repository connections, specs, approvals, agent_jobs, job_attempts, leases, workers, audit_events, evidence_receipts and release outcomes. Each query must enforce authorization at its actual data boundary. D1 per-database and daily-operation quotas need validation at deployment time.
+Supabase Auth and PostgreSQL are the selected hosted collaboration boundary. Existing workspace/chat tables are extended by `projects`, `project_memberships`, `project_invitations` and `project_audit_events`. RLS filters reads; narrow RPCs own project writes and grant changes. Future durable work, approvals, worker leases and evidence metadata belong in this same authority rather than being split into D1 by default.
 
 ## Per-worker state
 
-A separate SQLite file (via Rust SQLx if the Rust worker is built) for checkpoints, experiment trials, metrics, temporary context caches and retry history. Keep source repositories in isolated Git worktrees; datasets, model weights, screenshots, log streams and large outputs in tenant-scoped filesystem/object storage.
+Disposable workers keep temporary source and execution files locally; authoritative checkpoints, run state and evidence metadata must survive the runner. Keep repositories, datasets, model weights, screenshots and large logs in permission-scoped filesystem/object storage. A Rust rewrite is not part of the selected implementation path.
 
 ## When to choose PostgreSQL / Supabase
 
-For multi-writer consultancies, complex queries or more substantial tenant operation, provide a PostgreSQL adapter. Supabase is selected for the hosted identity/workspace foundation; a dedicated Oryveta project is **not yet provisioned**. The reviewed schema lives at `supabase/schema.sql`. On Supabase, apply tested per-tenant Row Level Security to exposed tables, secure storage policies, appropriate indexes and a deliberate backup plan. Free Supabase projects may pause after inactivity, making them unsuitable for guaranteed always-on critical services without mitigation.
+The dedicated Oryveta project is configured in the public client defaults. Base workspace/private-chat schemas and the project-membership migration are in `supabase/`; apply them in the documented prerequisite order. Exposed tables require explicit grants plus tested RLS, appropriate indexes and backup/restore procedures. Free-project pausing/quotas cannot support an unconditional uptime promise.
 
 ## Auth/storage rules
 

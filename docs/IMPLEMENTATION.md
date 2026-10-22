@@ -24,6 +24,8 @@ Status: **Merged local API and React Studio frontend; hosted React/Supabase inte
 | `tests/` | API, ownership, CSRF, OAuth state, archive safety, worker and scaffold tests |
 | `Dockerfile`, `compose.yaml` | Single-host API and worker containers with local-only port binding |
 
+The hosted collaboration slice uses `apps/web/studio/src/lib/identity.js`, `projects.js`, `pages/Projects.jsx` and the existing private-chat client. `supabase/migrations/projects_and_project_membership.sql` adds project RLS/RPCs without merging local engine identities. `scripts/auth_ui_smoke.py` exercises actual local Supabase Auth/PostgREST/PostgreSQL/Mailpit and a production-built Studio with headless Chromium; setup and deployment prerequisites are in [IDENTITY-WORKSPACES.md](IDENTITY-WORKSPACES.md).
+
 ## Run and test
 
 ```bash
@@ -37,7 +39,7 @@ uvicorn oryveta_api.main:app --host 127.0.0.1 --port 8000
 python -m oryveta_engine.worker
 ```
 
-Build the React Studio separately with Node 20+:
+Build the React Studio separately with Node 20.19+ or 22.12+:
 
 ```bash
 npm --prefix apps/web/studio ci
@@ -48,7 +50,7 @@ npm --prefix apps/web/studio run build:local
 
 The hosted build writes `apps/web/studio/dist`; `build:local` writes `apps/web/studio/dist-local` for the FastAPI `/studio/` surface. Open `http://127.0.0.1:8000/studio/`, sign in to local demo, and use Start New/Evolve. `pytest -q`, coverage and `ruff check apps/api engine tests` provide Python gates.
 
-Python 3.11+ is supported by metadata; GitHub CI tests Python 3.12. No paid model keys required.
+Python 3.11+ is supported by metadata; backend CI tests Python 3.11–3.13. No paid model keys are required.
 
 ## Hardening included in first source PR
 
@@ -64,9 +66,9 @@ Python 3.11+ is supported by metadata; GitHub CI tests Python 3.12. No paid mode
 2. SQLite and file workspaces are single-host and not adequate as-is for multi-tenant consultancy deployment.
 3. Source imports are snapshots only; imported code is not executed or changed by an AI agent.
 4. The worker does not run in a hardened per-tenant container or microVM and has no managed always-on hosting.
-5. Supabase Auth/workspace integration is implemented in the React client/schema, but real mailbox login, two-user RLS/browser authorization and provider configuration remain unverified.
+5. Local real Supabase email/PKCE, project/session authorization and multi-user browser checks pass. Hosted migration deployment, external mailbox delivery, GitHub OAuth consent and production redirect verification remain separate prerequisites.
 6. OAuth requires real client credentials, production ingress, rate limits, secrets management, audit and backup/restore before internet-facing operation.
-7. Full custom application generation, automated bug fixes/PRs, Rust supervisor, managed Cloudflare/Supabase production infrastructure and self-improving harness remain planned.
+7. Custom application generation, automated verified fixes/PRs, hosted worker execution, Slack/mobile delivery and the self-improving harness remain planned. The selected path extends Python rather than requiring a Rust/Hono rewrite.
 
 ## Release discipline
 

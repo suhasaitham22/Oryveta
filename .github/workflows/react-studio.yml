@@ -2,7 +2,7 @@ name: React Studio build and browser QA
 on:
   pull_request:
   push:
-    branches: [main]
+    branches: [main, 'ci/preflight-*']
 permissions:
   contents: read
 concurrency:
@@ -67,3 +67,45 @@ jobs:
         run: |
           npm install --no-audit --no-fund
           npx tsc --noEmit
+  auth-integration:
+    name: Real Supabase auth, RLS and browser collaboration
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      SUPABASE_EXPERIMENTAL_STACK: '1'
+      PLAYWRIGHT_SKIP_BROWSER_GC: '1'
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: '22'
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97
+        with:
+          python-version: '3.12'
+      - name: Set isolated Supabase state directory
+        run: echo "SUPABASE_HOME=$RUNNER_TEMP/oryveta-auth-supabase" >> "$GITHUB_ENV"
+      - name: Install locked frontend and browser dependencies
+        run: |
+          npm --prefix apps/web/studio ci --no-audit --no-fund
+          python -m pip install 'httpx==0.28.1' 'playwright==1.64.1'
+          python -m playwright install --with-deps chromium
+      - name: Start isolated native Supabase services
+        run: |
+          umask 077
+          npx --yes supabase@2.121.0 start --runtime native --eager --output-format json > "$RUNNER_TEMP/auth-connections.json"
+      - name: Exercise SQL authorization and real email login in Chromium
+        run: |
+          python scripts/auth_ui_smoke.py --connections "$RUNNER_TEMP/auth-connections.json" --evidence "$RUNNER_TEMP/auth-evidence"
+      - name: Preserve synthetic browser evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: auth-browser-evidence
+          path: ${{ runner.temp }}/auth-evidence
+          if-no-files-found: ignore
+          retention-days: 7
+      - name: Remove isolated test services
+        if: always()
+        run: npx --yes supabase@2.121.0 stack destroy --yes
