@@ -17,6 +17,9 @@
 --     authenticated role holds SELECT only on the four new tables, so a
 --     forgotten policy fails closed instead of exposing a write path.
 
+-- Keep table creation, RLS and privilege changes in one atomic rollout.
+begin;
+
 -- ---------------------------------------------------------------------------
 -- Tables
 -- ---------------------------------------------------------------------------
@@ -533,3 +536,5 @@ end
 $$;
 revoke all on function public.cancel_project_invitation(uuid) from public,anon;
 grant execute on function public.cancel_project_invitation(uuid) to authenticated;
+
+commit;

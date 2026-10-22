@@ -44,7 +44,7 @@ Use a dedicated project and inspect its existing schema before applying changes:
 
 1. Apply `supabase/schema.sql` if the workspace foundation is absent.
 2. Apply `supabase/migrations/private_chats_and_explicit_sharing.sql` if the private-chat foundation is absent. Its initial policy creation is not a repeatable migration runner.
-3. Apply `supabase/migrations/projects_and_project_membership.sql` after those prerequisites. It is additive and preserves existing conversations.
+3. Apply `supabase/migrations/projects_and_project_membership.sql` after those prerequisites. It is additive, preserves existing conversations and wraps table creation/RLS/grants in one transaction; execute the complete file rather than selected statements.
 4. Run the transactional RLS regressions on a controlled development/test database before rollout.
 5. Deploy the frontend only after the target schema exists. A missing migration is shown as an actionable error, never replaced with pretend data.
 
