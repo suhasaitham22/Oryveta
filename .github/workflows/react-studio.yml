@@ -72,7 +72,6 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     env:
-      SUPABASE_HOME: ${{ runner.temp }}/oryveta-auth-supabase
       SUPABASE_EXPERIMENTAL_STACK: '1'
       PLAYWRIGHT_SKIP_BROWSER_GC: '1'
     steps:
@@ -85,6 +84,8 @@ jobs:
       - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97
         with:
           python-version: '3.12'
+      - name: Set isolated Supabase state directory
+        run: echo "SUPABASE_HOME=$RUNNER_TEMP/oryveta-auth-supabase" >> "$GITHUB_ENV"
       - name: Install locked frontend and browser dependencies
         run: |
           npm --prefix apps/web/studio ci --no-audit --no-fund
