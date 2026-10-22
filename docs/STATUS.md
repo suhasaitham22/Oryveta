@@ -30,6 +30,6 @@ Demo Studio edits contextual storyboards; exports remain unverified drafts. Loca
 
 `oryveta_engine.learning` compares submitted evidence and requires human review. It does not authenticate execution evidence, train a model, retrieve cross-session memory or promote its own production harness.
 
-**Not implemented:** hosted factory execution, isolated arbitrary customer-code execution, autonomous verified Evolve fixes, custom Start New application generation, GitHub App repository publication, Slack integration, native mobile distribution, continuously running recursive improvement, enterprise SSO/billing or an availability SLA.
+**Not implemented:** hosted factory execution, isolated arbitrary customer-code execution, full knowledge graph/analysis, autonomous verified Evolve fixes, AI-native application/package rewriting, custom Start New application generation, project on-call telemetry/correlation/repair, GitHub App repository publication, Slack integration, native mobile distribution, continuously running recursive improvement, enterprise SSO/billing or an availability SLA.
 
 See [identity and testing](IDENTITY-WORKSPACES.md), [architecture](ARCHITECTURE.md) and the [staged roadmap](ROADMAP.md). A source change, local test, preview deployment and production release are different evidence levels.

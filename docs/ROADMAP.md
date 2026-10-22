@@ -7,9 +7,10 @@ This is a delivery plan, not a claim that the factory already exists. Sequence n
 One platform for personal users and teams: a polished web/mobile experience and Slack client operating the same accounts, projects, private/shared sessions, durable work items, runs, approvals and scoped knowledge.
 
 - **Start New:** requirements become an implemented, independently tested application and reviewable source—not merely a template.
-- **Evolve:** an authorized repository/change request becomes a reproduced problem, isolated implementation, independent verification and reviewable PR.
+- **Evolve:** analyze applications/packages, implement verified changes, and execute justified AI-native modernization or replacement with contract/data migration and rollback.
 - **Always-on:** accepted work and explicit schedules survive client closure and recover from interruption; machine/integration grants are independent of browser sessions.
 - **Recursive learning:** verified outcomes produce candidate memories/skills/harness improvements, which are compared against a baseline, reviewed, versioned and rolled back when necessary.
+- **On-call:** both Start New and Evolve projects can ingest authorized operational signals, correlate bug reports, open a scoped investigation session and produce a verified fix through the same factory.
 
 ## Architectural commitments
 
@@ -25,23 +26,31 @@ Use open-source Deep Agents/LangGraph primitives where they fit, rather than ado
 | 2 — Durable work and events | Canonical work items/runs, typed events, checkpoints, leases, cancellation, supervised worker; adapt real analysis rather than ship an empty queue | Browser/API/worker interruption preserves accepted work; stale worker cannot publish; no duplicate completion | 1 |
 | 3 — Model, tools and verifier | Explicit local model, scoped tools, disposable isolated execution, budgets, independent checks | Real edit/run/repair; denied credential/network access; protected evaluator; no paid fallback | 2, authorized compute |
 | 4 — GitHub App | Selected-repository grants, short-lived tokens, source SHAs, branch/PR publication, separately approved repository creation | Allowed private repo works; unselected/revoked access denied; token renewal; deduplicated side effects; stale approval rejected | 1–3 |
-| 5 — Agent chat/workspace | Minimal shadcn conversation, composer, decision summaries, real todos/tool cards, evidence/approval inspector, reconnect/cancel | Actual streamed events survive reconnect without duplicates; readable history/scroll; keyboard/reduced-motion/mobile checks | 1–3; GitHub surfaces use 4 |
-| 6 — Evolve | Reproduce, plan, implement, verify, draft PR and bounded feedback/rework | Baseline fails and candidate passes independent tests; required behavior preserved; exact tested SHA in PR | 1–5 |
-| 7 — Start New | Brief/criteria, decomposition, implementation, build/test/preview, reviewed publication and follow-up changes | Working CRUD/validation/persistence app, browser/API smoke, restart and changed-requirement check; more than one brief | Shared loop from 6 |
-| 8 — Review and release | Proof-linked review inbox, isolated previews, exact-artifact approvals, configured deployment target and rollback | Unauthorized preview/deploy denied; preview cannot access app cookies; stale approval rejected; test release rollback | 6–7 |
-| 9 — Slack | Installation/linking, explicit bindings, commands/mentions, durable intake/outbox, status/review links | Authorized/unlinked/unauthorized actors; retry dedupe; fast ack; long-job callback; rotation/uninstall; no channel leakage | 1–8 |
-| 10 — Scoped learning registry | Evidence/provenance, candidate memories/skills, retrieval permissions, retention/deletion, versioned activation/rollback | Reuse a reviewed lesson; deny cross-tenant/private-session retrieval; reject forged results; invalidate deleted sources | Reliable run/verifier evidence |
-| 11 — Recursive improvement lab | Outcome-driven candidates, isolated baseline/candidate trials, protected holdouts, bounded repeated cycles, reviewed promotion | Held-out improvement within budget, no required/security regressions, rejection and rollback paths demonstrated | 10 |
-| 12 — Mobile delivery | Installable PWA using the same backend; explicit native-platform follow-on PRs if required | Same run across phone/web, client closure does not stop work, safe caches/logout, honest browser/device coverage | Complete web flows |
-| 13 — Operated launch and scale | Supervision, fair queues, quota/secret/retention controls, backup/restore, incident procedures, measured capacity | 24-hour soak plus crashes/network loss/expiry/revocation/reboot/restore; no lost accepted work or duplicate publication in tested scenarios | Relevant completed flows |
+| 5 — Knowledge graph and analysis | Versioned repository/package/service/API/test/release relationships, source provenance, scoped retrieval and explicit coverage gaps | Trace an affected component to its tests, deployed release and findings; deny cross-project retrieval; invalidate stale/deleted sources | 4 |
+| 6 — Agent chat/workspace | Minimal shadcn conversation, decision summaries, actual todos/tool cards, evidence inspector, reconnect/cancel | Real streamed events survive reconnect; keyboard/reduced-motion/mobile checks; no fabricated progress | 2–5 |
+| 7 — Evolve verified changes | Reproduce, plan, implement, verify, draft PR and bounded feedback/rework | Baseline fails and candidate passes independent tests; required behavior preserved; exact tested SHA in PR | 2–6 |
+| 8 — AI-native modernization | Full analysis dossier, target architecture, app/package migration, typed agent/tool boundaries and staged replacement | Required API/data/security behavior preserved or explicitly migrated; consumer tests, rollout/rollback and AI-quality gates pass | 5, 7 |
+| 9 — Start New | Brief/criteria, decomposition, implementation, build/test/preview, reviewed publication and follow-up changes | Working app and persistence, browser/API smoke, restart and changed-requirement check; observable service/release identity | Shared loop from 7 |
+| 10 — Review and release | Proof-linked review inbox, isolated previews, exact-artifact approvals, configured target and rollback | Unauthorized preview/deploy denied; previews cannot access app cookies; stale approval rejected; release rollback tested | 7–9 |
+| 11 — Slack | Explicit installation/linking/bindings, commands/mentions, durable intake/outbox and review links | Linked/unlinked/unauthorized actors; retry dedupe; fast ack; long-job callback; no channel leakage | 1–10 |
+| 12 — Telemetry and bug connectors | Read-only log/metric/trace and issue connectors, release/source mapping, redaction, durable event receipts | Source/tenant isolation, bounded retrieval, replay handling, secret/PII controls and explicit retention/query limits | 2, 4, 5 |
+| 13 — On-call investigation | Deterministic incident correlation, automatic scoped sessions, evidence timeline, hypotheses and escalation | Duplicate/storm inputs create bounded canonical work; near-miss incidents stay distinct; diagnosis cites actual source evidence | 6, 12 |
+| 14 — On-call fix and closure | Reproduce incident against deployed revision, isolated patch, independent tests, controlled release and post-change observation | Real operational fault reaches a verified fix; no production write via telemetry credentials; resolution requires observation, not merely a merged PR | 7, 10, 13 |
+| 15 — Scoped learning registry | Evidence/provenance, candidate memories/skills, retrieval permissions, retention/deletion and versioned activation | Reuse a reviewed lesson; reject forged outcomes; deny private-session leakage; invalidate deleted sources | Reliable run/incident evidence |
+| 16 — Recursive improvement lab | Bounded retrospective/candidate/evaluation cycles, protected holdouts, reviewed promotion | Held-out improvement within budget, no required/security regressions; rejection and rollback demonstrated | 15 |
+| 17 — Mobile delivery | Installable PWA using the same backend; explicit native follow-ons where required | Same run/incident across phone/web; closure does not stop work; safe caches/logout and honest device coverage | Complete web flows |
+| 18 — Enterprise identity/governance | Required federation/MFA/lifecycle integrations, service identities, separation of duties, audit export and retention/deletion controls | Deprovisioning/revocation drills, least privilege and administrative audit; provider entitlements verified, not assumed free | Existing resource security from 1 |
+| 19 — Operated launch and scale | Supervision, fair queues, quotas, recovery, operational ownership and measured capacity | Soak and injected crash/network/expiry/revocation/reboot/restore; agreed SLO/RPO/RTO demonstrated; no false SLA/compliance claims | Relevant completed flows |
 
-Each PR must add an exercised capability. Verification and human boundaries begin with the first execution; PR 8 is not permission to postpone safety. Basic supervision starts in PR 2; PR 13 is the operated-launch gate. Collect learning evidence early, but activate learning only after the evidence is trustworthy.
+Each PR must add an exercised capability and may be split further for reviewability. Security and verification start with the first execution; the release and enterprise milestones do not defer baseline isolation or approval. Basic supervision starts in PR 2. Collect learning evidence early, but activate learning only after outcomes are trustworthy. Detailed modernization and on-call contracts are in [PRODUCT.md](PRODUCT.md) and [OPERATIONS.md](OPERATIONS.md).
 
 ## Premium, minimal chat UI
 
 Desktop: a compact project/session sidebar, readable conversation and optional inspector for tasks/files/diffs/preview/evidence. Mobile: one primary pane, sidebar/inspector sheets and a keyboard-safe composer. Keep the current project/session audience visible.
 
 Use owned shadcn/Radix composites for messages, composer, run activity, task list, tool results, evidence and approvals. Decision/reasoning blocks contain useful progress and decision summaries, not raw private model reasoning. Todos and tool states come from persisted worker events, not simulated completion. Collapse routine completed activity; keep failures and approvals visible.
+
+On-call sessions add an incident summary, affected service/environment/release, evidence timeline, linked bug reports, hypotheses, actual investigation tasks, fix/verification state and escalation/approval controls. Never mix model hypotheses with confirmed operational facts.
 
 Quality means readable typography, restrained color, consistent spacing, responsive controls, accessible focus/contrast, reduced motion, safe Markdown, stable scroll and honest terminal states. More animation, agents or panels does not make the product better.
 
@@ -57,6 +66,8 @@ Weight training is a separate data-consent/compute program, not another name for
 
 Target no mandatory paid service dependency, not unlimited free SaaS capacity. A continuously powered authorized host, electricity, storage, network and maintenance are still required. Local inference has no per-token service bill but must meet measured coding-quality and throughput gates. Never switch to a paid provider automatically.
 
+AI-native generated applications also need inference resources. Log providers can charge for ingestion, retention, queries and egress. A connector does not make those services free: default to existing authorized allowances or self-hosted sources, enforce budgets and never enable a paid telemetry/model plan automatically.
+
 Free static hosting and Supabase allowances can support a bounded pilot; quotas/pausing are not an availability SLA. Vercel Hobby is non-commercial personal use only. Choose a compliant launch deployment, such as an appropriate Cloudflare static-hosting plan, or explicitly approve a paid plan. Self-hosted Supabase transfers backups, updates and availability to the operator. Native store/signing accounts may require fees; a PWA is not falsely described as App Store delivery.
 
 Scale isolated runners and inference separately, using measured queue wait, accepted-task success, review effort and compute per accepted change. Customer-owned pools are an optional deployment mode with explicit enrollment and evidence trust boundaries. Add services only when a measured bottleneck justifies them.
@@ -67,6 +78,7 @@ Scale isolated runners and inference separately, using measured queue wait, acce
 2. Authorized always-on compute, stable integration ingress and backup storage.
 3. Capacity-limited multi-user pilot versus a contractual service-level promise.
 4. One real Evolve task and one Start New brief as launch acceptance cases.
+5. The first modernization target, required application/package contracts and the initial on-call telemetry/bug sources, with explicit environments and automation policy.
 
 The auth code, a local test, a preview deploy and a production release are separate milestones. No source claim replaces actual provider setup or a live test.
 
