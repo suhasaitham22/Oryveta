@@ -2,11 +2,11 @@
 
 ## Auth and collaboration changes
 
-The current auth/collaboration change adds persisted hosted project briefs, project roles and invitations, private-conversation project association, runtime sign-in provider discovery, and real Supabase/browser regression coverage. It does not add a hosted coding factory. Production migration and provider rollout are separate from these local verification results.
+PR #31 is deployed to Vercel production. Its atomic project/collaboration migration is applied to Supabase, with RLS enabled and direct client mutation grants denied on all four new tables. Production GitHub sign-in and deployed multi-user project/private-session authorization have been exercised. This release does not add a hosted coding factory.
 
 The React Studio builds a hosted `dist` and a self-hosted `dist-local`. FastAPI serves the latter at `/studio/`; the legacy `/` remains a separate self-hosted surface. Hosted Supabase identity and local FastAPI engine sessions are deliberately separate. No hosted engine bridge exists.
 
-**Identity:** Supabase email links use PKCE with browser storage shared across tabs; identity is verified with `getUser()`. Initialization failures are surfaced. GitHub availability comes from the actual project settings, not a hard-coded feature flag. During the 2026-10-22 check the resumed hosted project advertised email enabled and GitHub disabled. Its administrative credentials were unavailable, so no hosted provider/schema changes are claimed.
+**Identity:** Supabase email links use PKCE with shared browser storage; identity is verified with `getUser()`. GitHub provider discovery is dynamic. The production site URL and exact redirects are configured, and GitHub OAuth is enabled using an identity-only OAuth App. A real GitHub consent/callback reached the production origin and `/auth/v1/user` returned 200. Existing email identities are not silently merged with a new GitHub identity.
 
 **Projects:** PostgreSQL RLS and narrow RPCs enforce owner/admin/engineer/reviewer/viewer roles. Pending email or immutable-user-bound alias invitations confer no project access. Acceptance is atomic; replay cannot recreate a revoked grant. Reassigned aliases cannot silently upgrade an invitation for the former owner. Workspace membership and project membership are distinct.
 
@@ -19,8 +19,11 @@ The React Studio builds a hosted `dist` and a self-hosted `dist-local`. FastAPI 
 - Production-built React Studio in headless Chromium: actual email link opened in a new tab, original-tab session restoration, three users, project create/invite/accept, read-only mutation denial, session-only sharing, project/admin-self revocation, sign-out and desktop/mobile-width rendering. The new-tab PKCE regression failed before the storage fix and passed afterward.
 - Python suite: 151 tests passed. Ruff and the seven storyboard/security-scan contracts passed.
 - Vercel-target build succeeds for the canonical configuration; a privileged browser key and a Supabase origin absent from the deployed CSP are rejected before building.
+- Exact-head GitHub preflight and PR checks passed, including Python 3.11–3.13, security/Docker, React browser QA and the real local Supabase integration.
+- Production browser OAuth: identity-only GitHub consent, production callback, verified user and a Projects page without schema errors.
+- `scripts/production_auth_smoke.py`: three controlled production identities authenticated through the real Auth password grant; ordinary user sessions exercised the deployed create/invite/accept/read-only/session-sharing/revocation paths and mobile rendering. The admin key only provisioned/removed test identities, never entered a browser. All three test identities and their cascading application rows were removed; cleanup was independently checked.
 
-Local mail is captured in Mailpit. These results do not prove external mailbox delivery, live GitHub OAuth consent, production redirects, physical mobile-device behavior, hosted schema deployment, a 24-hour worker soak or enterprise uptime. The existing lazy Three.js chunk still emits Vite's size advisory; it was not hidden or treated as a correctness failure.
+Local Mailpit coverage is not external email delivery. Production GitHub OAuth and authorization checks are separate evidence from the API-issued test-session setup; the latter does not claim email or OAuth-consent coverage. The default hosted SMTP remains limited and unverified for general delivery. Physical mobile devices, a 24-hour worker soak, enterprise recovery and uptime remain unproven. The existing lazy Three.js size advisory is not hidden.
 
 ## Existing engine and product boundaries
 

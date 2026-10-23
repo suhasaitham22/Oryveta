@@ -66,8 +66,8 @@ Python 3.11+ is supported by metadata; backend CI tests Python 3.11–3.13. No p
 2. SQLite and file workspaces are single-host and not adequate as-is for multi-tenant consultancy deployment.
 3. Source imports are snapshots only; imported code is not executed or changed by an AI agent.
 4. The worker does not run in a hardened per-tenant container or microVM and has no managed always-on hosting.
-5. Local real Supabase email/PKCE, project/session authorization and multi-user browser checks pass. Hosted migration deployment, external mailbox delivery, GitHub OAuth consent and production redirect verification remain separate prerequisites.
-6. OAuth requires real client credentials, production ingress, rate limits, secrets management, audit and backup/restore before internet-facing operation.
+5. Production GitHub OAuth, project/private-session schema and controlled multi-user browser authorization are verified. General external email delivery, enterprise identity governance and recovery remain separate requirements.
+6. Repository access still requires a separate GitHub App. Production workers also require explicit host/credential provisioning, rate limits, secret handling, audit and backup/restore.
 7. Custom application generation, automated verified fixes/PRs, hosted worker execution, Slack/mobile delivery and the self-improving harness remain planned. The selected path extends Python rather than requiring a Rust/Hono rewrite.
 
 ## Release discipline

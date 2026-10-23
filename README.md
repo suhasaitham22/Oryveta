@@ -4,11 +4,11 @@
 
 ### [Open Oryveta — https://oryveta.vercel.app](https://oryveta.vercel.app)
 
-**Deployment:** [Vercel production](https://oryveta.vercel.app) serves the hosted React Studio build from `apps/web/studio/dist`; extensionless browser routes fall back to the app shell while dotted asset paths remain real 404s. Start New/Evolve hosted flows produce planning/storyboard drafts only; Supabase provider setup and real RLS/mailbox verification remain required for hosted account claims. The self-hosted FastAPI origin retains legacy `/` and serves the local React workspace at `/studio/` from `apps/web/studio/dist-local` when a local build exists; this local API/worker is not deployed to Vercel.
+**Deployment:** [Vercel production](https://oryveta.vercel.app) serves the hosted React Studio from `apps/web/studio/dist`. GitHub sign-in, persisted project membership and private-session sharing have production verification. Start New/Evolve execution still requires the separate self-hosted API; a saved brief is not a generated application. FastAPI retains legacy `/` and serves the local React workspace at `/studio/` from `apps/web/studio/dist-local`; that API/worker is not deployed to Vercel.
 
 > **Documentation:** [Complete product and technical decisions](docs/INDEX.md) · [Architecture](docs/ARCHITECTURE.md) · [UI design](docs/DESIGN-SYSTEM.md) · [Roadmap](docs/ROADMAP.md) · [Verified status](docs/STATUS.md) · [Quality gates](docs/QUALITY.md)
 
-> **Launch status:** The hosted UI clearly labels its unavailable execution boundary. Project generation, repository analysis and model inference require the separate self-hosted API. Live GitHub OAuth and hosted coding agents are not configured. Local deterministic starters and read-only analysis are not autonomous custom application generation.
+> **Launch status:** Production GitHub identity and project/private-session collaboration are live. General email deliverability, enterprise operations and hosted coding agents remain separate gates. Local deterministic starters and read-only analysis are not autonomous custom application generation.
 
 Oryveta is an open-source software engineering workspace with two target product journeys (the local MVP implements only bounded starter/scanning capabilities):
 
@@ -21,7 +21,7 @@ Kaggle and related benchmarks are **internal evaluation scenarios**, not a third
 
 **Early development.** The functional Python/FastAPI + SQLite MVP, tests, background worker, Docker Compose and CI are merged into `main`. The React Studio is the hosted UI and also an optional self-hosted `/studio/` surface; local jobs expose coarse worker states/events only. Autonomous code execution, test-backed AI fixes, GitHub publishing, hosted inference and 24/7 execution are not implemented.
 
-The auth/collaboration source adds persisted project briefs, explicit project roles and invitations, and private conversations that remain private when linked to a project. Real local Supabase email/PKCE, SQL authorization and headless browser flows are verified; production schema/provider rollout and external email delivery remain separate gates. See [identity, permissions and the reproducible test setup](docs/IDENTITY-WORKSPACES.md).
+Project roles, invitations and separately shared private conversations are enforced by Supabase RLS/RPCs. Real local email/PKCE tests, production GitHub OAuth and deployed multi-user authorization checks pass. No unrestricted repository execution or full software factory is claimed. See [identity, permissions and reproducible verification](docs/IDENTITY-WORKSPACES.md).
 
 See [current status](docs/STATUS.md) and [open-source policy](docs/OPEN-SOURCE.md).
 

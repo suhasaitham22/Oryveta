@@ -43,11 +43,11 @@ Repository **Settings → Branches / Rulesets** should protect `main` by requiri
 
 ## Production gates not yet satisfied
 
-- No verified production GitHub OAuth credentials or GitHub App repository grants.
-- Project/session RLS and roles are implemented and locally exercised; production rollout and broader enterprise administration remain gated. Hardened isolation/network policy for executing customer code is not implemented.
+- Production GitHub identity and project/session authorization are verified; repository-access GitHub App grants and broader enterprise administration remain unimplemented.
+- Hardened isolation/network policy for executing customer code is not implemented.
 - The single-host worker has heartbeats and admission limits. Remote execution, secrets management, infrastructure rate limits and autoscaling remain unimplemented.
 - No signed/pinned fully reproducible Python dependency lockfile or pinned Docker base-image digest yet.
-- Local authenticated browser tests pass, but hosted-provider e2e, load tests, disaster recovery and canary/rollback deployment remain separate gates.
+- Production OAuth and controlled multi-user browser authorization pass. General email delivery, load tests, disaster recovery and canary/rollback deployment remain separate gates.
 - No evidence of autonomous coding performance or Kaggle leaderboard success.
 
 Do not enable arbitrary repository execution or offer consultancy-grade SLA until these gaps have been addressed and tested. See [AUTH-SECURITY.md](AUTH-SECURITY.md) and [OPERATIONS.md](OPERATIONS.md).
