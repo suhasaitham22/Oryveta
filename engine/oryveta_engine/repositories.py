@@ -14,6 +14,9 @@ MAX_ARCHIVE = 12 * 1024 * 1024
 MAX_UNPACKED = 32 * 1024 * 1024
 MAX_ENTRIES = 1800
 REPO_PATTERN = re.compile(r"^[A-Za-z0-9_.-]{1,100}$")
+# A pinned source is an exact commit, never a branch or tag: a work item's
+# retry must fetch the same bytes the first attempt resolved.
+COMMIT_PATTERN = re.compile(r"^[0-9a-f]{40}$")
 
 
 class InvalidRepository(ValueError):
@@ -37,8 +40,16 @@ def parse_github_url(url: str) -> tuple[str, str]:
     return owner, repo
 
 
-def fetch_public_github_repo(url: str) -> tuple[str, bytes]:
-    """Fetch fixed GitHub API endpoints; follow only allowlisted archive hosts."""
+def fetch_public_github_repo(url: str, ref: str | None = None) -> tuple[str, bytes]:
+    """Fetch fixed GitHub API endpoints; follow only allowlisted archive hosts.
+
+    `ref`, when given, must be an exact 40-character lowercase commit, and is
+    refused before any request otherwise, so a branch name, a path fragment or
+    an abbreviated commit can never reach the archive URL. Without it the
+    repository's current default branch is fetched.
+    """
+    if ref is not None and not COMMIT_PATTERN.fullmatch(ref):
+        raise InvalidRepository("A pinned source must be an exact 40-character commit SHA")
     owner, repo = parse_github_url(url)
     headers = {"Accept": "application/vnd.github+json", "User-Agent": "oryveta/0.1"}
     with httpx.Client(timeout=25, follow_redirects=False, headers=headers) as client:
@@ -49,11 +60,14 @@ def fetch_public_github_repo(url: str) -> tuple[str, bytes]:
         info = meta.json()
         if info.get("private") or info.get("size", 0) > 15000:
             raise InvalidRepository("Only smaller public repositories can be imported for now")
-        branch = info.get("default_branch")
-        if not branch or len(branch) > 150:
-            raise InvalidRepository("Repository default branch is invalid")
+        target = ref
+        if target is None:
+            branch = info.get("default_branch")
+            if not branch or len(branch) > 150:
+                raise InvalidRepository("Repository default branch is invalid")
+            target = branch
         # Never buffer an unbounded response body, including the non-redirect case.
-        archive_url = f"https://api.github.com/repos/{owner}/{repo}/zipball/{branch}"
+        archive_url = f"https://api.github.com/repos/{owner}/{repo}/zipball/{target}"
         with client.stream("GET", archive_url) as archive:
             if archive.status_code in {301, 302, 303, 307, 308}:
                 location = archive.headers.get("location", "")

@@ -22,6 +22,20 @@ The React Studio builds a hosted `dist` and a self-hosted `dist-local`. FastAPI 
 
 Local mail is captured in Mailpit. These results do not prove external mailbox delivery, live GitHub OAuth consent, production redirects, physical mobile-device behavior, hosted schema deployment, a 24-hour worker soak or enterprise uptime. The existing lazy Three.js chunk still emits Vite's size advisory; it was not hidden or treated as a correctness failure.
 
+## Durable runtime candidate — local verification, 2026-10-23
+
+Stage 2 implements real project-authorized public-repository analysis, not an empty queue or a coding agent. Work items, attempts, events, leases, checkpoints, cancellation, creator/worker revocation and source pins are persisted in Supabase. The browser can submit, inspect, cancel and download a completed report independently of the worker.
+
+Exercised against isolated native Supabase and real GitHub downloads:
+
+- SQL authorization/transition suite and all nine concurrent PostgreSQL-session cases pass: cancellation/completion, reclaim, registration revocation, concurrent source pinning and idempotent admission.
+- A separately authenticated worker completed `pallets/click` analysis (91 source files) after the submitting session signed out; its rotating credential stayed private.
+- SIGKILL recovery stopped the orphaned child, reclaimed its expired lease, swept its snapshot directory and completed attempt 2 at the pinned commit. Cancellation and revoked registrations could not publish late results.
+- Production-built Chromium UI submitted work, closed the page, reopened the completed report and downloaded the persisted JSON. A new queued run did not show the previous run's result and could be cancelled.
+- Python suite: **295 passed**. Ruff and all seven frontend storyboard/security-scan contracts pass. A startup-race regression and a separate actual-child-entrypoint smoke prove that a worker dying before child initialization produces exit 3 and no result.
+
+This candidate has **not** been deployed to production. No authorized always-on worker host is configured. These checks prove local runtime behavior, not a host-reboot/restore drill, a 24-hour soak, model-driven code changes or an availability commitment. Worker operation, credential limitations and source-pin semantics are documented in [OPERATIONS.md](OPERATIONS.md), [IMPLEMENTATION.md](IMPLEMENTATION.md) and [API.md](API.md).
+
 ## Existing engine and product boundaries
 
 The local FastAPI/SQLite worker supports deterministic starter repositories, bounded ZIP/public GitHub snapshots, read-only heuristic analysis, cancellation/result fencing and exports. Analysis includes bounded full-file fingerprints, manifest hints, AST-based Python security checks and explicit truncation. Imported code is not executed or modified autonomously.

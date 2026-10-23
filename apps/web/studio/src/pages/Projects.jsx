@@ -16,10 +16,10 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import * as projectsApi from "@/lib/projects.js";
 import { useWorkspaceState } from "@/lib/WorkspaceState.jsx";
+import ProjectAnalysis from "@/components/ProjectAnalysis.jsx";
 
-/* Projects are persisted briefs, metadata and membership. Nothing on this page starts,
-   schedules or reports an execution: there is no hosted run to show.
-   Role checks below only shape the UI. PostgreSQL decides every read and write. */
+/* PostgreSQL authorizes project metadata, membership and bounded analysis.
+   UI role checks only shape controls; an analysis never executes repository code. */
 const roleLabels = {
   owner: "Owner",
   admin: "Admin",
@@ -215,8 +215,7 @@ export default function Projects({ user, preview, onExit }) {
         <h1>Shared work, explicit access.</h1>
         <p>
           A project is a persisted brief with its own membership. Project access
-          is granted per person and is separate from private conversations. No
-          hosted run is attached to a project.
+          is granted per person and is separate from private conversations.
         </p>
       </div>
       {error && (
@@ -495,6 +494,7 @@ export default function Projects({ user, preview, onExit }) {
               </Button>
             )}
           </form>
+          {active && <ProjectAnalysis key={active.id} project={active} role={role} />}
           {active && (
             <section
               className="surface-panel"

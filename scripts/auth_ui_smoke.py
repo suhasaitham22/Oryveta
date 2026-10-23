@@ -58,8 +58,9 @@ def apply_sql(connection: dict) -> None:
         binary = str(matches[0])
     migrations = ROOT / "supabase/migrations"
     chat_schema = migrations / "private_chats_and_explicit_sharing.sql"
-    files = [ROOT / "supabase/schema.sql", chat_schema]
-    files.extend(path for path in sorted(migrations.glob("*.sql")) if path != chat_schema)
+    project_schema = migrations / "projects_and_project_membership.sql"
+    files = [ROOT / "supabase/schema.sql", chat_schema, project_schema]
+    files.extend(path for path in sorted(migrations.glob("*.sql")) if path not in {chat_schema, project_schema})
     files.extend(sorted((ROOT / "supabase/tests").glob("*.sql")))
     for path in files:
         result = subprocess.run(

@@ -10,11 +10,15 @@ The local FastAPI engine uses SQLite for users, sessions, OAuth state, projects,
 
 ## Target hosted control-plane DB
 
-Supabase Auth and PostgreSQL are the selected hosted collaboration boundary. Existing workspace/chat tables are extended by `projects`, `project_memberships`, `project_invitations` and `project_audit_events`. RLS filters reads; narrow RPCs own project writes and grant changes. Future durable work, approvals, worker leases and evidence metadata belong in this same authority rather than being split into D1 by default.
+Supabase Auth and PostgreSQL are the selected hosted collaboration boundary. Existing workspace/chat tables are extended by `projects`, `project_memberships`, `project_invitations` and `project_audit_events`. RLS filters reads; narrow RPCs own project writes and grant changes. Durable work, runs, worker leases and run events now live in this same authority rather than in a second queue, broker or D1 database; approvals and evidence metadata belong there too.
+
+`supabase/migrations/durable_factory_runtime.sql` adds `work_items` (accepted work with its frozen source identity, input digest, attempt counters and cancellation record), `factory_runs` (one attempt each, with phase, checkpoint, resolved snapshot identity, bounded result and lease expiry), `factory_run_events` (append-only typed log, capped at 200 rows per run) and `project_workers` (per-project worker registrations). The fencing token is deliberately not among them: it lives in `private.factory_run_leases`, an unexposed schema on which `anon` and `authenticated` hold no privilege, so a user-facing read of a run cannot return a live lease. On the four public tables `authenticated` holds SELECT only, and all mutation is through the migration's SECURITY DEFINER RPCs. Every text column is an identifier, a short enumerated code or a bounded derived detail, and the two JSONB columns are structurally validated, so there is no free-text column into which a credential or host filesystem path could be written.
 
 ## Per-worker state
 
 Disposable workers keep temporary source and execution files locally; authoritative checkpoints, run state and evidence metadata must survive the runner. Keep repositories, datasets, model weights, screenshots and large logs in permission-scoped filesystem/object storage. A Rust rewrite is not part of the selected implementation path.
+
+The durable analysis worker follows that split: each attempt's GitHub snapshot is extracted into a disposable per-run directory on the worker's own disk and deleted when the attempt ends, successfully or not. Nothing of a crashed attempt's working directory is recovered; what survives is the work item, the run row, its checkpoint and its recorded snapshot identity.
 
 ## When to choose PostgreSQL / Supabase
 
