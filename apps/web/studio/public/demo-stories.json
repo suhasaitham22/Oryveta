@@ -165,7 +165,7 @@
     "id": "evolve-analysis-v2",
     "title": "Evolve repository intelligence",
     "description": "Reviewable repository inventory → scoped static findings → content-addressed evidence",
-    "version": 1,
+    "version": 2,
     "state": "storyboard",
     "verified": false,
     "scenes": [
@@ -186,6 +186,12 @@
         "headline": "Trace what changed, without inventing a fix.",
         "body": "A complete bounded source fingerprint and explicit findings-truncation flag tell reviewers whether an analysis is stale or partial. Read-only patches still require human approval and independent tests.",
         "receipt": "The source hash is scoped to analyzed files and supported readable manifests. No deployed agent, behavioral proof, automatic PR or real customer gain is claimed."
+      },
+      {
+        "eyebrow": "04 / DURABLE ANALYSIS",
+        "headline": "Close the page. Keep the accepted work.",
+        "body": "Submit a public repository from its project, inspect recorded attempts and download the completed report. A separately authorized worker runs independently of the browser. Cancellation and revoked access fence publication; retries use the pinned source revision.",
+        "receipt": "Verified with real local Supabase, GitHub downloads and Chromium, including worker crash recovery. The production worker is not deployed. This storyboard is not a live run or proof of autonomous code changes."
       }
     ]
   }

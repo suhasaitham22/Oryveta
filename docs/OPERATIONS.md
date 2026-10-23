@@ -10,6 +10,41 @@ The initial public preview has a dedicated workflow in .github/workflows/preview
 
 Persist New → Queued → Leased → Running → Verifying → Awaiting Approval → Completed/Failed/Canceled. Include heartbeat, lease expiration, idempotency, retry counter and dead-letter records. Workers may crash/restart or lose network. Reconcile outputs and replay safe operations only; never blindly repeat deployments, emails or destructive data writes.
 
+## Durable analysis worker operations
+
+This covers the one durable task that exists today: project-authorized repository analysis, served by `python -m oryveta_engine.factory_runtime` against `supabase/migrations/durable_factory_runtime.sql`. Flags and the credential file shape are in [IMPLEMENTATION.md](IMPLEMENTATION.md); the RPC and read contract is in [API.md](API.md).
+
+### Worker identity provisioning
+
+A worker is a separate Supabase Auth user, never a human's browser session. Provisioning is two steps with two different authorities:
+
+1. An administrator creates the Auth user and designates it with the Auth admin API, setting `app_metadata.oryveta_role = 'factory_worker'`. Only the admin API can write that field: an account cannot self-assign it, and `register_project_worker` deliberately cannot create or designate users.
+2. A project owner or admin calls `register_project_worker(p_project_id, p_worker_user_id, p_label)` with a 2–60 character label of `A-Z a-z 0-9`, space, `.`, `_` or `-`. The RPC refuses the caller's own account, any account without the designation, and any project or workspace member, so a project admin cannot promote a colleague's ordinary account into a worker.
+
+Authority is the conjunction of both facts and is re-checked on every worker call, so there are two independent ways to stop an identity. `revoke_project_worker` disables the registration and immediately fences every run that identity still holds in that project with `error_code = 'worker_revoked'`; removing the `oryveta_role` designation in Auth fences the identity everywhere at once. Re-registering a revoked identity re-enables the same row. Registration is per project: an identity that serves two projects needs a registration in each, and one worker process serves one project (`--project`).
+
+### Credential handling
+
+The worker holds an ordinary Auth session. **No admin or service-role credential appears in worker code or on the worker host**; designation stays with the administrator who performs step 1 above.
+
+- Keep the credential file as a non-symlink regular file with no group or world permission bits (`chmod 600`); the worker refuses to start otherwise. `ORYVETA_WORKER_CREDENTIALS` is a secure reference to that path, not a place to put the token itself.
+- Supabase rotates refresh tokens. The worker persists them through a `0600` temporary file, `fsync` and atomic replace. This protects file integrity, not a crash between remote token issuance and local persistence; re-provision a rejected session. Give each worker process its own independently issued session and credential file; never copy one rotating token across processes.
+- Tokens are excluded from the credential object's `repr`, a refused refresh reports the HTTP status only because the response body may echo the submitted credential, and nothing credential-shaped is written to a run row or an event. The analysis child is started with an environment built from scratch — interpreter path, `PYTHONPATH`, `TMPDIR`, encoding and locale — so it inherits no token, no lease and no network identity.
+- A leaked worker credential is bounded but not harmless. On the durable-work surface it grants claim/heartbeat/finish/fail for the projects where that identity is registered plus the RLS-filtered reads those projects allow — it is not a project member, holds no admin or service-role authority, and cannot submit, cancel or register anything. It is still a valid Auth session on the rest of the project's schema, so treat it like any other user credential: revoke the registration, remove the `oryveta_role` designation, or both, then re-provision.
+
+### Runtime behaviour operators depend on
+
+- **Lease, heartbeat, reclaim.** A claim takes a lease of 15–900 seconds (default 300) whose fencing token lives only in `private.factory_run_leases`. The worker heartbeats at each phase transition and then at least every 30 seconds — and at least every third of the lease — while the analysis child runs. The source download is a single unheartbeated window, so with a short lease and a slow repository the lease can expire mid-fetch and the attempt be reclaimed; size that lease against the importer's 12 MB archive limit and 25-second HTTP timeout rather than assuming the fetch is checkpointed. A worker that dies lets the lease expire; the next `claim_analysis_work` for that project runs the reclaim path first, marking the abandoned run `failed` with `error_code = 'lease_expired'`, deleting its lease, recording a `lease_expired` event and re-queueing or terminally failing the work item. Because reclaim happens inside the claim RPC, no scheduler, cron job or privileged process is needed — and equally, an abandoned run is only reclaimed once some worker next asks that project for work.
+- **Concurrency.** Claiming uses `FOR UPDATE SKIP LOCKED`, so two workers receive different work items or nothing. They never share an attempt or a lease token.
+- **Bounded retries.** `work_items.max_attempts` defaults to 2 (limit 5). A failed or reclaimed attempt returns the item to `queued` while attempts remain; exhaustion is an explicit terminal `failed` with `attempts = max_attempts`, the last attempt's actual cause in `work_items.error_code` and an `attempts_exhausted` event on the final run. Per-attempt causes stay on each `factory_runs.error_code`, so "why did it fail" and "it ran out of attempts" are both answerable. No row is left silently `running`. If the worker cannot even report its failure, the lease expiry path above still settles the item.
+- **Cancellation and revocation stop analysis.** Cancellation and worker revocation delete the lease transactionally. Creator permission loss is rechecked at claim, heartbeat and completion/failure and terminally fences that work item. The next worker checkpoint refuses publication and stops the whole analysis process group with SIGTERM, escalating after five seconds. Remote CPU shutdown is bounded by the next checkpoint, not instantaneous.
+- **Bounded runtime and crash cleanup.** `--max-run-seconds` terminates overlong analysis. The child has an independent deadline and original-worker-PID check, including startup before the watcher exists. Normal teardown deletes snapshots; after SIGKILL, the next worker's `--work-root` sweep removes marked directories whose owning process is gone. Set `--work-root` to a persistent private directory; without it, there is no startup sweep.
+- **Supervision.** Heartbeat transport failures retry at most three extra times within the lease margin. Continuous mode exits immediately on authority loss and after five consecutive control-loop failures. A supervisor must surface this exit, not silently restart rejected credentials forever. Abandoned attempts settle when another authorized worker claims after lease expiry.
+
+### Local versus production limits
+
+Verification for this slice is a local Supabase stack (Auth, PostgREST, PostgreSQL) plus real github.com access. There is no deployed worker, no managed always-on host and no availability promise; an operator starts and supervises the process on a host they control. The worker needs outbound access to the Supabase endpoint and to github.com, and needs no inbound ingress at all — it is a client and listens on no port. It is still not a hardened per-tenant container or microVM: the isolation claimed here is a credential-free child process that reads imported source and never executes it, not a sandbox.
+
 ## Observability
 
 Structured logs (request ID, tenant ID, task ID, repository, harness/model version); OpenTelemetry spans across API/queue/worker; CPU/memory/token cost; artifact refs; benchmark precision; explicit user-visible degradation; secrets redaction and retention rules.

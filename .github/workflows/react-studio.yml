@@ -98,6 +98,12 @@ jobs:
       - name: Exercise SQL authorization and real email login in Chromium
         run: |
           python scripts/auth_ui_smoke.py --connections "$RUNNER_TEMP/auth-connections.json" --evidence "$RUNNER_TEMP/auth-evidence"
+      - name: Exercise concurrent runtime transitions
+        run: python scripts/factory_runtime_race_checks.py --connections "$RUNNER_TEMP/auth-connections.json" --skip-sql
+      - name: Exercise the real repository worker
+        run: python scripts/factory_runtime_smoke.py --connections "$RUNNER_TEMP/auth-connections.json" --skip-sql
+      - name: Exercise browser-to-worker analysis
+        run: python scripts/factory_runtime_ui_smoke.py --skip-sql --evidence "$RUNNER_TEMP/auth-evidence" < "$RUNNER_TEMP/auth-connections.json"
       - name: Preserve synthetic browser evidence
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
