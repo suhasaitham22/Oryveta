@@ -56,11 +56,17 @@ def apply_sql(connection: dict) -> None:
         if len(matches) != 1:
             raise RuntimeError("Set PATH to the test stack's PostgreSQL bin directory")
         binary = str(matches[0])
-    migrations = ROOT / "supabase/migrations"
-    chat_schema = migrations / "private_chats_and_explicit_sharing.sql"
-    project_schema = migrations / "projects_and_project_membership.sql"
-    files = [ROOT / "supabase/schema.sql", chat_schema, project_schema]
-    files.extend(path for path in sorted(migrations.glob("*.sql")) if path not in {chat_schema, project_schema})
+    # Explicit order, never a glob: every file here builds on the ones before
+    # it, and an alphabetical sweep of supabase/migrations would load them in
+    # the wrong order. The transactional SQL regressions come last; each one
+    # rolls its own fixtures back.
+    files = [ROOT / relative for relative in (
+        "supabase/schema.sql",
+        "supabase/migrations/private_chats_and_explicit_sharing.sql",
+        "supabase/migrations/projects_and_project_membership.sql",
+        "supabase/migrations/durable_factory_runtime.sql",
+        "supabase/migrations/retained_attribution_and_lease_clock.sql",
+    )]
     files.extend(sorted((ROOT / "supabase/tests").glob("*.sql")))
     for path in files:
         result = subprocess.run(

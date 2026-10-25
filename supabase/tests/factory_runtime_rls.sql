@@ -9,7 +9,14 @@
 --   2. supabase/migrations/private_chats_and_explicit_sharing.sql
 --   3. supabase/migrations/projects_and_project_membership.sql
 --   4. supabase/migrations/durable_factory_runtime.sql
---   5. this file
+--   5. supabase/migrations/retained_attribution_and_lease_clock.sql
+--   6. this file
+--
+-- Step 5 is what the repository's own harnesses apply, so this file is listed
+-- after it. Nothing here depends on that migration: the cases below pin
+-- authorization, fencing and source-pinning behaviour the four earlier files
+-- own, and the lifecycle and lease-clock cases step 5 introduces live in
+-- supabase/tests/retained_attribution_and_lease_clock.sql.
 --
 -- Requires SQL-editor/owner privileges and intentionally creates synthetic
 -- auth.users. Everything here ROLLS BACK, even on success, so no fixture row

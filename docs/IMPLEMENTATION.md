@@ -24,6 +24,7 @@ Status: **Merged local API and React Studio frontend; hosted React/Supabase inte
 | `apps/web/cloud-config.js` | Public-only Supabase project URL and publishable key placeholders |
 | `supabase/schema.sql` | Owner-initiated workspaces, membership trigger and per-row authorization policies |
 | `supabase/migrations/durable_factory_runtime.sql` | Work items, fenced runs, typed run events, per-project worker registrations and the unexposed lease table |
+| `supabase/migrations/retained_attribution_and_lease_clock.sql` | Forward repair for retained actor deletion and lease deadlines/expiry after lock waits; apply after the durable-runtime migration |
 | `tests/` | API, ownership, CSRF, OAuth state, archive safety, worker and scaffold tests |
 | `Dockerfile`, `compose.yaml` | Single-host API and worker containers with local-only port binding |
 
@@ -57,7 +58,7 @@ Python 3.11+ is supported by metadata; backend CI tests Python 3.11–3.13. No p
 
 ## Durable analysis worker (self-hosted)
 
-`engine/oryveta_engine/factory_runtime.py` is a client of `supabase/migrations/durable_factory_runtime.sql`. It authenticates as its own Supabase Auth service identity, serves exactly one project, and performs exactly one task kind: a bounded public-GitHub snapshot plus the existing static analyzer. Apply the migration after `supabase/schema.sql`, the private-chat migration and the project-membership migration, then register the worker identity with `register_project_worker` as described in [OPERATIONS.md](OPERATIONS.md).
+`engine/oryveta_engine/factory_runtime.py` authenticates as its own Supabase Auth service identity, serves one project and performs bounded public-repository analysis. Apply the workspace schema, private-chat migration, project-membership migration, `durable_factory_runtime.sql` and `retained_attribution_and_lease_clock.sql`, in that order. Existing installations with the first four applied need only the final repair. Then register the worker identity with `register_project_worker` as described in [OPERATIONS.md](OPERATIONS.md).
 
 The credential file is a JSON object in a protected regular file:
 
@@ -88,7 +89,7 @@ python -m oryveta_engine.factory_runtime --once
 | `--poll-seconds` | Idle delay between claim attempts in continuous mode, default 5 |
 | `--work-root` | Persistent parent for disposable snapshots; startup reclaims marked directories whose worker is gone. Set this for crash cleanup. |
 
-Startup verifies an enabled project-worker registration. Each claim freezes the project source, revalidates its owner/repo with the importer, fetches a bounded archive, and runs the trusted static analyzer in a credential-free child process. Heartbeats fence every phase and run at most 30 seconds apart while analyzing. The source download remains one unheartbeated window: size the lease for the bounded fetch. Transport failures are distinct from source errors; heartbeats retry within the remaining lease margin. Fencing signals the whole analysis process group with SIGTERM, then SIGKILL after a five-second grace. Source identity conflicts, unresolved commits and creator authorization loss cannot publish results.
+Startup verifies an enabled project-worker registration. Each claim freezes the project source, revalidates its owner/repo with the importer, fetches a bounded archive, and runs the trusted analyzer in a credential-free child process. Heartbeats fence each phase and run at most 30 seconds apart while analyzing. Source download remains one unheartbeated window. Child waits cannot extend to the next heartbeat past the execution deadline, and late-observed results are rejected. Control-plane errors report safe status/category diagnostics rather than raw responses. Teardown sends SIGTERM to the process group, waits up to five seconds for the leader, then kills remaining helpers even if the leader exited first. Source conflicts and authorization loss cannot publish results.
 
 Resume semantics are deliberately narrow. **A crashed analysis is recomputed, not resumed in memory.** The work item's frozen URL, owner/repo and input digest survive project edits. The first accepted source resolution pins `pinned_source_ref` and `pinned_source_commit` on that work item. Claims return that pin plus `previous_source_digest` and `previous_checkpoint`; retries request the exact pinned commit without falling back to HEAD. Checkpoints report `resumed_attempt`, `source_commit`, `source_pinned` and whether the archive digest matches the previous attempt.
 

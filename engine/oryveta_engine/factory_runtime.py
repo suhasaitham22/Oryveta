@@ -310,9 +310,11 @@ def _reachable(what: str):
     try:
         yield
     except (httpx.HTTPError, httpx.StreamError) as exception:
+        # Malformed HTTP status lines can echo credentials too. Keep the
+        # transport category, but never chain untrusted protocol text into logs.
         raise ControlPlaneUnavailable(
             f"the control plane could not be reached for {what} "
-            f"({type(exception).__name__})") from exception
+            f"({type(exception).__name__})") from None
 
 
 class FactoryRuntimeClient:
@@ -383,9 +385,18 @@ class FactoryRuntimeClient:
             if response.status_code in {401, 403} and attempt == 0:
                 continue  # An expired or rotated session gets exactly one retry.
             if response.is_error:
+                # Response bodies can reflect Authorization headers or lease
+                # arguments. Preserve only the two fixed protocol refusals
+                # needed for source-conflict classification, never raw details.
+                detail = ""
+                try:
+                    problem = response.json()
+                except ValueError:
+                    problem = None
+                if isinstance(problem, dict) and problem.get("message") in SOURCE_CONFLICT_REFUSALS:
+                    detail = f": {problem['message']}"
                 raise FactoryRuntimeError(
-                    f"{method} {path} failed with HTTP {response.status_code}: "
-                    f"{response.text[:200]}")
+                    f"{method} {path} failed with HTTP {response.status_code}{detail}")
             if not response.content:
                 return None
             return response.json()
@@ -821,7 +832,10 @@ class AnalysisRuntimeWorker:
             try:
                 while True:
                     try:
-                        code = child.wait(timeout=interval)
+                        remaining = max(0.0, deadline - time.monotonic())
+                        code = child.wait(timeout=min(interval, remaining))
+                        if time.monotonic() >= deadline:
+                            raise AnalysisTimeout("analysis exceeded the bounded runtime")
                         break
                     except subprocess.TimeoutExpired:
                         pass
@@ -863,13 +877,15 @@ class AnalysisRuntimeWorker:
 
     @staticmethod
     def _terminate(child: subprocess.Popen) -> None:
-        """Stop the analysis the child leads, escalating if SIGTERM is ignored."""
-        if child.poll() is not None:
-            return
+        """Stop the owned process group, even if its original leader exited."""
         _signal_analysis_group(child, signal.SIGTERM)
         try:
             child.wait(timeout=TERMINATE_GRACE_SECONDS)
         except subprocess.TimeoutExpired:
+            pass
+        finally:
+            # Leader exit is not proof that its helpers exited. Kill remaining
+            # group members without relying on platform-specific signal-0 probes.
             _signal_analysis_group(child, signal.SIGKILL)
             child.wait()
 

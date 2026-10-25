@@ -98,6 +98,8 @@ jobs:
       - name: Exercise SQL authorization and real email login in Chromium
         run: |
           python scripts/auth_ui_smoke.py --connections "$RUNNER_TEMP/auth-connections.json" --evidence "$RUNNER_TEMP/auth-evidence"
+      - name: Exercise collaboration response-order races
+        run: python scripts/collaboration_race_smoke.py --connections "$RUNNER_TEMP/auth-connections.json" --skip-sql --evidence "$RUNNER_TEMP/auth-evidence"
       - name: Exercise concurrent runtime transitions
         run: python scripts/factory_runtime_race_checks.py --connections "$RUNNER_TEMP/auth-connections.json" --skip-sql
       - name: Exercise the real repository worker

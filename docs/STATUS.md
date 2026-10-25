@@ -25,6 +25,16 @@ The React Studio builds a hosted `dist` and a self-hosted `dist-local`. FastAPI 
 
 Local Mailpit coverage is not external email delivery. Production GitHub OAuth and authorization checks are separate evidence from the API-issued test-session setup; the latter does not claim email or OAuth-consent coverage. The default hosted SMTP remains limited and unverified for general delivery. Physical mobile devices, a 24-hour worker soak, enterprise recovery and uptime remain unproven. The existing lazy Three.js size advisory is not hidden.
 
+## Runtime and collaboration hardening — local verification, 2026-10-24
+
+- Worker results observed after the execution deadline are rejected. Process-group cleanup also stops helpers when their leader has already exited. Raw control-plane responses and protocol-error text cannot expose reflected credentials through the normal error/traceback paths.
+- Conversation details and sharing controls remain tied to their chat. Old refreshes cannot hide a newly created conversation. Delayed message, conversation, invitation and project-save acknowledgements preserve newer drafts, including after navigation.
+- The conversation view shows the newest 200 messages, including newly accepted messages beyond the old cutoff, and announces omitted older history.
+- The forward migration `retained_attribution_and_lease_clock.sql` permits deletion of attribution accounts while preserving terminal timestamps/state and refusing inherited grants. Lease timing uses wall-clock observations after locks: a 17-second lock wait still returned a fresh 15-second lease in the real concurrency test.
+- A suspected workspace-cascade conflict did not reproduce. Its existing foreign key was kept; successful workspace deletion and forbidden standalone registration deletion now have regression coverage.
+
+Verification: **302 Python tests passed**, all four SQL suites passed, all **10 concurrent-session cases** passed, and all **8 real-browser collaboration ordering cases** passed. Existing real Supabase email/PKCE, project/session authorization and compiled desktop/tablet/mobile navigation checks passed. The real GitHub worker smoke also passed completion, rotating credentials, crash recovery, cancellation and revocation. No production migration or cloud-worker deployment is claimed.
+
 ## Product explanation and navigation — local verification, 2026-10-24
 
 The product explanation now starts with project planning, repository analysis and private collaboration. Public pages, workspace introductions, demo scripts, metadata, the legacy interface, historical prototype and product docs distinguish hosted features, self-hosted tools and the planned AI software factory.

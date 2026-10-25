@@ -26,6 +26,7 @@ import stat
 import subprocess
 import sys
 import time
+import traceback
 import zipfile
 from pathlib import Path
 
@@ -109,6 +110,22 @@ GRANDCHILD_SPAWNING_CHILD = (
     "    handle.flush()\n"
     "    os.fsync(handle.fileno())\n"
     "time.sleep(120)\n"
+)
+EXITED_LEADER_CHILD = (
+    "import json, os, subprocess, sys, time\n"
+    "directory = os.path.dirname(sys.argv[2])\n"
+    "ready = os.path.join(directory, 'grandchild.ready')\n"
+    "helper = \"import pathlib,signal,sys,time;signal.signal(signal.SIGTERM,signal.SIG_IGN);pathlib.Path(sys.argv[1]).write_text('ready');time.sleep(120)\"\n"
+    "grandchild = subprocess.Popen([sys.executable, '-c', helper, ready],\n"
+    "    stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)\n"
+    "with open(os.path.join(directory, 'grandchild.pid'), 'w') as handle:\n"
+    "    handle.write(str(grandchild.pid))\n"
+    "deadline = time.monotonic() + 5\n"
+    "while not os.path.exists(ready):\n"
+    "    if time.monotonic() > deadline: raise RuntimeError('helper did not start')\n"
+    "    time.sleep(.01)\n"
+    "with open(sys.argv[2], 'w') as handle:\n"
+    "    json.dump({'summary': {'language': 'Python'}, 'findings': []}, handle)\n"
 )
 MARKER_REPORTING_CHILD = (
     "import json, os, sys\n"
@@ -700,6 +717,67 @@ def test_persistent_unauthorized_request_fails_loudly(tmp_path, capsys):
         assert secret not in str(excinfo.value)
 
 
+@pytest.mark.parametrize("as_json", [True, False])
+def test_control_plane_errors_do_not_expose_reflected_credentials(tmp_path, as_json):
+    access = "synthetic-access-must-stay-private"
+    path = write_credentials(
+        tmp_path / "secrets", access_token=access, expires_at=time.time() + 3600)
+
+    def handle(request):
+        reflected = request.headers["Authorization"] + " " + request.content.decode()
+        return (httpx.Response(400, json={"message": reflected, "details": FIRST_REFRESH_TOKEN})
+                if as_json else httpx.Response(400, text=reflected))
+
+    with FactoryRuntimeClient(WorkerCredentials.load(path),
+                              transport=httpx.MockTransport(handle)) as client:
+        with pytest.raises(FactoryRuntimeError) as failure:
+            client.rpc("heartbeat_analysis_run", {"p_lease_token": LEASE_TOKEN})
+    assert "HTTP 400" in str(failure.value)
+    for secret in (access, LEASE_TOKEN, FIRST_REFRESH_TOKEN):
+        assert secret not in str(failure.value)
+
+
+@pytest.mark.parametrize("message", factory_runtime.SOURCE_CONFLICT_REFUSALS)
+def test_safe_source_refusal_survives_error_redaction(tmp_path, message):
+    access = "synthetic-access-must-stay-private"
+    path = write_credentials(
+        tmp_path / "secrets", access_token=access, expires_at=time.time() + 3600)
+
+    def handle(request):
+        return httpx.Response(400, json={
+            "message": message,
+            "details": request.headers["Authorization"] + " " + request.content.decode(),
+        })
+
+    with FactoryRuntimeClient(WorkerCredentials.load(path),
+                              transport=httpx.MockTransport(handle)) as client:
+        with pytest.raises(SourceIdentityConflict) as failure:
+            build_worker(client).heartbeat(claim_row())
+    assert error_code(failure.value) == "source_identity_conflict"
+    for secret in (access, LEASE_TOKEN):
+        assert secret not in str(failure.value)
+        assert secret not in str(failure.value.__cause__)
+
+
+def test_transport_error_traceback_does_not_expose_reflected_credentials(tmp_path):
+    access = "synthetic-access-must-stay-private"
+    path = write_credentials(
+        tmp_path / "secrets", access_token=access, expires_at=time.time() + 3600)
+
+    def handle(request):
+        reflected = request.headers["Authorization"] + " " + request.content.decode()
+        raise httpx.RemoteProtocolError(reflected)
+
+    with FactoryRuntimeClient(WorkerCredentials.load(path),
+                              transport=httpx.MockTransport(handle)) as client:
+        with pytest.raises(ControlPlaneUnavailable) as failure:
+            client.rpc("heartbeat_analysis_run", {"p_lease_token": LEASE_TOKEN})
+    assert error_code(failure.value) == "control_plane_unavailable"
+    rendered = "".join(traceback.format_exception(failure.value))
+    assert access not in rendered
+    assert LEASE_TOKEN not in rendered
+
+
 # -- error codes ----------------------------------------------------------
 
 @pytest.mark.parametrize("exception, expected", [
@@ -936,6 +1014,21 @@ def test_bounded_runtime_terminates_the_child_and_maps_to_analysis_timeout(
     assert error_code(excinfo.value) == "analysis_timeout"
     assert wait_until_exited(spawned_children[0]) is not None
     assert "finish_analysis_run" not in client.names()
+
+
+def test_result_after_deadline_is_failed_not_published(tmp_path, spawned_children, monkeypatch):
+    archive = github_archive({"main.py": "value = 1\n"})
+    monkeypatch.setattr(factory_runtime, "fetch_public_github_repo",
+                        lambda url, ref=None: ("owner/repo", archive))
+    client = RecordingClient()
+    worker = build_worker(client, script=SLOW_RESULT_CHILD, max_run_seconds=1,
+                          work_root=tmp_path / "work")
+    # Keep the real five-second heartbeat interval: the old supervisor accepted
+    # a child finishing at 2.5 seconds despite the one-second execution budget.
+    worker._execute(claim_row())
+    assert client.count("finish_analysis_run") == 0
+    assert client.payloads("fail_analysis_run")[0]["p_error_code"] == "analysis_timeout"
+    assert wait_until_exited(spawned_children[0]) is not None
 
 
 def test_child_exiting_non_zero_maps_to_analysis_process_failed(
@@ -1738,6 +1831,21 @@ def test_fencing_stops_the_whole_analysis_process_group(
             "F4: a descendant of the fenced analysis child kept running")
     finally:
         kill_if_alive(descendant)
+
+
+def test_completed_leader_does_not_leave_a_term_ignoring_helper(
+        tmp_path, fast_termination, spawned_children):
+    worker = build_worker(RecordingClient(), script=EXITED_LEADER_CHILD)
+    directory, snapshot = prepared_run(tmp_path)
+    try:
+        result = worker._analyse_in_child(claim_row(), snapshot, directory)
+        assert result["summary"]["language"] == "Python"
+        assert spawned_children[0].returncode == 0
+        descendant = recorded_pid(directory / "grandchild.pid")
+        assert wait_until_gone(descendant), "completed analysis left a helper running"
+    finally:
+        if (directory / "grandchild.pid").exists():
+            kill_if_alive(recorded_pid(directory / "grandchild.pid"))
 
 
 def test_a_child_that_ignores_sigterm_is_escalated_to_sigkill(

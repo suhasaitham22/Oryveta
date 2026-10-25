@@ -1,4 +1,4 @@
-import React,{useEffect,useState} from "react";
+import React,{useEffect,useRef,useState} from "react";
 import {AtSign,ArrowRight,CheckCircle2,FolderGit2,LockKeyhole,MessageSquareText,Plus,Send,ShieldCheck,Trash2,UserPlus,UsersRound} from "lucide-react";
 import {Button} from "@/components/ui/button";
 import {Badge} from "@/components/ui/badge";
@@ -19,8 +19,14 @@ export default function PrivateChats({user,preview,workspaceId,onExit}){
  const [projectNotice,setProjectNotice]=useState("");
  const selected=chatDraft.selected;
  const setSelected=value=>setChatDraft(current=>({...current,selected:typeof value==="function"?value(current.selected):value}));
- const [messages,setMessages]=useState([]);
- const [shares,setShares]=useState([]);
+ /* Loaded details carry the conversation that produced them. Anything belonging to another
+    conversation is neither rendered nor actionable, so a slow or failed replacement load can
+    never offer one conversation's invitations under another one's title. */
+ const [details,setDetails]=useState({chatId:null,messages:[],shares:[],olderOmitted:false});
+ const detailsReady=!!selected&&details.chatId===selected;
+ const messages=detailsReady?details.messages:[];
+ const shares=detailsReady?details.shares:[];
+ const olderOmitted=detailsReady&&details.olderOmitted;
  const title=chatDraft.title;
  const project=chatDraft.project||"";
  const setProject=project=>setChatDraft(current=>({...current,project}));
@@ -29,6 +35,9 @@ export default function PrivateChats({user,preview,workspaceId,onExit}){
  const recipient=chatDraft.recipients[selected]||"";
  const permission=chatDraft.permissions[selected]||"viewer";
  const setMessage=message=>setChatDraft(current=>({...current,messages:{...current.messages,[selected]:message}}));
+ /* A completed send clears the text it submitted, never whatever is in the composer when its
+    acknowledgement happens to arrive. */
+ const clearSubmittedMessage=(chatId,submitted)=>setChatDraft(current=>current.messages[chatId]!==submitted?current:{...current,messages:{...current.messages,[chatId]:""}});
  const setRecipient=recipient=>setChatDraft(current=>({...current,recipients:{...current.recipients,[selected]:recipient}}));
  const setPermission=permission=>setChatDraft(current=>({...current,permissions:{...current.permissions,[selected]:permission}}));
  const [busy,setBusy]=useState(false);
@@ -39,10 +48,20 @@ export default function PrivateChats({user,preview,workspaceId,onExit}){
  const active=conversations.find(c=>c.id===selected)||null;
  const isOwner=!!active&&active.owner_id===user?.id;
  const canWrite=isOwner||shares.some(s=>s.status==="accepted"&&s.accepted_by===user?.id&&s.permission==="editor");
+ /* Each load is numbered and tied to this mounted page. An older response, or one that belongs
+    to a page the user has already left, is dropped instead of overwriting newer state or the
+    shared selection and drafts that outlive this page. */
+ const loadRequest=useRef(0);
+ const mounted=useRef(false);
  async function refresh(prefer){
-  if(preview||!user)return;
-  const [items,inbox,handle,readable]=await Promise.all([chatsApi.listChats(),chatsApi.listInvitations(user),chatsApi.getAlias(user),projectsApi.listProjects().then(rows=>({rows}),problem=>({problem:problem.message}))]);
-  setConversations(items);setInvitations(inbox);setAlias(handle);
+  if(preview||!user||!mounted.current)return;
+  const request=++loadRequest.current;
+  const live=()=>mounted.current&&request===loadRequest.current;
+  let items,inbox,handle,readable;
+  try{[items,inbox,handle,readable]=await Promise.all([chatsApi.listChats(),chatsApi.listInvitations(user),chatsApi.getAlias(user),projectsApi.listProjects().then(rows=>({rows}),problem=>({problem:problem.message}))]);}
+  catch(problem){if(!live())return;setError(problem.message);setLoading(false);throw problem;}
+  if(!live())return;
+  setConversations(items);setInvitations(inbox);setAlias(handle);setLoading(false);
   /* Projects are listed only to offer an association and to name the one already chosen.
      A failure here never blocks conversations, and names are resolved from this
      RLS-filtered list rather than joined onto a chat we may not be allowed to link. */
@@ -51,17 +70,23 @@ export default function PrivateChats({user,preview,workspaceId,onExit}){
   setSelected(old=>items.some(c=>c.id===(prefer||old))?(prefer||old):items[0]?.id||null);
   setRev(x=>x+1);
  }
- useEffect(()=>{if(!preview&&user){setLoading(true);refresh().catch(e=>setError(e.message)).finally(()=>setLoading(false));}},[preview,user?.id]);
  useEffect(()=>{
-  if(!selected||preview){setMessages([]);setShares([]);return;}
+  if(preview||!user)return;
+  mounted.current=true;
+  setLoading(true);
+  refresh().catch(()=>{}); // The current refresh reports its own error and loading state.
+  return()=>{mounted.current=false;loadRequest.current++;};
+ },[preview,user?.id]);
+ useEffect(()=>{
+  if(!selected||preview){setDetails({chatId:null,messages:[],shares:[],olderOmitted:false});return;}
   let alive=true;
-  Promise.all([chatsApi.listMessages(selected),chatsApi.listShares(selected)]).then(([m,s])=>{if(alive){setMessages(m);setShares(s);}}).catch(e=>{if(alive)setError(e.message)});
+  Promise.all([chatsApi.listMessages(selected),chatsApi.listShares(selected)]).then(([history,s])=>{if(alive)setDetails({chatId:selected,messages:history.messages,shares:s,olderOmitted:history.olderOmitted});}).catch(e=>{if(alive)setError(e.message)});
   return()=>{alive=false};
  },[selected,rev,preview]);
  async function action(task){
   if(busy||preview||!user)return;
   setBusy(true);setError("");setNotice("");
-  try{await task();}catch(e){setError(e.message)}finally{setBusy(false)}
+  try{await task();}catch(e){if(mounted.current)setError(e.message)}finally{if(mounted.current)setBusy(false)}
  }
  if(preview)return <div className="max-w-4xl"><div className="eyebrow">PRIVATE CONVERSATIONS</div><h1 className="font-display text-3xl md:text-5xl tracking-tight font-bold text-slate-800 mt-3">Sign in to start a private conversation.</h1><Card className="p-7 md:p-10 mt-8"><LockKeyhole size={32} className="text-indigo-500"/><p className="text-sm leading-7 text-slate-500 max-w-lg mt-5">Keep project decisions and reviews together. Sign in to create a conversation, then invite specific people by email or @alias. These are conversations with people, not an AI agent.</p><Button className="mt-6" onClick={onExit}>Return to sign in <ArrowRight size={16}/></Button></Card></div>;
  return <div>
@@ -78,7 +103,11 @@ export default function PrivateChats({user,preview,workspaceId,onExit}){
       /* Only claim the workspace when this account actually belongs to it: a project-only
          invitee links the conversation to the project without joining the workspace. */
       const scope=chosen?(spaces.some(s=>s.id===chosen.workspace_id)?chosen.workspace_id:null):workspaceId;
-      const created=await chatsApi.createChat(user,scope,clean,chosen?.id||null);setTitle("");setProject("");await refresh(created.id);setNotice(chosen?`Private conversation created and linked to ${chosen.name}. The link grants nobody else access.`:"Private conversation created.");});}}>
+      const created=await chatsApi.createChat(user,scope,clean,chosen?.id||null);
+      if(!mounted.current)return;
+      setChatDraft(current=>({...current,title:current.title===title?"":current.title,project:(current.project||"")===project?"":current.project}));
+      await refresh(created.id);
+      if(mounted.current)setNotice(chosen?`Private conversation created and linked to ${chosen.name}. The link grants nobody else access.`:"Private conversation created.");});}}>
       <label htmlFor="chat-title" className="block text-xs font-bold text-slate-600 mb-2">New private conversation</label>
       <Input id="chat-title" required maxLength={120} placeholder="What are we deciding?" value={title} onChange={e=>setTitle(e.target.value)}/>
       <label htmlFor="chat-project" className="block text-xs font-bold text-slate-600 mt-4 mb-2">Related project (optional)</label>
@@ -104,18 +133,23 @@ export default function PrivateChats({user,preview,workspaceId,onExit}){
     {loading?<p className="text-sm text-slate-400">Loading private conversations…</p>:!active?<div className="flex flex-col items-center justify-center text-center min-h-[450px]"><span className="w-16 h-16 rounded-2xl bg-indigo-50 text-indigo-500 grid place-items-center"><MessageSquareText size={29}/></span><h2 className="font-display font-bold text-2xl text-slate-800 mt-5">Discuss a project privately.</h2><p className="text-sm text-slate-500 mt-3 max-w-md leading-7">Create a conversation for a requirement, decision or review. Invite collaborators only when you want to share it.</p></div>:<>
      <header className="flex gap-3 justify-between items-center border-b border-slate-100 pb-5"><div><div className="eyebrow">PROTECTED CONVERSATION</div><h2 className="font-display text-xl md:text-2xl font-bold tracking-tight text-slate-800 mt-2">{active.title}</h2>{active.project_id&&<p className="text-[11px] text-slate-400 flex items-center gap-1.5 mt-2"><FolderGit2 size={13}/> {projects.find(p=>p.id===active.project_id)?.name||"Linked project not visible to you"} · project members do not get this conversation</p>}</div><Badge variant="outline">{isOwner?"Owner":canWrite?"Editor":"Viewer"}</Badge></header>
      <div role="log" aria-label="Chat messages" aria-live="polite" className="min-h-[180px] max-h-[400px] overflow-y-auto py-6 flex flex-col gap-3">
-      {messages.length?messages.map(m=><article key={m.id} className={"rounded-2xl px-4 py-3 text-sm max-w-[90%] border "+(m.author_id===user.id?"self-end bg-indigo-50 border-indigo-100":"self-start bg-white border-slate-100")}><small className="text-indigo-500 text-[10px] font-bold">{m.author_id===user.id?"You":"Collaborator"}</small><p className="whitespace-pre-wrap break-words leading-6 text-slate-700 mt-1">{m.content}</p></article>):<p className="text-xs text-slate-400">No messages yet. You can start with a decision or a project brief.</p>}
+      {olderOmitted&&<p className="text-[11px] text-slate-400">Showing the most recent {chatsApi.MESSAGE_WINDOW} messages. Older messages in this conversation are not shown here.</p>}
+      {!detailsReady?<p className="text-xs text-slate-400">Loading this conversation…</p>:messages.length?messages.map(m=><article key={m.id} className={"rounded-2xl px-4 py-3 text-sm max-w-[90%] border "+(m.author_id===user.id?"self-end bg-indigo-50 border-indigo-100":"self-start bg-white border-slate-100")}><small className="text-indigo-500 text-[10px] font-bold">{m.author_id===user.id?"You":"Collaborator"}</small><p className="whitespace-pre-wrap break-words leading-6 text-slate-700 mt-1">{m.content}</p></article>):<p className="text-xs text-slate-400">No messages yet. You can start with a decision or a project brief.</p>}
      </div>
-     {canWrite?<form className="border-t border-slate-100 pt-5" onSubmit={e=>{e.preventDefault();action(async()=>{const clean=message.trim();if(!clean||clean.length>4000)throw Error("Messages must be 1–4000 characters");await chatsApi.sendMessage(user,active.id,clean);setMessage("");setRev(n=>n+1);});}}><label htmlFor="chat-compose" className="text-xs font-bold text-slate-600 block mb-2">Message</label><Textarea id="chat-compose" required maxLength={4000} value={message} onChange={e=>setMessage(e.target.value)} placeholder="Write a thought, decision or review note…"/><div className="flex justify-end mt-3"><Button type="submit" disabled={busy}><Send size={15}/> Send message</Button></div></form>:<div className="text-xs text-slate-500 bg-slate-50 rounded-xl p-4">You have view-only access. Ask the owner to grant editor access if needed.</div>}
+     {canWrite?<form className="border-t border-slate-100 pt-5" onSubmit={e=>{e.preventDefault();action(async()=>{const submitted=message;const clean=submitted.trim();if(!clean||clean.length>4000)throw Error("Messages must be 1–4000 characters");await chatsApi.sendMessage(user,active.id,clean);clearSubmittedMessage(active.id,submitted);setRev(n=>n+1);});}}><label htmlFor="chat-compose" className="text-xs font-bold text-slate-600 block mb-2">Message</label><Textarea id="chat-compose" required maxLength={4000} value={message} onChange={e=>setMessage(e.target.value)} placeholder="Write a thought, decision or review note…"/><div className="flex justify-end mt-3"><Button type="submit" disabled={busy}><Send size={15}/> Send message</Button></div></form>:<div className="text-xs text-slate-500 bg-slate-50 rounded-xl p-4">You have view-only access. Ask the owner to grant editor access if needed.</div>}
      {isOwner?<section className="border-t border-slate-100 mt-7 pt-6">
        <h3 className="text-sm font-bold text-slate-800 flex gap-2 items-center"><UserPlus size={18} className="text-indigo-500"/> Share intentionally</h3>
        <p className="text-xs text-slate-500 leading-6 mt-2">Invite by Outlook, work email, Gmail or an existing @alias. Recipients cannot read until they accept in-app.</p>
-       <form className="grid sm:grid-cols-[1fr_130px_auto] gap-3 mt-4 items-end" onSubmit={e=>{e.preventDefault();action(async()=>{await chatsApi.invite(user,active.id,recipient,permission);setRecipient("");setRev(n=>n+1);setNotice("In-app invitation created. Recipient must accept to gain access.");});}}>
+       <form className="grid sm:grid-cols-[1fr_130px_auto] gap-3 mt-4 items-end" onSubmit={e=>{e.preventDefault();action(async()=>{
+        await chatsApi.invite(user,active.id,recipient,permission);
+        if(!mounted.current)return;
+        setChatDraft(current=>current.recipients[active.id]!==recipient?current:{...current,recipients:{...current.recipients,[active.id]:""}});
+        setRev(n=>n+1);setNotice("In-app invitation created. Recipient must accept to gain access.");});}}>
         <label className="text-[11px] font-bold text-slate-600">Recipient<Input className="mt-2" required maxLength={254} placeholder="user@company.com or @alias" value={recipient} onChange={e=>setRecipient(e.target.value)}/></label>
         <label className="text-[11px] font-bold text-slate-600">Access<select className="w-full mt-2 h-10 rounded-xl border border-slate-200 px-2 text-xs text-slate-600 bg-white" value={permission} onChange={e=>setPermission(e.target.value)}><option value="viewer">Can view</option><option value="editor">Can add</option></select></label>
         <Button type="submit" disabled={busy}>Invite <ArrowRight size={15}/></Button>
        </form>
-       <div className="grid gap-2 mt-5">{shares.length?shares.map(share=><div key={share.id} className="flex flex-wrap justify-between items-center gap-3 border rounded-xl border-slate-100 p-3"><div className="min-w-0"><strong className="text-xs text-slate-700 break-words">{share.recipient_email||"@"+share.recipient_alias}</strong><small className="text-[11px] text-slate-400 block mt-1">{share.permission} · {share.status}</small></div><Button variant="outline" size="sm" disabled={busy} onClick={()=>action(async()=>{await chatsApi.revoke(share.id);setRev(n=>n+1);setNotice("Access revoked.");})}>Revoke</Button></div>):<p className="text-xs text-slate-400">No invitations yet. This chat remains private.</p>}</div>
+       <div className="grid gap-2 mt-5">{!detailsReady?<p className="text-xs text-slate-400">Loading this conversation's invitations…</p>:shares.length?shares.map(share=><div key={share.id} className="flex flex-wrap justify-between items-center gap-3 border rounded-xl border-slate-100 p-3"><div className="min-w-0"><strong className="text-xs text-slate-700 break-words">{share.recipient_email||"@"+share.recipient_alias}</strong><small className="text-[11px] text-slate-400 block mt-1">{share.permission} · {share.status}</small></div><Button variant="outline" size="sm" disabled={busy} onClick={()=>action(async()=>{await chatsApi.revoke(share.id,active.id);setRev(n=>n+1);setNotice("Access revoked.");})}>Revoke</Button></div>):<p className="text-xs text-slate-400">No invitations yet. This chat remains private.</p>}</div>
        <button type="button" className="text-[11px] text-rose-500 hover:underline mt-8 flex gap-2 items-center" disabled={busy} onClick={()=>{if(!window.confirm("Permanently delete this conversation and all messages?"))return;action(async()=>{await chatsApi.deleteChat(active.id);await refresh(null);setNotice("Conversation permanently deleted.");});}}><Trash2 size={14}/> Delete conversation</button>
       </section>:<p className="text-xs text-slate-400 mt-6 border-t pt-5 border-slate-100">Only the owner manages sharing and can revoke access.</p>}
      <p className="text-[11px] text-slate-400 leading-5 mt-6">This chat stores human messages securely; hosted AI responses and automatic email notifications are not connected.</p>

@@ -65,11 +65,14 @@ ENGINE = ROOT / "engine"
 
 # Explicit order, never a glob: durable_factory_runtime.sql builds on the
 # project membership helpers, and an alphabetical sweep would load it first.
+# retained_attribution_and_lease_clock.sql comes last because it re-owns
+# constraints and functions the three files before it create.
 SQL_FILES = (
     "supabase/schema.sql",
     "supabase/migrations/private_chats_and_explicit_sharing.sql",
     "supabase/migrations/projects_and_project_membership.sql",
     "supabase/migrations/durable_factory_runtime.sql",
+    "supabase/migrations/retained_attribution_and_lease_clock.sql",
 )
 
 # Measured against the GitHub API on 2026-10-22: 5.0 MB of repository history,
