@@ -5,7 +5,7 @@ import { ArrowUpRight } from "lucide-react";
 export default function SiteFooter() {
   return (
     <footer className="site-footer section-container">
-      <span>Oryveta · Open source, grounded in evidence.</span>
+      <span>Oryveta · Plan software. Review source. Work together.</span>
       <nav aria-label="Footer">
         <Link to="/about">About</Link>
         <a

@@ -64,13 +64,13 @@ export default function DemoStudio({
           <div className="section-label">
             <Clapperboard size={15} /> Demo Studio / {story.title}
           </div>
-          <h2>Make the handoff easier to understand.</h2>
+          <h2>Write a script for your product demo.</h2>
           <p>
-            {context.title || "Untitled brief"} · Draft scenes stay with this
-            journey while you work.
+            {context.title || "Untitled brief"} · Describe what the user does
+            and what each scene should show.
           </p>
         </div>
-        <span className="status-tag">Draft · unverified</span>
+        <span className="status-tag">Storyboard draft</span>
       </div>
       <div className="storyboard-stage">
         <div className="storyboard-meta">

@@ -207,7 +207,7 @@ export default function Workspace({
             </strong>
             <p>
               {selfHosted
-                ? "Local cookie identity. Separate from Supabase workspaces."
+                ? "Repository work runs on this server. Cloud projects use a separate sign-in."
                 : preview
                   ? "Drafts stay open across site navigation. Export a copy to keep them."
                   : "Workspace membership never grants access to private chats."}
@@ -256,13 +256,14 @@ export default function Workspace({
           className={`workspace-controls ${hasWorkspaceSwitch ? "has-workspace-switch" : ""}`}
         >
           <Button
-            size="icon"
+            size="sm"
             variant="ghost"
             className="mobile-menu-trigger"
             onClick={() => mobileNav.current.showModal()}
             aria-label="Open workspace menu"
           >
             <Menu size={20} />
+            <span>Workspace</span>
           </Button>
           {hasWorkspaceSwitch && (
             <select
@@ -284,9 +285,10 @@ export default function Workspace({
             <div className="preview-ribbon">
               <InfoMark />
               <span>
-                {preview ? "Preview mode. " : "Hosted workspace. "}Briefs and
-                storyboards are drafts; no cloud coding agent is running.{" "}
-                {preview && "Private workspaces and chats require sign-in."}
+                {preview
+                  ? "Explore planning tools. Sign in to save projects and share private conversations."
+                  : "Projects and chats are saved. Export Start New and Evolve drafts to keep them."}{" "}
+                Code execution requires a configured self-hosted engine.
               </span>
             </div>
           )}
@@ -304,8 +306,8 @@ export default function Workspace({
             <>
               <div className="page-heading">
                 <div className="section-label">{active?.name || "Your working space"}</div>
-                <h1>{openWork.length ? "Pick up the work." : "What are you working on?"}</h1>
-                <p>{openWork.length ? "Your open briefs and selected local projects, kept in context." : "Start with a product brief or a codebase you want to understand."}</p>
+                <h1>{openWork.length ? "Continue your work." : "Start with an app or a codebase."}</h1>
+                <p>{openWork.length ? "Reopen a planning draft or your selected local project." : "Plan a new application with Start New, or inspect existing code with Evolve."}</p>
               </div>
               {openWork.length > 0 && (
                 <section className="open-work" aria-label="Continue your work">
@@ -330,39 +332,39 @@ export default function Workspace({
                   icon={Sparkles}
                   number="01"
                   title="Start New"
-                  description="Turn a client onboarding idea into a scoped brief. Create a starter locally, then explain what is—and isn't—built."
+                  description="Write the app requirements and export a brief. Use the self-hosted engine to prepare a starter repository."
                   onClick={() => navigate("new")}
                 />
                 <JourneyCard
                   icon={GitBranch}
                   number="02"
                   title="Evolve"
-                  description="Bring an existing service into focus. Inspect a snapshot locally, review findings, and make the next change understandable."
+                  description="Describe a change, analyze an authorized source snapshot locally, and review candidate issues before editing code."
                   onClick={() => navigate("evolve")}
                 />
               </div>
               <div className="overview-bottom">
                 <div>
                   <div className="section-label">Built into both journeys</div>
-                  <h2>Don't leave the explanation until last.</h2>
+                  <h2>Explain the work with a demo script.</h2>
                   <p>
-                    Demo Studio stays beside your brief and local run. The right
-                    story opens with the right context, without losing your
-                    edits when you switch journeys.
+                    Demo Studio helps you plan what to show a teammate or client.
+                    Write scenes beside your brief and export them as JSON.
+                    Rendering a video is a separate step.
                   </p>
                 </div>
                 <div className="artifact-stack">
                   <span>
                     01 <strong>Brief</strong>
-                    <small>Intent & constraints</small>
+                    <small>Requirements & acceptance criteria</small>
                   </span>
                   <span>
                     02 <strong>Local run</strong>
-                    <small>Recorded actions</small>
+                    <small>Starter code & source findings</small>
                   </span>
                   <span>
                     03 <strong>Demo Studio</strong>
-                    <small>Unverified draft story</small>
+                    <small>Editable demo script</small>
                   </span>
                 </div>
               </div>
@@ -553,35 +555,35 @@ export default function Workspace({
           {page === "activity" && (
             <>
               <div className="page-heading">
-                <div className="section-label">Accountability</div>
-                <h1>Actions, not assertions.</h1>
+                <div className="section-label">Activity</div>
+                <h1>See recorded work.</h1>
                 <p>
                   {selfHosted
-                    ? "Select a project and run inside Start New or Evolve to see persisted worker events."
-                    : "There are no hosted execution events. A planning export is not an agent run."}
+                    ? "Select a project in Local run to inspect its saved analysis events."
+                    : "Open a project's analysis panel to see attempts and events when a repository worker is configured."}
                 </p>
               </div>
               <div className="surface-panel">
                 <HardDrive size={25} />
                 <h2>
                   {selfHosted
-                    ? "Your run timeline stays with its project."
-                    : "Real execution is local today."}
+                    ? "Each analysis keeps its own timeline."
+                    : "Cloud analysis needs a running worker."}
                 </h2>
                 <p>
-                  Queued, running, completed, failed and canceled states come
-                  from the engine. No invented task completions, tool counts or
-                  private reasoning.
+                  The worker records queued, running, completed, failed and
+                  canceled analysis attempts. Writing or exporting a brief does
+                  not start an agent or execute code.
                 </p>
-                <Button variant="outline" onClick={() => navigate("evolve")}>
-                  Open Evolve <ArrowRight size={15} />
+                <Button variant="outline" onClick={() => navigate(selfHosted ? "evolve" : "projects")}>
+                  {selfHosted ? "Open Evolve" : "Open projects"} <ArrowRight size={15} />
                 </Button>
               </div>
               <div className="research-note">
-                <strong>Internal evaluation, not autonomous learning</strong>
+                <strong>Agent learning is planned</strong>
                 <p>
-                  The Python evidence gate compares matched outcomes and
-                  recommends human review. It does not promote its own changes.
+                  Internal evaluation tools compare submitted results for human
+                  review. They do not automatically improve or deploy an agent.
                 </p>
                 <a
                   href="https://github.com/suhasaitham22/Oryveta/blob/main/docs/EVALUATION.md"

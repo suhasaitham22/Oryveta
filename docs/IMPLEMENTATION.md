@@ -19,7 +19,7 @@ Status: **Merged local API and React Studio frontend; hosted React/Supabase inte
 | `engine/oryveta_engine/analysis_child.py` | Child-process entry point that runs `analyze_repository` over a prepared snapshot and writes the JSON result atomically |
 | `apps/web/` | Legacy standalone Soft Modern local UI served at `/`; hosted React Studio builds to `apps/web/studio/dist`, while the self-hosted React Studio uses the separate `apps/web/studio/dist-local` build at `/studio/`. Extensionless `/studio/*` page routes receive the app shell; dotted assets and reserved API-like paths do not. Missing local builds return `503` without replacing the legacy path |
 | `preview/` | Archived standalone static prototype; **not deployed** to Vercel |
-| `apps/web/vercel.json` | Vercel asset rewrites and restrictive security headers for the real app UI |
+| `apps/web/vercel.json` | Hosted build settings (`cd studio` install/build, output `studio/dist`), the SPA fallback rewrite that excludes assets and dotted paths, and the restrictive security headers including the `connect-src` policy |
 | `apps/web/cloud-auth.js` | Supabase Auth PKCE adapter and owner-scoped workspace data client; inactive until configured |
 | `apps/web/cloud-config.js` | Public-only Supabase project URL and publishable key placeholders |
 | `supabase/schema.sql` | Owner-initiated workspaces, membership trigger and per-row authorization policies |

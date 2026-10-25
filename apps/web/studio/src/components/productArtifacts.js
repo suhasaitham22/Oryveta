@@ -1,12 +1,12 @@
 // Illustrative documents, not engine output. Shared by the 3D and semantic views.
 export const productArtifacts = [
   {
-    title: "The brief",
+    title: "Project brief",
     label: "01 / Intent",
     file: "onboarding / brief.json",
     heading: "Client onboarding",
     tag: "Planning draft",
-    text: "A specific customer task, an explicit boundary, and a brief you can export.",
+    text: "Describe who the app is for, what it must do and how you will check it.",
     rows: [
       ["Customer task", "Give clients one place to submit their documents."],
       ["Acceptance criteria", "A reviewer can see what is still missing."],
@@ -15,12 +15,12 @@ export const productArtifacts = [
     footer: "Brief JSON · authored by you",
   },
   {
-    title: "The evidence",
+    title: "Code review",
     label: "02 / Source",
     file: "onboarding / source review",
-    heading: "Look inside the source.",
+    heading: "Review a source snapshot.",
     tag: "Illustrative review",
-    text: "A local source snapshot and findings to review—not a claim that tests passed.",
+    text: "Inspect files and candidate issues from read-only analysis of a source snapshot.",
     rows: [
       ["01  app/", "02    main.py"],
       ["03  tests/", "04    test_health.py"],
@@ -29,12 +29,12 @@ export const productArtifacts = [
     footer: "Local engine · no automatic code changes",
   },
   {
-    title: "The handoff",
+    title: "Demo script",
     label: "03 / Story",
     file: "onboarding / storyboard.json",
-    heading: "Explain the next step.",
+    heading: "Show the user experience.",
     tag: "Unverified storyboard",
-    text: "An editable story beside the work, with its limitations kept in the frame.",
+    text: "Draft the scenes for a product demo and export the script for later editing.",
     rows: [
       ["01 / Customer action", "A client submits the requested documents."],
       ["02 / Visible result", "A reviewer sees the remaining requirements."],

@@ -1,27 +1,27 @@
 [
   {
     "id": "guided-workflow",
-    "title": "The work, in focus",
-    "description": "Readable product artifacts → deliberate perspective → retained working context",
-    "version": 3,
+    "title": "Plan software, review source, work together",
+    "description": "Choose Start New or Evolve → define the work → inspect results and explain the next step",
+    "version": 4,
     "state": "storyboard",
     "scenes": [
       {
         "eyebrow": "01 / CHOOSE YOUR START",
-        "headline": "Plan the product. Review the code.",
-        "body": "Choose Start New or Evolve beside the original dimensional product documents. The brief shows a customer task, acceptance criteria and a constraint; the source review and storyboard carry their own boundaries.",
+        "headline": "Build new apps. Improve your code.",
+        "body": "Oryveta brings project planning, repository analysis and private collaboration together. Choose Start New for an app idea, or Evolve for an existing codebase. Starter generation and source analysis require the self-hosted engine.",
         "receipt": "Original canvas-textured example artwork, not a live run, customer result or completed application."
       },
       {
         "eyebrow": "02 / CHANGE YOUR PERSPECTIVE",
-        "headline": "Bring the artifact you need into focus.",
-        "body": "Select The brief, The evidence or The handoff to bring that document forward. Native page links, Back, Forward and breadcrumbs stay predictable. Reduced motion and unavailable WebGL provide the same document content without a canvas.",
+        "headline": "See what each output is for.",
+        "body": "Select Project brief, Code review or Demo script to inspect an example. Normal pages use navigation links and breadcrumbs; Demo Studio offers Back to brief. Reduced motion and unavailable WebGL show the same documents without a canvas.",
         "receipt": "Finite scene movement illustrates document selection, not agent progress. Only real engine records drive local task states."
       },
       {
         "eyebrow": "03 / WORK IN YOUR CONTEXT",
-        "headline": "Return to the work, not another setup screen.",
-        "body": "Edit a journey and return to Overview to continue its open brief or selected local snapshot. Inside Local run, inspect the selected project and recorded result first; create or import another snapshot from the secondary disclosure.",
+        "headline": "Continue the brief you were working on.",
+        "body": "Write requirements, inspect a local source snapshot or draft a demo script. Return from Demo Studio to the same brief without losing edits. Project briefs and private conversations can be saved after sign-in; journey drafts must be exported.",
         "receipt": "Open context is in memory, not saved across reloads. Hosted exports remain unverified drafts; source analysis does not execute imported code."
       }
     ]
@@ -29,8 +29,8 @@
   {
     "id": "start-new",
     "title": "Start New",
-    "description": "Product intent → local starter → contextual draft story",
-    "version": 2,
+    "description": "App requirements → self-hosted starter code → editable demo script",
+    "version": 3,
     "state": "storyboard",
     "scenes": [
       {
@@ -47,8 +47,8 @@
       },
       {
         "eyebrow": "03 / EXPLAIN WHAT COMES NEXT",
-        "headline": "Keep the story beside the work.",
-        "body": "Open Demo Studio inside Start New. Edit a scene, switch workflow tabs or journeys, and return to the same draft. Export the storyboard with its brief and project context.",
+        "headline": "Write a script for the intended user experience.",
+        "body": "Open Demo Studio inside Start New. Describe each scene, export the editable storyboard as JSON, and use Back to brief to return to the same requirements. Rendering a video is a separate step.",
         "receipt": "Edits last in the open workspace only. Storyboard JSON is unverified, not a rendered video or proof of a working portal."
       }
     ]
@@ -56,8 +56,8 @@
   {
     "id": "evolve",
     "title": "Evolve",
-    "description": "Authorized snapshot → source findings → honest change narrative",
-    "version": 2,
+    "description": "Change goal → source snapshot analysis → findings to review",
+    "version": 3,
     "state": "storyboard",
     "scenes": [
       {
@@ -74,8 +74,8 @@
       },
       {
         "eyebrow": "03 / KEEP THE RIGHT CONTEXT",
-        "headline": "Tell the Evolve story, not a different journey.",
-        "body": "Open Demo Studio from this Evolve brief. Edit the customer action and limitation, then export the matching Evolve story without losing edits when switching journeys.",
+        "headline": "Explain the change you want to make.",
+        "body": "Use Demo Studio to write the user actions and results you want to show. Export the Evolve script with its brief, then return to the same requirements. The script does not apply a patch or verify the change.",
         "receipt": "A contextual unverified storyboard, not a verified patch or automatically generated PR. Rendering requires the separate Remotion pipeline."
       }
     ]

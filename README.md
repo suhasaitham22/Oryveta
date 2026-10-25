@@ -1,25 +1,29 @@
 # Oryveta
 
-**Build thoughtfully. Evolve continuously.**
+**Plan software. Review source. Work together.**
+
+Oryveta is an open-source software delivery workspace for developers, independent builders and teams. It brings requirements, repository analysis and private collaboration together around two journeys: **Start New** for a new application, and **Evolve** for an existing application or package.
+
+**The goal:** an AI software factory in which agents plan, implement and test changes, while people review results and approve publishing. That complete agent workflow is still in development; the capabilities below describe what can be used now.
 
 ### [Open Oryveta — https://oryveta.vercel.app](https://oryveta.vercel.app)
 
-**Deployment:** [Vercel production](https://oryveta.vercel.app) serves the hosted React Studio from `apps/web/studio/dist`. GitHub sign-in, persisted project membership and private-session sharing have production verification. Start New/Evolve execution still requires the separate self-hosted API; a saved brief is not a generated application. FastAPI retains legacy `/` and serves the local React workspace at `/studio/` from `apps/web/studio/dist-local`; that API/worker is not deployed to Vercel.
+**Deployment:** [Vercel production](https://oryveta.vercel.app) serves the React Studio. GitHub sign-in, saved projects and private-conversation sharing have production verification. Starter generation and source analysis require a separately operated engine. The durable analysis worker is implemented and locally/CI verified, but its cloud host is not configured. FastAPI serves the self-hosted React workspace at `/studio/` and retains a separate legacy `/` interface.
 
 > **Documentation:** [Complete product and technical decisions](docs/INDEX.md) · [Architecture](docs/ARCHITECTURE.md) · [UI design](docs/DESIGN-SYSTEM.md) · [Roadmap](docs/ROADMAP.md) · [Verified status](docs/STATUS.md) · [Quality gates](docs/QUALITY.md)
 
-> **Launch status:** Production GitHub identity and project/private-session collaboration are live. General email deliverability, enterprise operations and hosted coding agents remain separate gates. Local deterministic starters and read-only analysis are not autonomous custom application generation.
+## What you can do today
 
-Oryveta is an open-source software engineering workspace with two target product journeys (the local MVP implements only bounded starter/scanning capabilities):
-
-- **Start New (target):** turn a project brief into a real software repository, then iteratively develop, test, review, and deploy it. Today the local path creates a deterministic starter and can analyze it; custom feature generation is not implemented.
-- **Evolve (target):** import an existing repository, analyze bugs, risky patterns, unused-code *candidates*, security concerns, and modernization opportunities, then implement verified improvements. Today the local path imports authorized snapshots and performs read-only heuristic analysis; patches remain review-only.
+- **Start New:** describe an app's users, features and acceptance criteria, then export the requirements as a brief. With the self-hosted engine, choose a template and download a starter repository. It does not implement a custom application from the brief.
+- **Evolve:** describe a change, import an authorized ZIP or public GitHub snapshot into the self-hosted engine, and review file-linked candidate issues. Analysis is read-only; it does not run imported code or apply verified fixes.
+- **Collaborate:** save project briefs, invite members with explicit roles and discuss work in separately shared private conversations.
+- **Explain the work:** use Demo Studio to write scenes and export a JSON storyboard. It is a demo script, not a rendered video or proof of working software. Journey drafts are kept in memory and must be exported before reloading.
 
 Kaggle and related benchmarks are **internal evaluation scenarios**, not a third product or navigation destination.
 
 ## Status
 
-**Early development.** The functional Python/FastAPI + SQLite MVP, tests, background worker, Docker Compose and CI are merged into `main`. The React Studio is the hosted UI and also an optional self-hosted `/studio/` surface; local jobs expose coarse worker states/events only. Autonomous code execution, test-backed AI fixes, GitHub publishing, hosted inference and 24/7 execution are not implemented.
+**Not available yet:** model-driven implementation and independent verification, private GitHub App repository access/publication, AI-native application/package modernization, operational on-call automation, scoped agent learning and an operated 24/7 service. These are [roadmap goals](docs/ROADMAP.md), not benefits of merely signing in.
 
 Project roles, invitations and separately shared private conversations are enforced by Supabase RLS/RPCs. Real local email/PKCE tests, production GitHub OAuth and deployed multi-user authorization checks pass. No unrestricted repository execution or full software factory is claimed. See [identity, permissions and reproducible verification](docs/IDENTITY-WORKSPACES.md).
 
@@ -34,9 +38,9 @@ See [current status](docs/STATUS.md) and [open-source policy](docs/OPEN-SOURCE.m
 5. Never claim benchmark wins, production reliability, or completed work without evidence.
 6. Keep free and open-source operation possible with bring-your-own-compute.
 
-## Functional MVP — run locally
+## Run the self-hosted engine
 
-The production-style foundation is intentionally a **single-host MVP**, not a multi-tenant cloud service. It runs locally with Python 3.11+, FastAPI, SQLite, and a separate durable worker. It can create runnable starter repositories, import authorized ZIP/public GitHub snapshots, perform heuristic static analysis, export projects and run reproducible *starter* ML evaluations.
+The Python/FastAPI + SQLite engine runs on a single host with a separate worker. It creates template starters, imports source snapshots, performs bounded static analysis and exports repositories. It is distinct from the Supabase-backed durable analysis runtime described in [IMPLEMENTATION.md](docs/IMPLEMENTATION.md).
 
 ```bash
 python -m venv .venv

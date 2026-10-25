@@ -56,7 +56,7 @@ Progress events stop at 180 per run, reserving the remaining capacity for termin
 
 Browsers cannot mutate run state. Only `submit_repository_analysis`, `cancel_work_item`, `register_project_worker` and `revoke_project_worker` are reachable from a human session; the four worker RPCs refuse an undesignated identity. The fencing token is not readable through this API at any privilege a client can hold: it lives in `private.factory_run_leases`, which is not an exposed PostgREST schema and on which `authenticated` holds no privilege, so no run read and no forgotten policy can return a live lease token. `factory_runs.lease_expires_at` is liveness information only. On the four public tables the `authenticated` role holds SELECT only and `anon` holds nothing, so a missing write policy fails closed instead of exposing a write.
 
-## Current GitHub API implementation (local/self-hosted; not deployed on the static preview)
+## Current GitHub API implementation (local/self-hosted; not deployed on the hosted site)
 
 The published FastAPI source supports health/config, GitHub identity OAuth callback, local-only demo auth, logout, current user/session, owner-scoped projects, scaffold generation, bounded repository ZIP or public GitHub imports, analysis jobs, status/events and artifact export. This API requires live code verification and real credentials before hosted use.
 
