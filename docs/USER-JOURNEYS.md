@@ -22,7 +22,7 @@ For a potential Rust rewrite, include a baseline, interoperability/migration str
 
 ## Target 24/7 task lifecycle
 
-Durable repository analysis has been verified locally and in CI, but no cloud worker host is configured. The full agent lifecycle below still requires that infrastructure and the planned implementation/verifier tools.
+Durable repository analysis is deployed to Supabase and verified through the production UI with a one-off local worker. No always-on cloud worker host is configured. The full agent lifecycle below still requires that infrastructure and the planned implementation/verifier tools.
 
 Authenticated request persists to central SQL state → queue/event wakes remote worker → worker claims expiring lease with idempotency → periodically checkpoints and reports state → stores artifacts and evidence → requests approval for sensitive operations → resumes independently of the browser. Recover transparently from worker outages without duplicate side effects.
 

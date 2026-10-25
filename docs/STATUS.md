@@ -1,5 +1,17 @@
 # Oryveta implementation status
 
+## Production runtime rollout — 2026-10-25 UTC
+
+The Vercel production deployment for merged commit `1c3e731c2d4b3ffd434dcfd5719fb57b679b658c` succeeded. The reviewed `durable_factory_runtime.sql` and `retained_attribution_and_lease_clock.sql` migrations are now applied to Oryveta project `nydtmiseclkwauiepqxn`; existing prerequisite migrations were not replayed.
+
+- All four public runtime tables and the private lease table have RLS enabled. Anonymous reads and direct authenticated writes are denied; authenticated callers cannot read private leases. All 15 exposed security-definer RPCs have fixed empty search paths and deny anonymous execution.
+- `production_auth_smoke.py --runtime` passed against the deployed site and API: browser-submitted public-repository analysis survived browser closure, a separately authenticated **one-off local worker** completed it, and the downloaded JSON matched the stored result. The worker rotated its ordinary session and received no administrative key.
+- Production cancellation rejected a late heartbeat/completion; worker revocation removed access. Deleting the cancelling/invited account preserved terminal metadata, and a new account at the same email address inherited no project or chat access.
+- Five controlled test identities and their application rows were removed. An independent catalog/data query found no release-test accounts, workspaces, projects, chats, registrations, work items, runs, events or leases remaining. Provider audit logs may remain.
+- Security advisors still report the intentional authenticated-only `SECURITY DEFINER` RPC pattern and disabled leaked-password protection. The RPCs require their reviewed actor/role/lease checks; switching them to invoker mode would break the no-direct-write contract. Supabase leaked-password protection requires Pro or above, so no paid plan was enabled. The advisor output is not claimed to be clean.
+
+**Still pending:** an authorized always-on worker host and measured free-tier capacity. This rollout proves the production control plane and one-off execution path, not 24/7 availability, model-driven coding, host recovery or enterprise readiness.
+
 ## Auth and collaboration changes
 
 PR #31 is deployed to Vercel production. Its atomic project/collaboration migration is applied to Supabase, with RLS enabled and direct client mutation grants denied on all four new tables. Production GitHub sign-in and deployed multi-user project/private-session authorization have been exercised. This release does not add a hosted coding factory.
@@ -33,7 +45,7 @@ Local Mailpit coverage is not external email delivery. Production GitHub OAuth a
 - The forward migration `retained_attribution_and_lease_clock.sql` permits deletion of attribution accounts while preserving terminal timestamps/state and refusing inherited grants. Lease timing uses wall-clock observations after locks: a 17-second lock wait still returned a fresh 15-second lease in the real concurrency test.
 - A suspected workspace-cascade conflict did not reproduce. Its existing foreign key was kept; successful workspace deletion and forbidden standalone registration deletion now have regression coverage.
 
-Verification: **302 Python tests passed**, all four SQL suites passed, all **10 concurrent-session cases** passed, and all **8 real-browser collaboration ordering cases** passed. Existing real Supabase email/PKCE, project/session authorization and compiled desktop/tablet/mobile navigation checks passed. The real GitHub worker smoke also passed completion, rotating credentials, crash recovery, cancellation and revocation. No production migration or cloud-worker deployment is claimed.
+Verification before rollout: **302 Python tests passed**, all four SQL suites passed, all **10 concurrent-session cases** passed, and all **8 real-browser collaboration ordering cases** passed. Existing real Supabase email/PKCE, project/session authorization and compiled desktop/tablet/mobile navigation checks passed. The real GitHub worker smoke also passed completion, rotating credentials, crash recovery, cancellation and revocation. Production rollout evidence is recorded above.
 
 ## Product explanation and navigation — local verification, 2026-10-24
 
@@ -49,7 +61,7 @@ Exercised verification:
 - Additional 320px/768px browser scenarios preserved drafts and focus after demo return. Eight signed-out routes at 1440px and 390px produced no horizontal overflow or axe-core 4.10.3 violations for the selected WCAG A/AA rules. This is automated coverage, not a full accessibility certification or a physical-device test.
 - Legacy browser flows passed, with the existing auth-adapter mock clearly distinguished from the real Supabase checks. Historical prototype checks now exercise escaped draft export, local-only repository preview and navigation instead of asserting marketing phrases. They cover the repaired inline-script parse error and the missing mobile Activity link.
 
-These are source/local verification results, not a claim that this UI revision or a cloud worker has been deployed. Free worker hosting still requires provider authorization and measured allowance fit; no card, paid plan or paid inference fallback has been added.
+These source/local checks preceded the production UI rollout. Free worker hosting still requires provider authorization and measured allowance fit; no card, paid plan or paid inference fallback has been added.
 
 ## Durable runtime candidate — local verification, 2026-10-23
 
@@ -63,7 +75,7 @@ Exercised against isolated native Supabase and real GitHub downloads:
 - Production-built Chromium UI submitted work, closed the page, reopened the completed report and downloaded the persisted JSON. A new queued run did not show the previous run's result and could be cancelled.
 - Python suite: **295 passed**. Ruff and all seven frontend storyboard/security-scan contracts pass. A startup-race regression and a separate actual-child-entrypoint smoke prove that a worker dying before child initialization produces exit 3 and no result.
 
-This candidate has **not** been deployed to production. No authorized always-on worker host is configured. These checks prove local runtime behavior, not a host-reboot/restore drill, a 24-hour soak, model-driven code changes or an availability commitment. Worker operation, credential limitations and source-pin semantics are documented in [OPERATIONS.md](OPERATIONS.md), [IMPLEMENTATION.md](IMPLEMENTATION.md) and [API.md](API.md).
+These initial checks proved local runtime behavior. The production database and one-off execution path were subsequently verified as recorded above; no always-on worker host is configured. A host-reboot/restore drill, 24-hour soak, model-driven code changes and an availability commitment remain unproven. Worker operation, credential limitations and source-pin semantics are in [OPERATIONS.md](OPERATIONS.md), [IMPLEMENTATION.md](IMPLEMENTATION.md) and [API.md](API.md).
 
 ## Existing engine and product boundaries
 

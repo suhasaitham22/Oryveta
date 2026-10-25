@@ -4,7 +4,7 @@
 
 The production Vercel project at https://oryveta.vercel.app serves the **React Studio** built from `apps/web/studio`. The hosted site is a browser client only; it is intentionally separate from the Python API, the durable worker and any agent execution. The archived `preview/` directory is a historical static prototype and must never be Vercel's project root — see [the historical preview notes](../preview/README.md). For local engine and Studio commands see the repository README.
 
-Hosted today: GitHub sign-in, saved projects and project briefs, project roles and invitations, and private conversations that stay private until their owner shares them. The production verification behind that list is recorded in [STATUS.md](STATUS.md). Start New and Evolve work — deterministic starter repositories and read-only source analysis — requires the separately operated self-hosted engine; a saved brief is not a generated application. There is no hosted engineering API and no cloud agent worker. Kaggle remains an internal benchmark, not a top-level UI journey.
+Hosted today: GitHub sign-in, saved projects and briefs, project roles/invitations, private conversations and the Supabase durable-analysis control plane. Production verification is recorded in [STATUS.md](STATUS.md). Analysis completed through the deployed UI using a one-off local worker; no always-on cloud worker is configured. Starter generation still requires the separate self-hosted FastAPI engine. A saved brief is not a generated application, and Kaggle remains an internal benchmark rather than a product journey.
 
 ### Vercel configuration
 

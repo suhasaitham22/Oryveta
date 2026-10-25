@@ -1,6 +1,6 @@
 # Functional MVP implementation — code map and verified boundaries
 
-Status: **Merged local API and React Studio frontend; hosted React/Supabase integration remains separately configured.** The Python API is not deployed to Vercel. This page documents actual code and distinguishes deterministic starters/read-only analysis from autonomous software engineering.
+Status: **The React/Supabase collaboration and durable-analysis control plane are deployed.** Production analysis was verified with a one-off local worker; always-on worker hosting remains pending. The separate FastAPI/SQLite engine is not deployed to Vercel. This page distinguishes deterministic starters/read-only analysis from autonomous software engineering.
 
 ## Local architecture
 
@@ -107,7 +107,7 @@ Persisted output is bounded on both sides: the schema allows 256 KB and 400 find
 
 ## Known production blockers
 
-1. The public Vercel React Studio is not connected to the self-hosted FastAPI engine; hosted flows remain planning/storyboard experiences.
+1. The Vercel UI uses Supabase for collaboration and durable analysis. It is not connected to the separate FastAPI/SQLite engine, and no always-on cloud worker is configured.
 2. SQLite and file workspaces are single-host and not adequate as-is for multi-tenant consultancy deployment.
 3. Source imports are snapshots only; imported code is not executed or changed by an AI agent.
 4. The worker does not run in a hardened per-tenant container or microVM and has no managed always-on hosting.

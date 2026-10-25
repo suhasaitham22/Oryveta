@@ -25,7 +25,7 @@ Authority is the conjunction of both facts and is re-checked on every worker cal
 
 ### Credential handling
 
-The worker holds an ordinary Auth session. **No admin or service-role credential appears in worker code or on the worker host**; designation stays with the administrator who performs step 1 above.
+The worker process holds only an ordinary Auth session. Do not provision a continuous worker host with an admin/service-role credential; identity designation belongs to the administrator. The opt-in production verification harness temporarily performs administrative setup on the same machine as its one-off worker, but does not pass the admin key to that worker's environment or credential file. That check proves process-level credential handling, not hardened host isolation.
 
 - Keep the credential file as a non-symlink regular file with no group or world permission bits (`chmod 600`); the worker refuses to start otherwise. `ORYVETA_WORKER_CREDENTIALS` is a secure reference to that path, not a place to put the token itself.
 - Supabase rotates refresh tokens. The worker persists them through a `0600` temporary file, `fsync` and atomic replace. This protects file integrity, not a crash between remote token issuance and local persistence; re-provision a rejected session. Give each worker process its own independently issued session and credential file; never copy one rotating token across processes.
@@ -43,7 +43,7 @@ The worker holds an ordinary Auth session. **No admin or service-role credential
 
 ### Local versus production limits
 
-Verification for this slice is a local Supabase stack (Auth, PostgREST, PostgreSQL) plus real github.com access. There is no deployed worker, no managed always-on host and no availability promise; an operator starts and supervises the process on a host they control. The worker needs outbound access to the Supabase endpoint and to github.com, and needs no inbound ingress at all — it is a client and listens on no port. It is still not a hardened per-tenant container or microVM: the isolation claimed here is a credential-free child process that reads imported source and never executes it, not a sandbox.
+The production Supabase schema and Vercel UI have been verified with a one-off local analysis worker, in addition to the isolated local/CI checks. No always-on cloud worker is configured and there is no availability promise. The worker requires outbound access to Supabase and GitHub, with no inbound port. Its credential-free analyzer process reads imported source but does not execute it; this is not a hardened per-tenant sandbox.
 
 ## Observability
 
@@ -69,7 +69,7 @@ Encrypted backups for SQL and artifacts, regular restore drills, schema migratio
 
 ## Current limitation
 
-Hosted collaboration uses Supabase identity and project/session policies after the target migrations are applied; local real-service/browser checks do not prove production rollout. There is still no hosted autonomous worker, operated incident system or guaranteed availability. Those remain roadmap gates.
+The production collaboration and durable-analysis control plane are deployed. A temporary local worker proved the real execution path, but continuous worker hosting, an operated incident system and availability/recovery guarantees remain roadmap gates.
 
 ## Project on-call mode — planned product capability
 

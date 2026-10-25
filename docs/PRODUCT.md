@@ -6,7 +6,7 @@ Oryveta is an open-source software delivery workspace for developers, independen
 
 The target is an **AI software factory**: agents plan, implement and independently test changes; people review the results and approve publishing. This specification defines that target, not a claim that every capability is live.
 
-Today, the hosted product provides projects, roles, invitations, private conversations and planning/demo exports. Journey drafts must be exported; they are not saved project briefs. A separately operated engine provides starter repositories and read-only source analysis. The durable analysis worker is implemented and locally/CI verified but has no configured cloud host. Automated coding, publishing, modernization, on-call and learning remain planned.
+Today, the hosted product provides projects, roles, invitations, private conversations and planning/demo exports. Journey drafts must be exported; they are not saved project briefs. A separately operated engine provides starter repositories and read-only source analysis. The durable analysis control plane is deployed to Supabase and verified with a one-off local worker, but has no always-on cloud host. Automated coding, publishing, modernization, on-call and learning remain planned.
 
 ## Locked primary product experiences
 
@@ -40,7 +40,7 @@ Target acceptance journey:
 7. Produce an independently tested patch, pull request, explanation and Proof Receipt.
 8. Observe post-merge outcomes with user consent and recommend the next highest-value action.
 
-**Current reality:** the self-hosted engine imports bounded source snapshots and reports candidate findings. The durable public-repository analysis worker is implemented but not deployed to a cloud host. Full architecture/runtime analysis, AI-native rewriting, private GitHub App access and independently verified fixes remain planned.
+**Current reality:** the self-hosted engine imports bounded source snapshots and reports candidate findings. The production durable-analysis path has been verified with a temporary local worker; continuous cloud execution still needs a worker host. Full architecture/runtime analysis, AI-native rewriting, private GitHub App access and independently verified fixes remain planned.
 
 ### AI-native modernization contract
 
