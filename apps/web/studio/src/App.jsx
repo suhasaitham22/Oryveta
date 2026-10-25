@@ -279,25 +279,25 @@ function SignIn({ user, selfHosted }) {
           Your private workspace
         </span>
         <h1>
-          Good work starts
+          Keep your projects
           <br />
-          with clarity.
+          and conversations together.
         </h1>
         <p>
-          Hosted sign-in adds workspace membership and private human
-          conversations. It never grants access to your local engine.
+          Sign in to save project briefs, invite collaborators and create
+          private conversations. You choose what to share and with whom.
         </p>
         <p>
-          Briefs and storyboards remain in this open browser session. Export a
-          copy to keep them.
+          Drafts in Start New, Evolve and Demo Studio are different from saved
+          project briefs: export them before closing or reloading the page.
         </p>
       </div>
       {selfHosted ? (
         <div className="surface-panel">
           <h2>You're in the local edition.</h2>
           <p>
-            Use Local run inside a journey to connect to this engine. Hosted
-            Supabase identity is separate; no tokens or cookies are forwarded.
+            Open Local run inside Start New or Evolve to use this server.
+            The local engine has a separate sign-in from cloud projects.
           </p>
           <Button asChild>
             <Link to="/workspace">Open local workspace</Link>

@@ -1,6 +1,6 @@
 # Oryveta documentation hub
 
-**Snapshot: 2026-10-09.** This is the main source of architectural intent and product decisions. Always distinguish **current implementation** from **planned capabilities**. The public site at https://oryveta.vercel.app is a responsive static UI preview, not a complete agent service.
+**Snapshot: 2026-10-24.** This is the main source of architectural intent and product decisions. Oryveta is an open-source software delivery workspace being built into an AI software factory, entered through **Start New** or **Evolve**; see [VISION.md](VISION.md) for the audience and the available-versus-planned boundary. Always distinguish **current implementation** from **planned capabilities**. The public site at https://oryveta.vercel.app serves the hosted React Studio with real sign-in and saved project collaboration; it is not an agent service and does not run Start New or Evolve work.
 
 ## Product and design
 
@@ -39,7 +39,7 @@
 | [STATUS.md](STATUS.md) | Live GitHub and Vercel status, current limitations and in-progress work |
 | [OPEN-SOURCE.md](OPEN-SOURCE.md) | Apache-2.0 licensing, contributor and commercial-use principles |
 | [CONTRIBUTING.md](CONTRIBUTING.md) | Tests, PR requirements, benchmark and security contribution standards |
-| [DEPLOYMENT-PREVIEW.md](DEPLOYMENT-PREVIEW.md) | Static hosted preview scope and manual run/deploy instructions |
+| [DEPLOYMENT-PREVIEW.md](DEPLOYMENT-PREVIEW.md) | Hosted Vercel deployment of the React Studio, its build settings and what is not hosted |
 
 ## Architecture decision records
 
@@ -53,7 +53,7 @@ Oryveta name; current Galileo-led bright product direction; Start New + Evolve a
 
 ## What is not yet locked or built
 
-Hosted factory execution, GitHub App repository publication, tenant-safe runner isolation, autonomous verified changes, Slack/mobile delivery, controlled recursive learning and enterprise operational guarantees. Supabase identity/project/session collaboration has local real-service verification; production rollout is tracked separately in STATUS.md.
+Hosted factory execution, GitHub App repository publication, tenant-safe runner isolation, autonomous verified changes, Slack/mobile delivery, controlled recursive learning and enterprise operational guarantees. Supabase identity/project/session collaboration is deployed and production-verified; the durable analysis runtime is merged with local and CI verification only, and its deployment state is tracked in [STATUS.md](STATUS.md).
 
 ## Review and updates
 

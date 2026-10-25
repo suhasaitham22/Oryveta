@@ -3,10 +3,12 @@ on:
   push:
     paths:
       - 'preview/**'
+      - 'scripts/preview_ui_smoke.py'
       - '.github/workflows/preview-checks.yml'
   pull_request:
     paths:
       - 'preview/**'
+      - 'scripts/preview_ui_smoke.py'
       - '.github/workflows/preview-checks.yml'
 permissions:
   contents: read
@@ -18,15 +20,12 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-      - name: Verify preview exists and avoids unsafe dependencies
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97
+        with:
+          python-version: '3.12'
+      - name: Install the browser
         run: |
-          test -f preview/index.html
-          python - <<'PY'
-          from pathlib import Path
-          site = Path('preview/index.html').read_text(encoding='utf-8')
-          for phrase in ['Start New', 'Evolve Existing', 'Interactive product preview', 'No sign-in required']:
-              assert phrase in site, phrase
-          assert '<script src="https://' not in site
-          assert 'GitHub authentication' in site, 'Authentication limitation must be disclosed'
-          print('Static preview checks passed')
-          PY
+          python -m pip install 'playwright==1.64.1'
+          python -m playwright install --with-deps chromium
+      - name: Exercise historical preview behavior
+        run: python scripts/preview_ui_smoke.py

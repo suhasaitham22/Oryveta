@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
-import { Link, NavLink, useLocation, useNavigate } from "react-router-dom";
-import { ArrowLeft, ChevronRight, Menu, X } from "lucide-react";
+import { Link, NavLink, useLocation } from "react-router-dom";
+import { ChevronRight, Menu, X } from "lucide-react";
 import Brand from "./Brand.jsx";
 import { Button } from "./ui/button";
 
@@ -34,7 +34,6 @@ const links = [
 
 export default function SiteHeader({ user, onSignOut, selfHosted }) {
   const location = useLocation();
-  const navigate = useNavigate();
   const [open, setOpen] = useState(false);
   const trigger = useRef(null);
   const menu = useRef(null);
@@ -78,18 +77,6 @@ export default function SiteHeader({ user, onSignOut, selfHosted }) {
             ))}
           </nav>
           <div className="site-account">
-            {segments.length === 0 && window.history.state?.idx > 0 && (
-              <Button
-                className="home-back"
-                variant="ghost"
-                size="sm"
-                aria-label="Back"
-                onClick={() => navigate(-1)}
-              >
-                <ArrowLeft size={15} />
-                <span>Back</span>
-              </Button>
-            )}
             {selfHosted ? (
               <span className="status-tag">Local edition</span>
             ) : user ? (
@@ -137,16 +124,6 @@ export default function SiteHeader({ user, onSignOut, selfHosted }) {
       </header>
       {segments.length > 0 && (
         <div className="route-trail">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() =>
-              window.history.state?.idx > 0 ? navigate(-1) : navigate("/")
-            }
-          >
-            <ArrowLeft size={15} />
-            Back
-          </Button>
           <nav aria-label="Breadcrumb">
             <ol>
               <li>

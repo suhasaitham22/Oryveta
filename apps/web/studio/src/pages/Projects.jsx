@@ -188,18 +188,18 @@ export default function Projects({ user, preview, onExit }) {
       <>
         <div className="page-heading">
           <div className="section-label">Projects</div>
-          <h1>Projects need a real account.</h1>
+          <h1>Sign in to manage your projects.</h1>
           <p>
-            Preview mode never creates accounts or database rows, and it cannot
-            read anyone's projects, members or invitations.
+            Save a project brief, invite collaborators and choose who can
+            view or edit the project.
           </p>
         </div>
         <div className="surface-panel">
           <LockKeyhole size={26} />
           <h2>Sign in to create or join a project.</h2>
           <p>
-            A project keeps a brief and its membership. Being invited to a
-            project never grants access to someone's private conversations.
+            Projects organize the work and its members. Private conversations
+            have separate invitations, so joining a project does not share chats.
           </p>
           <Button onClick={onExit}>
             Return to sign in <ArrowRight size={16} />
@@ -212,10 +212,10 @@ export default function Projects({ user, preview, onExit }) {
     <>
       <div className="page-heading">
         <div className="section-label">Projects</div>
-        <h1>Shared work, explicit access.</h1>
+        <h1>Your projects</h1>
         <p>
-          A project is a persisted brief with its own membership. Project access
-          is granted per person and is separate from private conversations.
+          Keep each project's brief, source link and collaborators together.
+          Project access and private-conversation sharing are managed separately.
         </p>
       </div>
       {error && (

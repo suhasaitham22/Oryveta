@@ -1,5 +1,13 @@
 # Product specification and use cases
 
+## Product in plain language
+
+Oryveta is an open-source software delivery workspace for developers, independent builders, consultants and teams. Start New organizes a new application; Evolve organizes a change to an existing application or package. Requirements, source findings and private collaboration stay connected to the work.
+
+The target is an **AI software factory**: agents plan, implement and independently test changes; people review the results and approve publishing. This specification defines that target, not a claim that every capability is live.
+
+Today, the hosted product provides projects, roles, invitations, private conversations and planning/demo exports. Journey drafts must be exported; they are not saved project briefs. A separately operated engine provides starter repositories and read-only source analysis. The durable analysis worker is implemented and locally/CI verified but has no configured cloud host. Automated coding, publishing, modernization, on-call and learning remain planned.
+
 ## Locked primary product experiences
 
 ### 1. Start New — create a new repository and product
@@ -16,7 +24,7 @@ Target acceptance journey:
 7. Offer repository export, GitHub repository publishing (via authorized GitHub App), deploy preview, review and iteration.
 8. Continue approved feature work and maintenance through durable cloud jobs and clear progress reporting.
 
-**Current reality:** an earlier local Python/FastAPI MVP supports starter-template generation, ZIP export and tests. The publicly deployed static preview only drafts a brief; it does not run the API or generate repositories. Real autonomous custom product generation is not implemented.
+**Current reality:** Start New exports an in-memory requirements draft. The self-hosted engine creates deterministic starter repositories and source ZIPs; it does not implement the user's full brief. Hosted saved project briefs and collaboration are separate features. Custom model-driven application generation is not implemented.
 
 ### 2. Evolve — improve existing repositories
 
@@ -32,13 +40,13 @@ Target acceptance journey:
 7. Produce an independently tested patch, pull request, explanation and Proof Receipt.
 8. Observe post-merge outcomes with user consent and recommend the next highest-value action.
 
-**Current reality:** the local engine provides bounded snapshot intake and heuristic source findings. Full architecture/runtime analysis, AI-native rewriting, private GitHub App access and autonomous verified fixes remain planned; the current analyzer is not proof of comprehensive enterprise coverage.
+**Current reality:** the self-hosted engine imports bounded source snapshots and reports candidate findings. The durable public-repository analysis worker is implemented but not deployed to a cloud host. Full architecture/runtime analysis, AI-native rewriting, private GitHub App access and independently verified fixes remain planned.
 
 ### AI-native modernization contract
 
 “AI-native” means useful agent-driven workflows with typed tools, explicit identity/authorization, permission-aware knowledge retrieval, bounded orchestration, observability and independent evaluation. It does not mean replacing deterministic authorization, validation, money movement or database transactions with model decisions.
 
-Evolve supports four intervention levels: add an AI feature; expose existing domain capabilities safely to agents; replace selected components; or replace the application/package. Prefer staged replacement where it reduces risk, but do not exclude a justified full rewrite. Preserve required behavior, not every accidental legacy defect. Breaking contracts must be explicit, versioned and approved.
+The planned Evolve workflow supports four intervention levels: add an AI feature; expose existing domain capabilities safely to agents; replace selected components; or replace the application/package. Prefer staged replacement where it reduces risk, but do not exclude a justified full rewrite. Preserve required behavior, not every accidental legacy defect. Breaking contracts must be explicit, versioned and approved.
 
 Before behavior-changing migration, produce a reviewable **analysis dossier**:
 
@@ -59,9 +67,9 @@ For multi-repository/package changes, inventory and migrate known callers, verif
 
 AI features require their own reliability, task-quality, latency and resource tests. If local inference cannot meet the agreed requirement, report the measured limitation or revise the approved scope—never silently invoke a paid provider or label an unimplemented fallback “complete.”
 
-## Shared on-call mode
+## Planned shared on-call mode
 
-Both Start New and Evolve projects can opt into on-call mode through the same web/mobile/Slack platform. Authorized logs, metrics, traces, release data and bug reports are correlated into a canonical incident and restricted session. Agents investigate with read-only tools, then use the same isolated Evolve/fix/verification path. Production actions require a separate explicit policy; reading logs is not deployment permission.
+The target product lets both Start New and Evolve projects opt into on-call mode through the same web/mobile/Slack platform. Authorized logs, metrics, traces, release data and bug reports will be correlated into a canonical incident and restricted session. Agents will investigate with read-only tools, then use the same isolated Evolve/fix/verification path. Production actions require a separate explicit policy; reading logs is not deployment permission. This mode is not implemented yet.
 
 New applications should offer reviewed service/release instrumentation. Existing applications connect their current sources first and identify observability gaps. An incident is resolved only after the required post-change evidence, not merely because a PR was created or merged. See [OPERATIONS.md](OPERATIONS.md) for ingestion, correlation, session, automation and proof contracts.
 

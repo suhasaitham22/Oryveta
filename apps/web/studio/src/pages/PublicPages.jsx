@@ -39,49 +39,51 @@ export function Home() {
       <section className="home-intro section-container">
         <div className="home-copy">
           <Reveal>
-            <span className="section-label">An open workspace for software work</span>
+            <span className="section-label">Open-source software delivery</span>
           </Reveal>
           <Reveal delay={0.08}>
-            <h1>Plan the product.<br />Review the code.</h1>
+            <h1>Build new apps.<br />Improve your code.</h1>
           </Reveal>
           <Reveal delay={0.16}>
             <p className="home-deck">
-              Write a focused brief. Prepare a starter or inspect an existing
-              codebase. Keep the story beside the work.
+              Oryveta brings project planning, repository analysis and team
+              collaboration into one workspace. Start with an app idea or a
+              codebase you want to improve.
             </p>
           </Reveal>
           <Reveal delay={0.24} className="home-actions">
             <Button asChild size="lg">
               <Link to="/workspace/new">
-                Start something new <ArrowRight size={17} />
+                Plan a new app <ArrowRight size={17} />
               </Link>
             </Button>
             <Button asChild variant="outline" size="lg">
               <Link to="/workspace/evolve">
-                Improve what exists <GitBranch size={17} />
+                Explore existing code <GitBranch size={17} />
               </Link>
             </Button>
           </Reveal>
           <div className="home-editions">
-            <div><span>In your browser</span><strong>Briefs & storyboards</strong></div>
-            <div><span>On your machine</span><strong>Starters & source analysis</strong></div>
+            <div><span>Available in your browser</span><strong>Briefs, projects & private conversations</strong></div>
+            <div><span>With the self-hosted engine</span><strong>Starter code & repository analysis</strong></div>
           </div>
         </div>
         <ProductScene />
       </section>
       <section className="home-next section-container">
         <Reveal>
-          <span className="section-label">Something you can inspect</span>
-          <h2>A better handoff<br />starts with the artifacts.</h2>
+          <span className="section-label">The goal · in development</span>
+          <h2>An AI software factory.<br />You stay in control.</h2>
         </Reveal>
         <Reveal delay={0.12}>
           <p>
-            A brief you can edit. Source you can download. A storyboard with
-            the limits still in view. Choose the work you need—not a promise
-            that an invisible agent has finished it.
+            Describe the software you need. Our goal is agents that plan,
+            implement and test the work, then prepare changes for your approval.
+            Automated coding, publishing and on-call maintenance are planned—not
+            running in the hosted app today.
           </p>
           <Link className="text-link" to="/what-we-do">
-            See the two journeys <ArrowRight size={17} />
+            See what you can do today <ArrowRight size={17} />
           </Link>
         </Reveal>
       </section>
@@ -98,37 +100,38 @@ export function About() {
       <Reveal>
         <span className="section-label">About Oryveta</span>
         <h1>
-          Clarity is part
+          One workspace
           <br />
-          of the craft.
+          for software work.
         </h1>
         <p className="page-deck">
-          Software is a collaboration between people who rarely have the same
-          context. The handoff deserves as much care as the code.
+          For developers, independent builders and teams turning requirements
+          into new applications or improvements to existing code.
         </p>
       </Reveal>
       <section className="editorial-split">
         <h2>
-          Built for the space
+          From a requirement
           <br />
-          between idea and delivery.
+          to a reviewed change.
         </h2>
         <div>
           <p>
-            Oryveta is for independent builders, technical consultants and small
-            teams making software for someone else. It helps make an ambiguous
-            request concrete and an existing codebase easier to discuss.
+            Requirements, source findings and team decisions often live in
+            separate tools. Oryveta organizes them around a project, so you can
+            understand the requested change and decide what to do next.
           </p>
           <p>
-            The aim is not to make people disappear from the process. It is to
-            make intent, evidence and responsibility easier to see.
+            We are building toward AI agents that implement and test that work.
+            People will still control repository access, review results and
+            approve publishing or deployment.
           </p>
         </div>
       </section>
       <section className="principle-grid" aria-label="Open source principles">
         <Reveal>
           <Code2 size={24} />
-          <h2>Open by design.</h2>
+          <h2>Open and self-hostable.</h2>
           <p>
             Apache-2.0 source. Read the implementation, run it yourself, and
             contribute improvements. Third-party licenses remain their own.
@@ -136,35 +139,35 @@ export function About() {
         </Reveal>
         <Reveal delay={0.1}>
           <LockKeyhole size={24} />
-          <h2>Boundaries first.</h2>
+          <h2>Private by default.</h2>
           <p>
-            Local repository work and hosted account features use separate
-            identities. Sharing is explicit, not an accidental consequence of
-            workspace membership.
+            Choose who can join a project and who can read a conversation.
+            Project membership does not automatically share private chats.
           </p>
         </Reveal>
         <Reveal delay={0.2}>
           <FileText size={24} />
-          <h2>Evidence over claims.</h2>
+          <h2>Results you can inspect.</h2>
           <p>
-            A draft is a draft. A static finding is not a passing test. A
-            storyboard is not a rendered demo. The interface should tell you the
-            difference.
+            Export your brief, inspect source findings and download starter
+            code. Each result says how it was produced and what still needs
+            testing or review.
           </p>
         </Reveal>
       </section>
       <section className="stage-note">
-        <span className="section-label">Current stage</span>
+        <span className="section-label">Available today</span>
         <h2>
-          A working foundation.
+          Plan together.
           <br />
-          Not an autonomous delivery service.
+          Inspect source locally.
         </h2>
         <p>
-          Today, Oryveta combines planning and storyboard exports, hosted
-          workspaces and private human chats, and a self-hosted starter and
-          source-analysis engine. Hosted coding agents, automatic patches and
-          deployments are not available.
+          In the browser, create project briefs, manage invitations and share
+          private conversations. Start New and Evolve also offer exportable
+          planning drafts. With the self-hosted engine, prepare starter
+          repositories and analyze source snapshots. The complete AI coding and
+          delivery workflow is still being built.
         </p>
         <a
           className="text-link"
@@ -186,16 +189,16 @@ export function WhatWeDo() {
       className="public-page section-container editorial-page"
     >
       <Reveal>
-        <span className="section-label">What We Do</span>
+        <span className="section-label">What you can do</span>
         <h1>
-          Two ways in.
+          Start a new app.
           <br />
-          Something useful out.
+          Understand an existing one.
         </h1>
         <p className="page-deck">
-          Start with an idea or an existing repository. Leave with context you
-          can inspect, edit and share—not a claim that work happened behind the
-          curtain.
+          Choose Start New for an application idea or Evolve for an existing
+          codebase. Both help you define the work, inspect the available results
+          and explain the next step to your team.
         </p>
       </Reveal>
       <section className="journey-detail">
@@ -205,12 +208,13 @@ export function WhatWeDo() {
             01 / Start New
           </span>
           <h2>
-            Give an idea
-            <br />a practical foundation.
+            Turn an idea
+            <br />into an actionable brief.
           </h2>
           <p>
-            For a client portal, a small service, or the first version of an
-            internal tool. Define the task before adding more software.
+            Describe who the app is for, what it should do and how you will
+            check it. Export the brief, then use the self-hosted engine if you
+            want a starter repository.
           </p>
           <Button asChild>
             <Link to="/workspace/new">
@@ -220,24 +224,24 @@ export function WhatWeDo() {
         </Reveal>
         <ol>
           <li>
-            <strong>Frame the outcome</strong>
+            <strong>Define the application</strong>
             <p>
-              Write a named brief with user needs and constraints. Export the
-              planning JSON.
+              Record users, features, constraints and acceptance criteria.
+              Download the requirements as a project brief.
             </p>
           </li>
           <li>
-            <strong>Prepare a starter locally</strong>
+            <strong>Prepare starter code locally</strong>
             <p>
-              Choose a deterministic template with the self-hosted engine.
-              Download its ZIP and inspect its source.
+              Choose a template in the self-hosted engine and download its
+              source ZIP. It is a starting point, not an AI-built custom app.
             </p>
           </li>
           <li>
-            <strong>Draft the explanation</strong>
+            <strong>Write a demo script</strong>
             <p>
-              Edit the contextual storyboard and export its scenes with the same
-              brief and project context.
+              Use Demo Studio to describe the intended user experience.
+              Export editable scenes as JSON; video rendering is separate.
             </p>
           </li>
         </ol>
@@ -249,13 +253,14 @@ export function WhatWeDo() {
             02 / Evolve
           </span>
           <h2>
-            Make an existing
+            Understand a codebase
             <br />
-            system easier to change.
+            before changing it.
           </h2>
           <p>
-            For the service you inherited or the product that needs its next
-            improvement. Start with an authorized snapshot and a clear question.
+            Set a change goal, inspect an authorized source snapshot and
+            review candidate issues. Current analysis is read-only: it does not
+            change your code or prove that the application works.
           </p>
           <Button asChild variant="outline">
             <Link to="/workspace/evolve">
@@ -267,8 +272,8 @@ export function WhatWeDo() {
           <li>
             <strong>Set a change goal</strong>
             <p>
-              Record the repository name and what should improve. Keep the scope
-              editable.
+              Describe the current behavior, the improvement you need and
+              the regressions to avoid.
             </p>
           </li>
           <li>
@@ -279,35 +284,36 @@ export function WhatWeDo() {
             </p>
           </li>
           <li>
-            <strong>Explain the next decision</strong>
+            <strong>Review findings and plan the change</strong>
             <p>
-              Turn the context into a draft story. Findings are a review queue,
-              not applied patches or security certification.
+              Use the reported files, lines and limitations to decide what
+              needs investigation. Verified fixes and automatic PRs are planned.
             </p>
           </li>
         </ol>
       </section>
       <section className="delivery-boundaries">
         <div>
-          <span className="section-label">Available here</span>
+          <span className="section-label">Available now</span>
           <h2>
-            A browser for planning.
+            Planning and collaboration.
             <br />
-            Your engine for execution.
+            Self-hosted source tools.
           </h2>
           <p>
-            Hosted visitors can draft and export without an account. Sign in for
-            Supabase workspaces and private human conversations. Local jobs
-            require the separately operated same-origin engine.
+            The browser supports project briefs, invitations, private
+            conversations and draft exports. The self-hosted engine adds starter
+            repositories and bounded source analysis. Running background
+            analysis requires a configured worker; cloud hosting is not ready yet.
           </p>
         </div>
         <div>
-          <h3>What the exports mean</h3>
+          <h3>Still in development</h3>
           <ul>
-            <li>Brief JSON: intent, not executed work.</li>
-            <li>Starter ZIP: template source, not a deployed product.</li>
-            <li>Analysis: static findings, not test results.</li>
-            <li>Storyboard JSON: unverified scenes, not rendered video.</li>
+            <li>AI agents that implement changes and run independent tests.</li>
+            <li>Reviewed GitHub pull requests, previews and deployments.</li>
+            <li>On-call investigation, maintenance and reusable lessons.</li>
+            <li>AI-native modernization of applications and packages.</li>
           </ul>
           <Link className="text-link" to="/workspace">
             Go to the workspace <ArrowRight size={17} />

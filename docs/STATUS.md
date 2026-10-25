@@ -25,6 +25,22 @@ The React Studio builds a hosted `dist` and a self-hosted `dist-local`. FastAPI 
 
 Local Mailpit coverage is not external email delivery. Production GitHub OAuth and authorization checks are separate evidence from the API-issued test-session setup; the latter does not claim email or OAuth-consent coverage. The default hosted SMTP remains limited and unverified for general delivery. Physical mobile devices, a 24-hour worker soak, enterprise recovery and uptime remain unproven. The existing lazy Three.js size advisory is not hidden.
 
+## Product explanation and navigation — local verification, 2026-10-24
+
+The product explanation now starts with project planning, repository analysis and private collaboration. Public pages, workspace introductions, demo scripts, metadata, the legacy interface, historical prototype and product docs distinguish hosted features, self-hosted tools and the planned AI software factory.
+
+Normal pages no longer show generic Back controls. Demo Studio provides **Back to brief**, including direct links, while preserving the draft and returning keyboard focus to the Brief tab. Shared gutters, readable supporting text, explicit mobile workspace navigation, larger touch targets and restrained hover feedback keep the existing visual style consistent.
+
+Exercised verification:
+
+- Python suite: **295 passed**; Ruff, JavaScript syntax and seven storyboard/security contracts passed.
+- Hosted and self-hosted production builds passed. Chromium exercised navigation, demo return, draft retention and contextual exports at desktop, tablet and mobile widths. The self-hosted path also exercised real local login, ZIP analysis and cancellation.
+- Real local Supabase/Chromium collaboration passed: new-tab email/PKCE login, project invitations and viewer denial, private-session sharing and isolation, revocation and sign-out.
+- Additional 320px/768px browser scenarios preserved drafts and focus after demo return. Eight signed-out routes at 1440px and 390px produced no horizontal overflow or axe-core 4.10.3 violations for the selected WCAG A/AA rules. This is automated coverage, not a full accessibility certification or a physical-device test.
+- Legacy browser flows passed, with the existing auth-adapter mock clearly distinguished from the real Supabase checks. Historical prototype checks now exercise escaped draft export, local-only repository preview and navigation instead of asserting marketing phrases. They cover the repaired inline-script parse error and the missing mobile Activity link.
+
+These are source/local verification results, not a claim that this UI revision or a cloud worker has been deployed. Free worker hosting still requires provider authorization and measured allowance fit; no card, paid plan or paid inference fallback has been added.
+
 ## Durable runtime candidate — local verification, 2026-10-23
 
 Stage 2 implements real project-authorized public-repository analysis, not an empty queue or a coding agent. Work items, attempts, events, leases, checkpoints, cancellation, creator/worker revocation and source pins are persisted in Supabase. The browser can submit, inspect, cancel and download a completed report independently of the worker.

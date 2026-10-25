@@ -1,6 +1,7 @@
-import React, { useState } from "react";
+import React, { useRef, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import {
+  ArrowLeft,
   ArrowRight,
   Clapperboard,
   Download,
@@ -35,6 +36,7 @@ export default function Journey({
   workspaceId,
 }) {
   const [exported, setExported] = useState(false);
+  const briefTab = useRef(null);
   const [searchParams, setSearchParams] = useSearchParams();
   const tab = searchParams.get("tab") || "brief";
   function selectTab(value) {
@@ -85,8 +87,8 @@ export default function Journey({
           <h1>{title}</h1>
           <p>
             {isNew
-              ? "Define the product, prepare a local starter, and shape the handoff."
-              : "Set a change goal, inspect source locally, and explain the findings."}
+              ? "Describe the app you need and export its brief. Prepare starter code with the self-hosted engine."
+              : "Describe a change, inspect source with the self-hosted engine, and review the findings before editing code."}
           </p>
         </div>
         {draft.name && (
@@ -98,7 +100,7 @@ export default function Journey({
       </div>
       <Tabs value={tab} onValueChange={selectTab} activationMode="manual">
         <TabsList className="journey-tab-list" aria-label={`${title} workflow`}>
-          <TabsTrigger value="brief">
+          <TabsTrigger ref={briefTab} value="brief">
             <FileText size={15} />
             Brief
           </TabsTrigger>
@@ -151,7 +153,7 @@ export default function Journey({
                   }
                 />
               </label>
-              <div className="flex flex-wrap gap-3">
+              <div className="form-actions">
                 <Button type="submit">
                   <Download size={15} />
                   Export brief
@@ -161,7 +163,7 @@ export default function Journey({
                   variant="outline"
                   onClick={() => selectTab("demo")}
                 >
-                  Shape the demo <ArrowRight size={15} />
+                  Write demo script <ArrowRight size={15} />
                 </Button>
               </div>
               {exported && (
@@ -170,8 +172,8 @@ export default function Journey({
                 </p>
               )}
               <p className="fine-print">
-                Brief and story edits stay in this open workspace. Export to
-                keep a copy; they are not saved to your account.
+                Brief and demo edits stay in this open workspace. Export a
+                copy before closing or reloading the page.
               </p>
             </form>
             <aside className="journey-guide" aria-label="Workflow guidance">
@@ -202,7 +204,7 @@ export default function Journey({
                   <span>03</span>
                   <div>
                     <strong>Explain</strong>
-                    <p>Draft a contextual demo with explicit limitations.</p>
+                    <p>Write a demo script to show the intended user experience.</p>
                   </div>
                 </li>
               </ol>
@@ -230,6 +232,18 @@ export default function Journey({
           />
         </TabsContent>
         <TabsContent value="demo">
+          <Button
+            type="button"
+            variant="ghost"
+            className="demo-return"
+            onClick={() => {
+              selectTab("brief");
+              briefTab.current?.focus();
+            }}
+          >
+            <ArrowLeft size={16} aria-hidden="true" />
+            Back to brief
+          </Button>
           <DemoStudio
             stories={stories}
             storyId={kind}

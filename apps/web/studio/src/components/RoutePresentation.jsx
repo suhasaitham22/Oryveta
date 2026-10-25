@@ -10,6 +10,7 @@ const titles = {
   "/workspace/new": "Start New",
   "/workspace/evolve": "Evolve",
   "/workspace/settings": "Workspaces",
+  "/workspace/projects": "Projects",
   "/workspace/chats": "Private chats",
   "/workspace/activity": "Activity",
 };
