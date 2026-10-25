@@ -44,6 +44,10 @@ export default function Projects({ user, preview, onExit }) {
   const [notice, setNotice] = useState("");
   const [rev, setRev] = useState(0);
   const refreshRequest = useRef(0);
+  /* False once this page instance has been left. Drafts and the selection live in the
+     workspace provider and outlive the page, so a mutation that completes afterwards must
+     not write to them. */
+  const mounted = useRef(false);
 
   const selected = projectDraft.selected;
   const active = projects.find((project) => project.id === selected) || null;
@@ -70,8 +74,11 @@ export default function Projects({ user, preview, onExit }) {
         [formKey]: { ...current.forms[formKey], [field]: value },
       },
     }));
-  const clearForm = (key) =>
+  /* `submitted` is the exact draft object that was sent. If the draft has changed since, the
+     newer text is kept: a completion only clears what it saved. */
+  const clearForm = (key, submitted) =>
     setProjectDraft((current) => {
+      if (current.forms[key] !== submitted) return current;
       const forms = { ...current.forms };
       delete forms[key];
       return { ...current, forms };
@@ -98,7 +105,7 @@ export default function Projects({ user, preview, onExit }) {
         (error) => ({ error }),
       ),
     ]);
-    if (request !== refreshRequest.current) return items;
+    if (request !== refreshRequest.current || !mounted.current) return items;
     setProjects(items);
     setRoles(
       Object.fromEntries(mine.map((row) => [row.project_id, row.role])),
@@ -128,11 +135,19 @@ export default function Projects({ user, preview, onExit }) {
   }
   useEffect(() => {
     if (preview || !user) return;
+    mounted.current = true;
     setLoading(true);
     refresh()
-      .catch((problem) => setError(problem.message))
-      .finally(() => setLoading(false));
-    return () => { refreshRequest.current++; };
+      .catch((problem) => {
+        if (mounted.current) setError(problem.message);
+      })
+      .finally(() => {
+        if (mounted.current) setLoading(false);
+      });
+    return () => {
+      mounted.current = false;
+      refreshRequest.current++;
+    };
   }, [preview, user?.id]);
   useEffect(() => {
     if (!selected || preview) {
@@ -344,6 +359,9 @@ export default function Projects({ user, preview, onExit }) {
             aria-labelledby="project-form-heading"
             onSubmit={(event) => {
               event.preventDefault();
+              /* The draft exactly as submitted, so a completion that arrives after further
+                 edits — or after this page was left and reopened — clears nothing newer. */
+              const submitted = projectDraft.forms[formKey];
               action(async () => {
                 if (active) {
                   await projectsApi.updateProject(active.id, {
@@ -351,7 +369,8 @@ export default function Projects({ user, preview, onExit }) {
                     brief,
                     sourceUrl,
                   });
-                  clearForm(active.id);
+                  if (!mounted.current) return;
+                  clearForm(active.id, submitted);
                   await refresh(active.id);
                   setNotice("Project saved.");
                 } else {
@@ -360,7 +379,8 @@ export default function Projects({ user, preview, onExit }) {
                     workspaceId,
                     { name, brief, kind, sourceUrl },
                   );
-                  clearForm("new");
+                  if (!mounted.current) return;
+                  clearForm("new", submitted);
                   await refresh(created.id);
                   setNotice(
                     "Project created. You are its owner; invite people explicitly.",

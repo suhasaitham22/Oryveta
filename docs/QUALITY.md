@@ -24,6 +24,8 @@ The auth integration job starts isolated Supabase CLI 2.121.0 native PostgreSQL,
 
 Local captured email is not external mailbox delivery, GitHub consent or a production deployment. Vercel builds also reject privileged browser keys and Supabase origins absent from the deployed CSP. The source credential scanner covers both React source and legacy browser configuration.
 
+`scripts/collaboration_race_smoke.py` adds real-service browser regressions for slow and out-of-order responses. It defers delivery of actual HTTP responses rather than mocking successes, covering identity-scoped chat details, collection refresh order, pending mutation acknowledgements, navigation lifetimes and the newest bounded message window. Its fixture cleanup fails loudly instead of claiming success when temporary data remains. The auth-integration workflow runs it after schema setup.
+
 ## Verified local hardening tests
 
 - Browser-bound OAuth state, callback success and one-time replay rejection; auth responses must not be cached.

@@ -38,6 +38,10 @@ Conversations continue to use `chats`, `chat_shares` and `chat_messages`. A null
 
 Private chat invitations remain explicit viewer/editor grants with acceptance. Project/workspace membership grants no chat visibility. A session-only recipient can read the shared conversation without reading the linked project. In-app invitations do not send external notification emails.
 
+Conversation details and sharing actions are tied to the chat that produced them, not just the current header. Old collection responses and post-navigation saves cannot replace a newer selection or draft. A successful send, conversation creation or invitation clears only the submitted value, preserving text entered while its acknowledgement was pending.
+
+The chat view fetches the newest 200 messages in deterministic timestamp/id order and displays them chronologically. One extra row detects omitted older history, which is announced in the UI; earlier messages remain stored but are not shown in this bounded view. Sharing revocation identifies both the share and its intended conversation.
+
 ## Applying the schema
 
 Use a dedicated project and inspect its existing schema before applying changes:
@@ -45,10 +49,13 @@ Use a dedicated project and inspect its existing schema before applying changes:
 1. Apply `supabase/schema.sql` if the workspace foundation is absent.
 2. Apply `supabase/migrations/private_chats_and_explicit_sharing.sql` if the private-chat foundation is absent. Its initial policy creation is not a repeatable migration runner.
 3. Apply `supabase/migrations/projects_and_project_membership.sql` after those prerequisites. It is additive, preserves existing conversations and wraps table creation/RLS/grants in one transaction; execute the complete file rather than selected statements.
-4. Run the transactional RLS regressions on a controlled development/test database before rollout.
-5. Deploy the frontend only after the target schema exists. A missing migration is shown as an actionable error, never replaced with pretend data.
+4. Apply `supabase/migrations/durable_factory_runtime.sql`, followed by `supabase/migrations/retained_attribution_and_lease_clock.sql`. The latter repairs retained attribution during account deletion and runtime lease timing. Applying schema does not start a worker.
+5. Run all transactional RLS/lifecycle regressions on a controlled development/test database before rollout.
+6. Deploy the frontend only after the target schema exists. A missing migration is shown as an actionable error, never replaced with pretend data.
 
 These SQL files follow the repository's manual migration convention; do not assume `supabase db push` automatically applies unnumbered files. `supabase/config.toml` is for isolated local verification, not a production auth configuration to push remotely.
+
+For an installation that already has the first four SQL files, apply only `retained_attribution_and_lease_clock.sql`. It preserves accepted/cancelled records after deleting their attribution account without allowing a successor account at the same email address to inherit an old grant. Rehearse this forward repair before production deployment; do not replay the private-chat initial policy setup.
 
 ## Real local auth and browser verification
 

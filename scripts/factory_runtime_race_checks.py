@@ -17,7 +17,7 @@ the worker CLI are out of scope and stay untouched.
 
 Why this script exists: single-connection psql cannot interleave transactions,
 so `supabase/tests/factory_runtime_rls.sql` structurally cannot reach DR-002,
-DR-003 or DR-005. This harness supplies exactly that missing coverage.
+DR-003, DR-005 or DR-006. This harness supplies exactly that missing coverage.
 
 Cases, each with its interleaving written out at the call site:
   * completion_versus_cancellation      DR-002  finish  vs cancel_work_item
@@ -29,6 +29,7 @@ Cases, each with its interleaving written out at the call site:
   * concurrent_source_pinning           DR-004  two attempts at one pin
   * concurrent_idempotent_submission    DR-005  identical simultaneous submits
   * conflicting_idempotent_submission   DR-005  one key, two different inputs
+  * lease_survives_a_lock_wait          DR-006  claim blocked past its lease
 
 Against the pre-fix migration these cases fail, and that failure is the point:
 DR-002 aborts a session with SQLSTATE 40P01 (deadlock detected) because
@@ -39,18 +40,23 @@ running attempt with a live lease that revocation did not fence; DR-004 lets the
 second of two simultaneous source resolutions overwrite what the first one
 recorded, so one work item ends up analysed against two different commits;
 DR-005 raises SQLSTATE 23505 (unique_violation) instead of replaying the first
-submission.
+submission; and DR-006 hands out an attempt whose lease has already run out,
+because the deadline is computed from the transaction timestamp that was fixed
+before the claim's registration lock was granted.
 Every failure message names the finding and prints the SQLSTATE it observed.
 
 Race windows are pinned open with real row locks and bounded waits instead of
 sleeps, and a window that cannot be reached fails with "the race window was not
-reproduced" rather than passing silently. Two facts cannot be produced from
-inside this harness and are staged explicitly, exactly as
-supabase/tests/factory_runtime_rls.sql stages them: a lease is aged by moving
-public.factory_runs.lease_expires_at into the past (standing in for elapsed
-wall-clock time), and a worker service identity is designated by writing
-auth.users.raw_app_meta_data as the Auth admin API would. Every fixture this
-script creates is deleted again before it returns.
+reproduced" rather than passing silently. DR-006 is the one case that holds its
+window for a measured interval, because elapsed wall-clock time is what it
+measures rather than a way to order two sessions; even there the block is read
+out of the server with pg_blocking_pids before the interval starts. Two facts
+cannot be produced from inside this harness and are staged explicitly, exactly
+as supabase/tests/factory_runtime_rls.sql stages them: a lease is aged by
+moving public.factory_runs.lease_expires_at into the past (standing in for
+elapsed wall-clock time), and a worker service identity is designated by
+writing auth.users.raw_app_meta_data as the Auth admin API would. Every fixture
+this script creates is deleted again before it returns.
 
 Pass connection JSON on stdin, or name a file with --connections. Either shape
 the Supabase CLI emits is accepted: `supabase status --output-format json`
@@ -87,11 +93,14 @@ ROOT = Path(__file__).resolve().parents[1]
 
 # Explicit order, never a glob: durable_factory_runtime.sql builds on the
 # project membership helpers, and an alphabetical sweep would load it first.
+# retained_attribution_and_lease_clock.sql comes last because it re-owns
+# constraints and functions the three files before it create.
 SQL_FILES = (
     "supabase/schema.sql",
     "supabase/migrations/private_chats_and_explicit_sharing.sql",
     "supabase/migrations/projects_and_project_membership.sql",
     "supabase/migrations/durable_factory_runtime.sql",
+    "supabase/migrations/retained_attribution_and_lease_clock.sql",
 )
 
 INSTANCE = "00000000-0000-0000-0000-000000000000"
@@ -120,6 +129,12 @@ IDENTITY_ARGS = (f"p_source_ref => '{SOURCE_REF}', p_source_commit => '{SOURCE_C
 # the one case that needs an expired lease ages it on purpose.
 LEASE_SECONDS = 900
 AGED_LEASE = "now() - interval '2 minutes'"
+
+# DR-006 asks for the shortest lease the RPC accepts and then holds the lock the
+# claim waits on for longer than that, which is the whole point of the case. The
+# hold stays well inside the sessions' 60s statement_timeout.
+SHORT_LEASE_SECONDS = 15
+LOCK_HOLD_SECONDS = 17.0
 
 SQLSTATE_DEADLOCK = "40P01"
 SQLSTATE_UNIQUE_VIOLATION = "23505"
@@ -1225,6 +1240,107 @@ def prove_conflicting_idempotent_submission(h: Harness) -> None:
           f"work item {admitted} stands alone", flush=True)
 
 
+def prove_lease_survives_a_lock_wait(h: Harness) -> None:
+    # DR-006. claim_analysis_work waits on its registration row before it
+    # creates a lease, and that wait is unbounded: register_project_worker's
+    # upsert takes FOR UPDATE on the same row. A deadline computed from now(),
+    # the transaction timestamp, cannot see time that passed inside the
+    # transaction, so a wait longer than the requested lease produced a
+    # committed attempt that was already expired - its first heartbeat was
+    # refused and the attempt budget was spent for nothing.
+    #
+    # Unlike every other case here, the elapsed time is the subject rather than
+    # a synchronization device, so this one does hold its window open for a
+    # measured interval instead of releasing it as soon as the block is
+    # observed. The block itself is still read out of the server first, so a
+    # run where the claim never waited fails instead of passing.
+    #
+    #   B  begin; register_project_worker(project, worker A) -- holds FOR UPDATE
+    #   A  begin; claim_analysis_work(project, 15) as worker A
+    #      -> blocked on FOR SHARE over the same registration row
+    #   .. the window is held LOCK_HOLD_SECONDS > 15s
+    #   B  commit (releases A)
+    #      pre-fix : A returns lease_expires_at = its transaction start + 15s,
+    #                which is already in the past, and its first heartbeat
+    #                answers lease_lost
+    #      post-fix: the deadline is clock_timestamp() + 15s, read after the
+    #                lock was granted, so the worker gets the lease it asked for
+    #   A  commit, then heartbeat in a fresh transaction
+    case = "lease_survives_a_lock_wait"
+    register_worker(h, h.worker_a, "Race worker A")
+    settle_project_one(h)
+    item = submit_item(h, h.project_one)
+
+    h.b.ok("begin;\n" + actor(h.owner) + "\n"
+           "select " + tagged("t.id", "t.enabled")
+           + " from public.register_project_worker("
+             f"p_project_id => '{h.project_one}', p_worker_user_id => '{h.worker_a}',"
+             " p_label => 'Race worker A') t;",
+           f"{case}: pinning the registration row lock the claim waits on")
+    h.a.send(f"begin;\n{actor(h.worker_a)}\n"
+             + "select " + tagged(
+                 "t.work_item_id", "t.run_id", "t.attempt", "t.lease_token",
+                 "t.lease_expires_at > clock_timestamp()",
+                 "round(extract(epoch from"
+                 " (t.lease_expires_at - clock_timestamp()))::numeric, 1)")
+             + f" from public.claim_analysis_work(p_project_id => '{h.project_one}',"
+               f" p_lease_seconds => {SHORT_LEASE_SECONDS}) t;")
+    must_block(h.control, h.a,
+               f"{case}: the claim must wait on the pinned registration row")
+    time.sleep(LOCK_HOLD_SECONDS)
+    h.b.ok("commit;", f"{case}: releasing the registration row after the lease length")
+
+    claim = h.a.collect(f"{case}: the claim released after the wait")
+    h.a.ok("commit;", f"{case}: committing the claim")
+    claim.clean(f"{case}: the claim")
+    if not claim.rows:
+        raise AssertionError(
+            f"{case} (DR-006): the claim handed out no work after the wait, so the window did "
+            f"not exercise lease creation\n{claim.transcript()}")
+    fields = claim.only(f"{case}: the claim")
+    attempt = Attempt(fields[0], fields[1], int(fields[2]), fields[3])
+    live, remaining = fields[4], fields[5]
+    if attempt.work_item_id != item:
+        raise AssertionError(
+            f"{case} (DR-006): the claim handed out work item {attempt.work_item_id} instead of "
+            f"{item}; another claimable item is interfering with this case")
+    if live != "true":
+        raise AssertionError(
+            f"{case} (DR-006): the claim waited {LOCK_HOLD_SECONDS:.0f}s for its registration "
+            f"row and then handed out a {SHORT_LEASE_SECONDS}s lease that is already expired "
+            f"({remaining}s of it remain). The deadline was measured from the transaction "
+            "timestamp, which is fixed before the wait; it must be measured from "
+            f"clock_timestamp() after the lock is granted.\n{claim.transcript()}")
+    if float(remaining) < SHORT_LEASE_SECONDS / 2:
+        raise AssertionError(
+            f"{case} (DR-006): the attempt received only {remaining}s of its "
+            f"{SHORT_LEASE_SECONDS}s lease, so part of it was consumed by the lock wait")
+
+    beat = h.a.ok(f"begin;\n{actor(h.worker_a)}\n"
+                  + "select " + tagged("t.lease_valid", "t.reason")
+                  + " from public.heartbeat_analysis_run("
+                    f"p_run_id => '{attempt.run_id}',"
+                    f" p_lease_token => '{attempt.lease_token}',"
+                    f" p_phase => 'fetching_source', {IDENTITY_ARGS},"
+                    f" p_lease_seconds => {LEASE_SECONDS}) t;\n"
+                    "commit;", f"{case}: the first heartbeat of the new attempt")
+    verdict = beat.only(f"{case}: the heartbeat")
+    if verdict[0] != "true":
+        raise AssertionError(
+            f"{case} (DR-006): the first heartbeat of the attempt was refused as "
+            f"'{verdict[1]}', so the worker never held a usable lease and the work item spent an "
+            f"attempt for nothing\n{beat.transcript()}")
+    outstanding = live_attempts(h.control, h.project_one, h.worker_a)
+    if outstanding != 1:
+        raise AssertionError(
+            f"{case} (DR-006): {outstanding} running attempt(s) of this identity hold a lease "
+            "row, so the claim did not leave exactly the one attempt it reported")
+    settle_project_one(h)
+    print(f"{case} (DR-006): the claim waited {LOCK_HOLD_SECONDS:.0f}s on its registration row "
+          f"for a {SHORT_LEASE_SECONDS}s lease and still returned {remaining}s of it, and the "
+          f"attempt's first heartbeat was accepted", flush=True)
+
+
 # ---------------------------------------------------------------------------
 # Flow
 # ---------------------------------------------------------------------------
@@ -1254,11 +1370,14 @@ def exercise(binary: str, database: str) -> None:
             prove_concurrent_source_pinning(h)
             prove_concurrent_idempotent_submission(h)
             prove_conflicting_idempotent_submission(h)
-            print("All nine concurrency cases passed: DR-002's single lock order holds under "
+            prove_lease_survives_a_lock_wait(h)
+            print("All ten concurrency cases passed: DR-002's single lock order holds under "
                   "cancellation, revocation and reclaim, DR-003's claim cannot commit around a "
                   "revocation and a fenced lease stays dead, DR-004's source pin is decided "
-                  "once under the work item lock, and DR-005's idempotent admission replays "
-                  "instead of colliding.", flush=True)
+                  "once under the work item lock, DR-005's idempotent admission replays "
+                  "instead of colliding, and DR-006's lease is measured from the wall clock "
+                  "after the registration lock rather than from the transaction timestamp "
+                  "before the wait.", flush=True)
         finally:
             # Close the racing sessions first: any transaction one of them still
             # holds would otherwise block the fixture deletion below.
