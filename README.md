@@ -8,7 +8,7 @@ Oryveta is an open-source software delivery workspace for developers, independen
 
 ### [Open Oryveta — https://oryveta.vercel.app](https://oryveta.vercel.app)
 
-**Deployment:** [Vercel production](https://oryveta.vercel.app) serves the React Studio. GitHub sign-in, saved projects and private-conversation sharing have production verification. Starter generation and source analysis require a separately operated engine. The durable analysis worker is implemented and locally/CI verified, but its cloud host is not configured. FastAPI serves the self-hosted React workspace at `/studio/` and retains a separate legacy `/` interface.
+**Deployment:** [Vercel production](https://oryveta.vercel.app) serves the React Studio. GitHub sign-in, saved projects and private-conversation sharing have production verification. The durable analysis schema is deployed to Supabase; browser submission, result download, cancellation and revocation were verified with a temporary local worker. No always-on cloud worker is configured. Starter generation still uses the separate self-hosted FastAPI engine, which serves `/studio/` and retains a legacy `/` interface.
 
 > **Documentation:** [Complete product and technical decisions](docs/INDEX.md) · [Architecture](docs/ARCHITECTURE.md) · [UI design](docs/DESIGN-SYSTEM.md) · [Roadmap](docs/ROADMAP.md) · [Verified status](docs/STATUS.md) · [Quality gates](docs/QUALITY.md)
 
