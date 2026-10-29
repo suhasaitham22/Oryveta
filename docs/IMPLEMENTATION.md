@@ -16,6 +16,7 @@ Status: **The React/Supabase collaboration and durable-analysis control plane ar
 | `engine/oryveta_engine/benchmarks.py` | Deterministic local classification baselines; not Kaggle |
 | `engine/oryveta_engine/worker.py` | SQLite lease-based background worker, retry limits and status |
 | `engine/oryveta_engine/factory_runtime.py` | Project-scoped durable analysis worker: Auth session refresh, PostgREST RPC transitions, fenced leases and a supervised analysis child |
+| `engine/oryveta_engine/factory_service.py` | Unattended service entry point: one-time secret bootstrap, exclusive session lock, persistent rotated credentials, mounted-volume privilege drop and SIGTERM handling |
 | `engine/oryveta_engine/analysis_child.py` | Child-process entry point that runs `analyze_repository` over a prepared snapshot and writes the JSON result atomically |
 | `apps/web/` | Legacy standalone Soft Modern local UI served at `/`; hosted React Studio builds to `apps/web/studio/dist`, while the self-hosted React Studio uses the separate `apps/web/studio/dist-local` build at `/studio/`. Extensionless `/studio/*` page routes receive the app shell; dotted assets and reserved API-like paths do not. Missing local builds return `503` without replacing the legacy path |
 | `preview/` | Archived standalone static prototype; **not deployed** to Vercel |
@@ -96,6 +97,8 @@ Resume semantics are deliberately narrow. **A crashed analysis is recomputed, no
 The first attempt resolves the default branch. GitHub's ZIP comment supplies the full commit; the short root-directory suffix is checked for agreement, not mistaken for a full hash. Missing or conflicting identity fails closed. Later attempts fetch the exact pin. Imported source is read, never executed. There is still no hosted always-on worker: an operator must start and supervise this process on an authorized host.
 
 Persisted output is bounded on both sides: the schema allows 256 KB and 400 findings; the worker retains at most 200 and exposes truncation explicitly. Normal completion removes the snapshot. A hard-killed worker leaves its directory for the next `--work-root` startup sweep, which removes only marked directories belonging to dead processes. The child receives the original worker PID, refuses an already-orphaned start, monitors parent loss and carries its own deadline. These guards do not simulate recovery from losing the host.
+
+For container/hosted startup without manually staging the first token file, use `python -m oryveta_engine.factory_service`. It uses the same flags and worker, with `/data/worker/credentials.json` as the default credential path and a temporary analysis directory by default. Its first-start secret, persistent volume, single-session lock and bounded supervisor setup are documented in [OPERATIONS.md](OPERATIONS.md#unattended-service-startup). It adds no model inference, repository grants or paid services.
 
 ## Hardening included in first source PR
 

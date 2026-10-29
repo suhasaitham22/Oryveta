@@ -53,7 +53,7 @@ Oryveta name; current Galileo-led bright product direction; Start New + Evolve a
 
 ## What is not yet locked or built
 
-Hosted factory execution, GitHub App repository publication, tenant-safe runner isolation, autonomous verified changes, Slack/mobile delivery, controlled recursive learning and enterprise operational guarantees. Supabase identity/project/session collaboration is deployed and production-verified; the durable analysis runtime is merged with local and CI verification only, and its deployment state is tracked in [STATUS.md](STATUS.md).
+Hosted factory execution, GitHub App repository publication, tenant-safe runner isolation, autonomous verified changes, Slack/mobile delivery, controlled recursive learning and enterprise operational guarantees. Supabase identity/project/session collaboration and the durable-analysis control plane are deployed and production-verified with a one-off local worker. An unattended service entry point is available, but continuous hosting remains pending; evidence and deployment state are tracked in [STATUS.md](STATUS.md).
 
 ## Review and updates
 

@@ -549,6 +549,23 @@ def test_non_json_credential_file_is_refused(tmp_path):
         WorkerCredentials.load(path)
 
 
+@pytest.mark.parametrize("kind", ["directory", "fifo"])
+def test_non_regular_credential_file_is_refused_without_blocking(tmp_path, kind):
+    path = tmp_path / "credentials.json"
+    if kind == "directory":
+        path.mkdir(mode=0o700)
+    else:
+        os.mkfifo(path, 0o600)
+    result = subprocess.run(
+        [sys.executable, "-c",
+         "import sys; from oryveta_engine.factory_runtime import WorkerCredentials; "
+         "WorkerCredentials.load(sys.argv[1])", str(path)],
+        env={**os.environ, "PYTHONPATH": str(Path(factory_runtime.__file__).parent.parent)},
+        capture_output=True, text=True, timeout=5)
+    assert result.returncode != 0
+    assert "regular file" in result.stderr
+
+
 def test_json_array_credential_file_is_refused(tmp_path):
     path = write_credentials(tmp_path / "secrets", raw='["refresh-token"]')
     with pytest.raises(CredentialError, match="JSON object"):

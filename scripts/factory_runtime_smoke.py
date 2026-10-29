@@ -821,6 +821,69 @@ def prove_credential_rotation(credentials: Path, before: dict, service_key: str,
           "printed no token, key or credential content", flush=True)
 
 
+def prove_service_restart(connection: dict, owner: httpx.Client, account: Account,
+                          project_id: str, repository: str, home: Path,
+                          secrets: Secrets, service_key: str) -> None:
+    """Real Auth rotation and GitHub analysis through unattended service startup."""
+    state = home / "service"
+    credentials = state / "credentials.json"
+    session = password_session(connection, account, secrets)
+    before = {
+        "supabase_url": connection["API_URL"],
+        "publishable_key": connection["PUBLISHABLE_KEY"],
+        "project_id": project_id,
+        "refresh_token": session["refresh_token"],
+    }
+    environment = worker_environment(home)
+    environment["ORYVETA_WORKER_BOOTSTRAP"] = json.dumps(before)
+    command = [sys.executable, "-m", "oryveta_engine.factory_service",
+               "--credentials", str(credentials), "--project", project_id]
+    for stage in ("bootstrap", "restart"):
+        item = row(rpc(owner, "submit_repository_analysis", {
+            "p_project_id": project_id,
+            "p_idempotency_key": f"service-{stage}-{uuid.uuid4().hex}"}))
+        process = subprocess.run(
+            [*command, "--once"], env=environment, cwd=home,
+            capture_output=True, text=True, timeout=WORKER_EXIT_TIMEOUT)
+        output = process.stdout + process.stderr
+        secrets.assert_absent("Service output", output)
+        if process.returncode:
+            raise AssertionError(f"Service {stage} exited {process.returncode}: {output}")
+        prove_first_success(owner, item["work_item_id"], repository, account)
+        prove_credential_rotation(credentials, before, service_key, output, secrets)
+        before = credential_state(credentials)
+        if stage == "bootstrap":
+            # Expire the cached access token to require another real refresh.
+            # A bad bootstrap must be ignored, not substituted for persisted state.
+            before["expires_at"] = 0
+            credentials.write_text(json.dumps(before), encoding="utf-8")
+            environment["ORYVETA_WORKER_BOOTSTRAP"] = "obsolete bootstrap is not JSON"
+
+    environment.pop("ORYVETA_WORKER_BOOTSTRAP")
+    log = home / "logs" / "service-shutdown.log"
+    with log.open("wb") as output:
+        process = subprocess.Popen(
+            [*command, "--poll-seconds", "60"], env=environment, cwd=home,
+            stdout=output, stderr=subprocess.STDOUT, start_new_session=True)
+        try:
+            wait_until("the continuous service registration", WORKER_EXIT_TIMEOUT,
+                       lambda: "is enabled" in worker_output(log, secrets))
+            process.send_signal(signal.SIGTERM)
+            if process.wait(timeout=10) != 0:
+                raise AssertionError("the service did not shut down cleanly on SIGTERM")
+        finally:
+            if process.poll() is None:
+                kill_worker_process_group(process)
+                process.wait(timeout=10)
+    if "stopped" not in worker_output(log, secrets):
+        raise AssertionError("SIGTERM bypassed the worker's graceful shutdown path")
+    if list(home.glob("oryveta-service-*")):
+        raise AssertionError("the service leaked its disposable analysis directory")
+    print("Proven: unattended bootstrap completed real analysis; restart used the rotated "
+          "private session despite an invalid bootstrap; SIGTERM stopped the continuous "
+          "service cleanly and removed its temporary work directory", flush=True)
+
+
 # ---------------------------------------------------------------------------
 # Stage 4: scoped reads
 # ---------------------------------------------------------------------------
@@ -1247,6 +1310,9 @@ def exercise(connection: dict, repository: str, service_key: str, home: Path) ->
         prove_scoped_reads(owner, viewer, nonmember, worker_a_client, anonymous,
                            project_id, second["id"], work_item_id, run["id"])
         rpc(owner, "cancel_work_item", {"p_work_item_id": second_item})
+
+        prove_service_restart(connection, owner, accounts["worker-a"], project_id,
+                              repository, home, secrets, service_key)
 
         reclaim_item = row(rpc(owner, "submit_repository_analysis", {
             "p_project_id": project_id, "p_idempotency_key": f"smoke-{suffix}-reclaim"}))
