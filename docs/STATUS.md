@@ -1,5 +1,13 @@
 # Oryveta implementation status
 
+## Unattended worker service — source verification, 2026-10-29
+
+The analysis worker now has a container-oriented `factory_service` entry point. It initializes a private credential from a secret only when no persisted file exists, preserves rotated sessions across restart, excludes another service using that private directory, drops root after mounted-volume initialization, and handles SIGTERM through the existing worker teardown. Invalid persisted state is refused rather than replaced by a stale bootstrap.
+
+Local verification: **320 Python tests passed**, with **85.27% branch-inclusive coverage** against the 84% gate; Ruff and Python compilation passed. An actual CLI smoke exercised private first-start storage, restart with a rotated credential and corrupt-state refusal without network or real credentials. A reproduced `0600` FIFO startup hang is now rejected as a non-regular credential file. The CI gates additionally exercise real Supabase/GitHub analysis through first-start/restart, continuous-service SIGTERM, and credential preservation/privilege drop across replacement Docker containers.
+
+This is a deployable source change, **not a hosted rollout**. Railway authorization, actual free-plan entitlement/capacity checks, persistent worker operation and model/isolation compute remain outstanding. No payment method, paid plan or paid inference fallback has been enabled.
+
 ## Production runtime rollout — 2026-10-25 UTC
 
 The Vercel production deployment for merged commit `1c3e731c2d4b3ffd434dcfd5719fb57b679b658c` succeeded. The reviewed `durable_factory_runtime.sql` and `retained_attribution_and_lease_clock.sql` migrations are now applied to Oryveta project `nydtmiseclkwauiepqxn`; existing prerequisite migrations were not replayed.

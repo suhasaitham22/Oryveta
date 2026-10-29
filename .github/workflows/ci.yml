@@ -116,6 +116,40 @@ jobs:
           assert os.geteuid() != 0
           assert app.title == "Oryveta API"
           print("Non-root container smoke OK")'
+      - name: Verify persistent worker session and privilege drop
+        run: |
+          volume="oryveta-worker-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
+          docker volume create "$volume"
+          trap 'docker volume rm "$volume"' EXIT
+          docker run --rm --user 0:0 --volume "$volume:/data" \
+            --entrypoint python oryveta-ci:local -c '
+          import json, os, stat
+          from oryveta_engine.factory_service import (
+              DEFAULT_CREDENTIALS, prepare_directory, session_lock, bootstrap_credentials)
+          from oryveta_engine.factory_runtime import WorkerCredentials
+          prepare_directory(DEFAULT_CREDENTIALS)
+          assert os.geteuid() == 65532 and os.getegid() == 65532 and not os.getgroups()
+          with session_lock(DEFAULT_CREDENTIALS.parent):
+              bootstrap_credentials(DEFAULT_CREDENTIALS, json.dumps({
+                  "supabase_url": "https://stack.example.test",
+                  "publishable_key": "synthetic-public-key",
+                  "refresh_token": "synthetic-initial-refresh"}))
+              WorkerCredentials.load(DEFAULT_CREDENTIALS).record_session(
+                  "synthetic-access", "synthetic-rotated-refresh", 1900000000)
+          assert stat.S_IMODE(DEFAULT_CREDENTIALS.stat().st_mode) == 0o600
+          print("Mounted-volume bootstrap dropped root and persisted a private rotated session")'
+          docker run --rm --user 0:0 --volume "$volume:/data" \
+            --entrypoint python oryveta-ci:local -c '
+          import os
+          from oryveta_engine.factory_service import (
+              DEFAULT_CREDENTIALS, prepare_directory, session_lock, bootstrap_credentials)
+          from oryveta_engine.factory_runtime import WorkerCredentials
+          prepare_directory(DEFAULT_CREDENTIALS)
+          with session_lock(DEFAULT_CREDENTIALS.parent):
+              bootstrap_credentials(DEFAULT_CREDENTIALS, "obsolete bootstrap is not JSON")
+              assert WorkerCredentials.load(DEFAULT_CREDENTIALS).refresh_token == "synthetic-rotated-refresh"
+          assert os.geteuid() == 65532
+          print("Replacement container preserved the rotated session without re-bootstrap")'
       - name: Validate single-host Compose configuration
         run: |
           docker compose config --quiet

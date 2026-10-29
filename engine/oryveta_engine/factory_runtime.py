@@ -237,6 +237,8 @@ class WorkerCredentials:
             info = file.stat()
         except FileNotFoundError as exc:
             raise CredentialError("worker credential file does not exist") from exc
+        if not stat.S_ISREG(info.st_mode):
+            raise CredentialError("worker credential file must be a regular file")
         if stat.S_IMODE(info.st_mode) & 0o077:
             raise CredentialError(
                 "worker credential file must not be group or world accessible (chmod 600)")

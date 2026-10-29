@@ -32,6 +32,37 @@ The worker process holds only an ordinary Auth session. Do not provision a conti
 - Tokens are excluded from credential `repr` and from control-plane error diagnostics. HTTP errors retain method/path/status and only the two fixed source-conflict messages; raw response bodies and upstream protocol-error text are not logged because they can reflect credentials or private leases. The analysis child receives a minimal environment without the parent's tokens, lease or network identity.
 - A leaked worker credential is bounded but not harmless. On the durable-work surface it grants claim/heartbeat/finish/fail for the projects where that identity is registered plus the RLS-filtered reads those projects allow — it is not a project member, holds no admin or service-role authority, and cannot submit, cancel or register anything. It is still a valid Auth session on the rest of the project's schema, so treat it like any other user credential: revoke the registration, remove the `oryveta_role` designation, or both, then re-provision.
 
+### Unattended service startup
+
+`python -m oryveta_engine.factory_service` wraps the same analysis worker; it does not create an identity or grant project access. Provision and register a dedicated worker session first. Set `ORYVETA_WORKER_BOOTSTRAP` as a **secret environment variable** containing the credential JSON documented in [IMPLEMENTATION.md](IMPLEMENTATION.md#durable-analysis-worker-self-hosted). Do not place it in source, command arguments, build arguments or logs.
+
+- The default credential path is `/data/worker/credentials.json`. First startup validates the bootstrap and publishes a `0600` file in a `0700` directory. Later starts use that file, even if the bootstrap is missing or obsolete. Corrupt, unsafe or rejected persisted credentials fail closed; they are never silently replaced with the initial token.
+- One service holds an OS lock on its credential directory for its entire lifetime. Do not run the direct `factory_runtime` CLI against that same session or directory: it does not participate in the service lock. Independent workers require independent Auth sessions and private directories.
+- Only the credential directory needs persistent storage. The default analysis work directory is temporary and removed on normal completion or SIGTERM. Hard-killed containers can leave transient files until their writable layer is discarded. `--work-root` remains available for the direct worker's explicit startup-sweep behavior.
+- The bootstrap variable is removed from the service's process environment before starting work. After the first successful authenticated run, remove the bootstrap secret from the hosting configuration too. The hosting platform may retain historical deployment variables; treat the original session as sensitive.
+
+With the secret already set in the invoking environment:
+
+```bash
+docker build --tag oryveta-worker:local .
+docker volume create oryveta-worker-state
+docker run --detach --name oryveta-worker --user 0:0 \
+  --restart on-failure:3 \
+  --volume oryveta-worker-state:/data \
+  --env ORYVETA_WORKER_BOOTSTRAP \
+  --entrypoint python oryveta-worker:local \
+  -m oryveta_engine.factory_service
+```
+
+Root is used **only to prepare the mounted private directory**; the service clears supplementary groups and switches to UID/GID `65532` before loading credentials, contacting Supabase or analyzing a repository. Root startup refuses an unmounted `/data` or another credential path. The existing API image still defaults to a non-root API process.
+
+For Railway, attach a persistent volume at `/data`, use the existing Dockerfile, set the start command to `python -m oryveta_engine.factory_service`, and set `RAILWAY_RUN_UID=0` for that initialization step. Railway supplies `RAILWAY_VOLUME_MOUNT_PATH`; the service checks the mount and refuses ephemeral state. Keep one replica, no public domain/inbound port, sleeping disabled and a bounded restart policy (at most three retries). Check the account's actual free-plan entitlements and measured resource usage before enabling continuous operation; this recipe does not establish allowance fit or availability.
+
+The service accepts the existing worker flags. On a non-root development host, `--credentials` can select another private directory. SIGTERM invokes the worker's existing child-process teardown; interrupted work remains governed by the database lease/reclaim rules. Configuration errors exit `2`, runtime authorization/control-plane failures retain the worker's nonzero status, and bounded supervisor retries must stop and surface the failure. Never loop rejected refresh tokens indefinitely.
+
+For a code rollback, retain the **latest** credential volume. Restoring an old token file is not a session rollback: it can contain an already-spent refresh token. Re-provision a rejected session through the administrator/project-owner process instead of enabling automatic bootstrap fallback.
+
+
 ### Runtime behaviour operators depend on
 
 - **Lease, heartbeat, reclaim.** A claim takes a lease of 15–900 seconds (default 300) whose fencing token lives only in `private.factory_run_leases`. The worker heartbeats at each phase transition and then at least every 30 seconds — and at least every third of the lease — while the analysis child runs. The source download is a single unheartbeated window, so with a short lease and a slow repository the lease can expire mid-fetch and the attempt be reclaimed; size that lease against the importer's 12 MB archive limit and 25-second HTTP timeout rather than assuming the fetch is checkpointed. A worker that dies lets the lease expire; the next `claim_analysis_work` for that project runs the reclaim path first, marking the abandoned run `failed` with `error_code = 'lease_expired'`, deleting its lease, recording a `lease_expired` event and re-queueing or terminally failing the work item. Because reclaim happens inside the claim RPC, no scheduler, cron job or privileged process is needed — and equally, an abandoned run is only reclaimed once some worker next asks that project for work.
