@@ -9,7 +9,7 @@
 | [VISION.md](VISION.md) | Mission, competitor differentiation, user pain points, ProofLoop and Verified Outcome Graph |
 | [PRODUCT.md](PRODUCT.md) | Start New and Evolve definitions, consultancy scenarios, outcome contracts |
 | [USER-JOURNEYS.md](USER-JOURNEYS.md) | Auth/onboarding, builds, Evolve patching, approvals, client handover, error states |
-| [DESIGN-SYSTEM.md](DESIGN-SYSTEM.md) | Galileo-led composition, real routes, original 3D, accessibility and motion |
+| [DESIGN-SYSTEM.md](DESIGN-SYSTEM.md) | Orbital studio typography/surfaces, original graphics and optional 3D, real routes, accessibility and motion |
 | [BRAND.md](BRAND.md) | Oryveta identity, domain and naming history |
 
 ## Platform engineering
@@ -49,7 +49,7 @@
 
 ## What is locked
 
-Oryveta name; current Galileo-led bright product direction; Start New + Evolve as the two journeys; Kaggle only for testing; Apache-2.0 open-source goal; evidence and permission requirements; $0 required software licensing with optional bring-your-own-compute.
+Oryveta name; current orbital studio visual direction; Start New + Evolve as the two journeys; Kaggle only for testing; Apache-2.0 open-source goal; evidence and permission requirements; $0 required software licensing with optional bring-your-own-compute.
 
 ## What is not yet locked or built
 

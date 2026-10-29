@@ -1,20 +1,19 @@
-# Oryveta Studio — clear direction
+# Oryveta Studio — orbital studio
 
-The primary visual reference remains the public **Galileo** preview: a bright canvas, bold sans-serif hierarchy, yellow primary actions and a product-centered composition. This refinement keeps the established routes and visual language, but replaces abstract block artwork with readable product documents and puts working context ahead of repeated setup.
+The current visual system pairs an off-white canvas and confident Geist typography with a dark product rail, cobalt actions and original orbital artwork. It replaces the previous olive/yellow treatment across public pages, sign-in, workspace, projects, conversations, briefs, demos and execution views. The redesign preserves the working product and its available-versus-planned boundaries.
 
 ## Reference synthesis and attribution
 
-Public previews were inspected in Chromium on 2026-10-12:
+Public references reviewed on 2026-10-29:
 
-- [Galileo](https://galileo.shadcn.io): primary light/sculptural composition and yellow action. Supplied rendered HTML identifies its hero as a looping muted video, plus a translated header, word reveals and staggered sticky sections. These informed motion hierarchy, not copied implementation.
-- [Reframe](https://reframe.shadcn.io): editorial scale and product artwork carrying the page.
-- [Lightbox](https://lightbox.shadcn.io): contrast and process-oriented hierarchy.
-- [Solaris](https://solaris.shadcn.io): technical product framing, without fictional execution metrics.
-- [Catalogue](https://www.shadcn.io/template) / [Prodexa](https://prodexa.shadcn.io): continuity between marketing and a calmer working interface.
+- [Antigravity](https://antigravity.google/): spacious editorial hierarchy and restrained dimensional motion.
+- [Lunon](https://lunon.ai/): cinematic composition and clear section hierarchy.
+- [Linear](https://linear.app/): precise product surfaces, contrast and information density.
+- [Raycast](https://www.raycast.com/): product-led graphics and purposeful interaction.
 
-No paid source, template video/models, brands, customer claims, expired countdowns or payment assertions are reused. No Lenis, scroll hijacking, minified Next hydration code or text-selection restrictions are imported. Historical ShadcnStore notices remain; see [THIRD_PARTY.md](../apps/web/studio/THIRD_PARTY.md). All new 3D geometry is original.
+Antigravity, Lunon and Linear were inspected in Chromium; Raycast's public product presentation was also reviewed. These are inspiration, not implementation dependencies. No reference-site source, videos, models, brand marks, customer logos or performance claims were copied. Orbital geometry, illustrations and product examples are original. Geist is self-hosted under OFL-1.1; historical ShadcnStore notices remain. See [THIRD_PARTY.md](../apps/web/studio/THIRD_PARTY.md).
 
-Home states the product's job before any slogan: the eyebrow **Open-source software delivery**, the heading **Build new apps. Improve your code.**, and a deck naming project planning, repository analysis and team collaboration in one workspace. A later section is labelled **The goal · in development** above **An AI software factory. You stay in control.**, so the factory ambition never reads as a shipped feature. The footer carries **Plan software. Review source. Work together.** Public copy follows the [brand voice and wording rules](BRAND.md#voice-and-wording). Copy and dimensional documents share the desktop first viewport. A compact capability split separates hosted collaboration, self-hosted starters/read-only source analysis, and planned agent implementation/maintenance. Mobile preserves the same order without horizontal panning. The artwork is explicitly an example, never a running agent.
+Home leads with the product's job, then capability cards, Start New/Evolve choices, an illustrative artifact viewer, a clearly labelled planned-delivery sequence and a closing CTA. The hero's SVG strata and orbital traces need no 3D renderer or external image. The heavier spatial artifact view is a separate, explicitly opened interaction. Working views use the same typography and controls without ambient graphics competing with forms, messages or results.
 
 ## Compact shared navigation
 
@@ -26,7 +25,7 @@ Public content is deliberately divided:
 
 | Route | Purpose |
 | --- | --- |
-| `/` | Short product story, dimensional scene and two entry CTAs |
+| `/` | Product story, original orbital illustration, capability/journey sections and optional spatial artifact viewer |
 | `/about` | Purpose, audience, open-source principles and current stage |
 | `/what-we-do` | Detailed Start New/Evolve journeys, deliverables and boundaries |
 | `/sign-in` | Real hosted identity setup, or a clear local-identity explanation |
@@ -41,29 +40,30 @@ Journey tabs use `?tab=brief|local|demo`; unknown tab values show an explicit er
 
 | Token | Value | Role |
 | --- | --- | --- |
-| Canvas | `#F8F9F6` | Bright neutral page |
-| Ink | `#232521` | Headings and technical surfaces |
-| Muted | `#58604F` | Readable secondary text |
-| Signal | `#F5D84C` | Primary actions |
-| Border | `#DCE0D5` | Quiet dividers |
+| Canvas | `#F7F8FC` | Off-white page |
+| Ink | `#151923` | Headings and technical surfaces |
+| Muted | `#5F6676` | Readable secondary text |
+| Signal | `#385CE3` | Primary actions and selected states |
+| Border | `#E1E5EC` | Quiet dividers |
+| Product rail | `#11151F` | Dark workspace navigation |
 
-Use the shipped system-font stack: Helvetica Neue, Helvetica, Arial, sans-serif. No external font request or unshipped Inter assumption. Forms are solid and labelled, navigation has visible keyboard focus, and status colors remain semantic rather than decorative success claims.
+Geist Variable 5.3.0 is bundled locally, with a Latin WOFF2 preload and platform fallbacks. No third-party font server is contacted. The complete font notice ships at `public/geist-license.txt`. Body copy is 16px; product text is generally 13–14px, with larger labelled mobile inputs. Solid panels, semantic status colors and readable secondary text take precedence over translucent effects.
 
-Use shared responsive gutters for the header, page content and breadcrumb trail. Keep supporting copy readable instead of shrinking it to fit: mobile form text is 16px, principal actions and menu controls provide 44px touch targets, and long content wraps. Stack brief actions on narrow screens. Desktop sidebars scroll within the viewport. Hover feedback changes color/border/shadow rather than moving buttons and cards.
+`index.css` owns shared foundations; `pages.css` owns public/chrome/sign-in presentation; `workspace.css` is imported by the lazy Workspace module. Base element resets stay in Tailwind's base layer so they cannot override component text colors or input sizes. Shared gutters, wrapping content, 44px coarse-pointer targets, visible focus and native scrolling apply throughout.
 
 ## Dimensional composition and motion
 
-`ProductScene` is the accessible scene boundary. Its lazily imported `ThreeScene` uses **Three.js 0.180.0** to render three rounded, beveled document panels with lit metal edges, printed faces, perspective and cast shadows. Original canvas textures show the three named example documents—**Project brief**, **Code review** and **Demo script**—not anonymous bars. `productArtifacts.js` supplies both the texture content and the semantic document alternative, so the meaning does not depend on WebGL. No external images, models, shaders or additional 3D framework are imported.
+`SiteArt` paints the original orbital hero, journey marks, principle illustrations and planned-delivery rail as SVG/HTML. Small positional entrances keep text at full contrast; observer-dependent transforms are armed only when an observer exists. The hero's two slow orbital traces respect reduced motion. No page-wide animation runtime or loading-screen introduction is shipped.
 
-A finite entrance assembles the document stack. Three keyboard-operable viewpoint controls bring the selected document to the front; depth now follows a meaningful artifact choice rather than an arbitrary orbit. Native scroll and restrained mouse movement adjust perspective without hijacking scrolling. At least 25% of the scene must intersect before animation begins. Textures are drawn once per mount, not during animation.
+`ProductScene` initially renders a readable semantic document. Its native chapter buttons select **Project brief**, **Code review** and **Demo script**. **Open spatial view** explicitly imports Three.js 0.180.0; the initial public load does not request that chunk. Original beveled document geometry, canvas textures, perspective and shadows explain the same example content, never live execution.
 
-Rendering is demand-driven: frames stop once interpolation settles, when the scene is sufficiently offscreen, or when the document is hidden. Cleanup disconnects observers/listeners, cancels the frame, disposes geometry, materials, textures, shadow targets and renderer, and releases the WebGL context. Route-level lazy loading keeps Three out of direct workspace loads; no bundle-size warning threshold is raised.
+The spatial viewer has Pause/Resume and Close controls. Paused chapter and resize changes repaint once without interpolation or a continuing loop. Closing restores keyboard focus to the opener. Rendering is demand-driven and stops offscreen or in a hidden document; DPR is capped at 1.5. Teardown removes listeners and observers and disposes geometry, materials, textures, shadows, renderer and context.
 
-**Motion 14.1.0** remains the only DOM animation runtime. Public copy enters through visible translation, not unreadable low-opacity text. The working UI retains quieter hover/press responses and real run-panel layout transitions. No splash, invented completion, percentages, ETAs or private reasoning are animated into existence.
+Motion is implemented with CSS and browser APIs; the previous `motion` dependency and unused Card primitive have been removed. Run indicators still reflect actual engine state. No fabricated completion, percentage, ETA or private reasoning is animated into existence.
 
 ## Accessibility and React state
 
-Reduced motion is a live `useSyncExternalStore` media-query subscription. Enabling it removes the WebGL scene and its resources, displays the selected document as a labelled static alternative, and stops DOM entrance transforms. Disabling it may restore the scene. WebGL unavailability, context loss and lazy-load errors use the same semantic alternative. Its stage grows with document content instead of clipping it to the fixed canvas height. The three controls still select readable document content without a canvas. Illustrative titles use the correct heading level; navigation keeps visible keyboard focus without positional hover effects.
+Reduced motion is a live `useSyncExternalStore` media-query subscription. Enabling it removes an open WebGL scene and displays the selected semantic artifact; disabling it restores only a view the visitor had already explicitly opened. The chapter controls remain usable. Unavailable WebGL, context loss and load errors preserve readable content. The static stage grows with its document rather than clipping it to a fixed canvas height. Public and product transitions respect the preference without requiring a reload.
 
 Effects synchronize external systems only: Supabase/network subscriptions with stale-response guards, browser title/focus/scroll, real engine polling, renderer/observer lifetime and renderer control updates. Pathnames, tabs, breadcrumbs, active workspaces and draft lookup are derived during render. Navigation and mutations happen in handlers. Keyed identity trees reset owner data without chains of state-synchronizing Effects. Mobile menu state resets by route key and closes explicitly on selection/Escape; Escape returns focus to its trigger. Route presentation waits for lazy content before moving focus.
 
@@ -71,7 +71,7 @@ Workspace drafts, settings edits, selected context and unsent chat composition l
 
 ## A workspace for the current task
 
-Overview derives its **Continue your work** rows from the current owner's open briefs and selected local projects. It does not invent a recent-project history or timestamps. Continue uses native journey/query links; without open work, the original Start New and Evolve choices remain primary. Creation choices become more compact when there is work to resume.
+The dark navigation rail identifies the active context and keeps product routes distinct. Overview derives **Continue your work** from the current owner's actual drafts and selected local projects, never invented history or timestamps. Start New/Evolve cards retain a single keyboard target and proper heading semantics. Forms, record lists, invitations, memberships, messages, empty states, errors and execution receipts share the same restrained panel system.
 
 Journey headings are compact and retain Start New/Evolve as distinct workflow names. A named brief appears as context rather than another hero. Brief, Local run and contextual Demo Studio remain accessible query-string tabs; no route, export or identity contract changes.
 
@@ -89,15 +89,17 @@ Persisted queued/running/succeeded/failed/canceled states, event records, stale/
 
 ## Browser evidence
 
-Intentional media records the compiled implementation, not customer usage or deployment claims:
+Current media records the compiled implementation, not customer usage:
 
 - [Desktop Home](media/studio-landing.png) and [mobile Home](media/studio-mobile.png).
-- [3D viewpoint](media/studio-story.png), an illustrative product composition.
-- [Resume workspace](media/studio-workspace.png), showing an actually authored in-memory brief and its Continue action.
-- [Short browser recording](media/studio-navigation.webm) and [timestamped decoded frames](media/studio-motion-contact.png), showing the brief, source and handoff selections followed by actual About/Back navigation. The recording is 9.36 seconds; contact frames were decoded at 0.8, 2.5, 4.3, 6.0, 7.2 and 8.5 seconds.
-- [Real local analysis](media/studio-local-run.png), using isolated synthetic source and persisted worker state; not a security certification or performance benchmark.
+- [Spatial artifact view](media/studio-story.png), explicitly illustrative and shown paused.
+- [Workspace](media/studio-workspace.png), with an actually authored in-memory verification draft.
+- [Short browser recording](media/studio-navigation.webm) of Home and the spatial interaction, plus a [current UI contact sheet](media/studio-motion-contact.png) assembled from actual screenshots.
+- [Real local analysis](media/studio-local-run.png), completed by a one-off worker against an isolated synthetic source snapshot.
 
-Record exact verification commands and environment limitations in the PR evidence. Browser screenshots and animation are not proof of live email delivery, OAuth configuration, two-account Supabase authorization or rendered storyboard video.
+Verification includes actual hosted/self-hosted browser navigation, draft/export flows, paused canvas updates, live reduced-motion teardown and close-focus restoration; real local Supabase email/PKCE, project/session authorization and all eight collaboration ordering cases; and 48 public/guest route/viewport checks at 1440, 768, 390 and 320px with no overflow or violations in the selected axe-core WCAG A/AA rules. This is not a full accessibility certification or a physical-device test.
+
+Initial Home JavaScript measured through the browser is 438,846 decoded bytes versus the previous deployed page's 1,058,449 (58.5% less). Public pages render with the entry module rather than briefly showing a footer beneath a loading placeholder; controlled desktop/mobile checks recorded zero Home layout shift after this change. The optional Three.js chunk is still large and its build advisory remains visible; it is absent from initial requests. Sign-in/auth code and storyboard data are deferred, product CSS is route-loaded, and font assets are self-hosted. Lab timing comparisons belong in release evidence; no field INP or availability claim is inferred from a build.
 
 ## Agent chat direction
 

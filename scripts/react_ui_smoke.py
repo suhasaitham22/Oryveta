@@ -254,6 +254,35 @@ def _check_local(page, api_url):
     _assert_no_overflow(page)
 
 
+def _check_spatial_scene(page, origin):
+    """The optional renderer must really draw, update while paused, and stop."""
+    page.goto(origin, wait_until="domcontentloaded")
+    scene = page.get_by_label("Illustrative product scene")
+    scene.get_by_role("button", name="Open spatial view").click()
+    canvas = scene.locator("canvas")
+    expect(canvas).to_be_visible(timeout=20000)
+    scene.get_by_role("button", name="Pause motion", exact=True).click()
+    painted = "() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)))"
+    page.evaluate(painted)
+    before = canvas.screenshot()
+    scene.get_by_role("button", name="Code review", exact=True).click()
+    page.evaluate(painted)
+    selected = canvas.screenshot()
+    assert selected != before, "Changing chapters while paused must update the visible scene"
+    page.evaluate(painted)
+    assert canvas.screenshot() == selected, "A paused scene must stay still between frames"
+    page.emulate_media(reduced_motion="reduce")
+    expect(canvas).to_have_count(0)
+    expect(scene.get_by_role("article")).to_be_visible()
+    expect(scene.get_by_role("button", name="Code review", exact=True)).to_have_attribute(
+        "aria-pressed", "true")
+    page.emulate_media(reduced_motion="no-preference")
+    scene.get_by_role("button", name="Close spatial view", exact=True).click()
+    expect(canvas).to_have_count(0)
+    expect(scene.get_by_role("button", name="Open spatial view")).to_be_focused()
+    print("PASS real spatial rendering, paused visual update, reduced motion and close focus")
+
+
 def run():
     assert (ROOT / "index.html").is_file(), "Run npm build in apps/web/studio before browser smoke"
     api_url = os.environ.get("ORYVETA_SMOKE_API_URL")
@@ -278,6 +307,8 @@ def run():
                 else:
                     _check_navigation(page, api_url)
                     _check_hosted(page, api_url)
+                    if label == "desktop":
+                        _check_spatial_scene(page, api_url)
                 assert not errors, (label, errors)
                 scenario = "local API lifecycle" if os.environ.get("ORYVETA_SMOKE_API_URL") else "hosted boundary and contextual story"
                 print("PASS", label, scenario, "overflow")
@@ -290,10 +321,12 @@ def run():
                 assert reduced_page.evaluate("matchMedia('(prefers-reduced-motion: reduce)').matches")
                 completed_icon = reduced_page.locator(".lifecycle-tasks .task-complete svg")
                 assert completed_icon.count() >= 1
-                assert completed_icon.first.evaluate("(node) => getComputedStyle(node).animationName") == "none"
-                assert reduced_page.locator(".lifecycle-tasks .task-complete").first.evaluate(
-                    "(node) => getComputedStyle(node).transitionDuration"
-                ) == "0s"
+                reduced_page.evaluate(
+                    "() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)))"
+                )
+                assert reduced_page.locator(".lifecycle-tasks").evaluate(
+                    "(node) => node.getAnimations({subtree: true}).every(animation => animation.playState !== 'running')"
+                ), "Reduced motion must leave the lifecycle readable without running animations"
                 print("PASS reduced-motion local lifecycle tasks")
             else:
                 scene = reduced_page.get_by_label("Illustrative product scene")

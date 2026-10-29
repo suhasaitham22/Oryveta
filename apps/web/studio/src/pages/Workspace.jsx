@@ -29,6 +29,7 @@ import { useWorkspaceState } from "@/lib/WorkspaceState.jsx";
 import Journey, { emptyDraft } from "./Journey.jsx";
 import PrivateChats from "./PrivateChats.jsx";
 import Projects from "./Projects.jsx";
+import "../workspace.css";
 
 const primaryNavigation = [
   ["overview", LayoutDashboard, "Overview"],
@@ -187,7 +188,19 @@ export default function Workspace({
     return (
       <>
         <Link className="workspace-sidebar-title" to="/workspace">
-          Your workspace
+          <span className="rail-mark" aria-hidden="true">
+            <Layers3 size={17} />
+          </span>
+          <span className="rail-id">
+            <strong>Your workspace</strong>
+            <span>
+              {selfHosted
+                ? "Local engine edition"
+                : preview
+                  ? "Preview · not signed in"
+                  : active?.name || "No workspace yet"}
+            </span>
+          </span>
         </Link>
         <nav aria-label="Workspace navigation">
           <div className="nav-group-label">Create & improve</div>
@@ -320,7 +333,7 @@ export default function Workspace({
                         <h2>{work.draft.name || "Untitled brief"}</h2>
                         {work.draft.brief && <p>{work.draft.brief}</p>}
                       </div>
-                      <Link className="text-link" to={`${workspacePaths[work.page]}?tab=${work.tab}`}>
+                      <Link className="row-link" to={`${workspacePaths[work.page]}?tab=${work.tab}`}>
                         Continue <ArrowRight size={16} />
                       </Link>
                     </div>
@@ -409,11 +422,16 @@ export default function Workspace({
                 </div>
               ) : (
                 <div className="settings-layout">
-                  <div className="space-y-3">
+                  <div className="choice-column">
+                    <div className="section-label">
+                      Your workspaces · {spaces.length}
+                    </div>
                     {spaces.map((space) => (
                       <button
                         key={space.id}
+                        type="button"
                         className={`space-choice ${active?.id === space.id ? "selected" : ""}`}
+                        aria-pressed={active?.id === space.id}
                         onClick={() => setSelected(space.id)}
                       >
                         <strong>{space.name}</strong>
@@ -602,22 +620,29 @@ export default function Workspace({
 }
 
 function InfoMark() {
-  return <ShieldCheck size={17} className="shrink-0" />;
+  return <ShieldCheck size={17} aria-hidden="true" />;
 }
+/* The heading carries the action, so the card is a real heading plus one button
+   instead of a heading nested inside a button. The overlay keeps the whole card
+   clickable without adding a second tab stop. */
 function JourneyCard({ icon: Icon, number, title, description, onClick }) {
   return (
-    <button className="journey-card" onClick={onClick}>
-      <div className="flex justify-between items-center">
+    <div className="journey-card">
+      <span className="journey-card-top">
         <span className="feature-icon">
-          <Icon size={23} />
+          <Icon size={22} />
         </span>
         <span className="card-number">{number}</span>
-      </div>
-      <h2>{title}</h2>
+      </span>
+      <h2>
+        <button type="button" className="journey-card-action" onClick={onClick}>
+          {title}
+        </button>
+      </h2>
       <p>{description}</p>
-      <span className="journey-card-link">
+      <span className="journey-card-link" aria-hidden="true">
         Open {title} <ArrowRight size={17} />
       </span>
-    </button>
+    </div>
   );
 }

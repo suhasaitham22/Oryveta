@@ -2,9 +2,9 @@
 
 ## Original visual composition and public references
 
-The current page composition and dimensional product scene are original Oryveta work. The primary inspiration is the public [Galileo preview](https://galileo.shadcn.io): bright sculptural materiality, deliberate sans-serif hierarchy, yellow action and large product imagery. Supporting public references are [Reframe](https://reframe.shadcn.io) (editorial/product-art scale), [Lightbox](https://lightbox.shadcn.io) (contrast/process hierarchy), [Solaris](https://solaris.shadcn.io) (technical product framing), and the [catalogue](https://www.shadcn.io/template)/[Prodexa](https://prodexa.shadcn.io) (marketing-to-workspace continuity). All were viewed as public previews on 2026-10-12; Galileo and the actual Oryveta surfaces were inspected again for this product-focused refinement.
+The current orbital studio composition and dimensional product scene are original Oryveta work. Public references reviewed on 2026-10-29 were [Antigravity](https://antigravity.google/), [Lunon](https://lunon.ai/), [Linear](https://linear.app/) and [Raycast](https://www.raycast.com/): editorial hierarchy, cinematic composition, precise product surfaces and purposeful interaction. Antigravity, Lunon and Linear were inspected in Chromium. Earlier Galileo/template references informed a superseded iteration, not the current palette.
 
-No source, images, sphere/ribbon geometry, brand marks, marketing copy, customer claims or paid assets from these templates are included. Supplied Galileo HTML shows its hero using a looping muted video, translated header/word reveals and staggered sticky compositions. Those observations informed choreography, not implementation reuse: Oryveta uses its own live Three.js geometry, original canvas-drawn document textures, native scroll, semantic links and accessible document alternatives. No video, minified Next hydration code, Lenis, expired countdown, payment claims or template assets were copied. Example brief/source/story text is original and labelled illustrative; it is not engine output or customer data.
+No reference-site source, images, videos, models, logos, copy, customer claims or paid assets are included. The orbital hero and supporting SVGs are original; the optional Three.js scene uses original geometry and canvas-drawn documents. Native scrolling and readable static content remain available. No animation framework, scroll hijacking or reference-site hydration code is imported.
 
 ## Historical ShadcnStore adaptation
 
@@ -46,9 +46,9 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 ```
 
-## Motion
+## Historical Motion notice
 
-`motion` **14.1.0** is pinned with the npm dependency lock. Registry metadata and the installed package's `LICENSE.md` identify it as MIT. Source: [motiondivision/motion](https://github.com/motiondivision/motion), documentation: [motion.dev](https://motion.dev). It remains the sole DOM animation runtime: translated page entrances and actual run-panel layout. Text retains full contrast before entrance. A shared live reduced-motion subscription supplements the library's mount-time preference snapshot.
+The previous DOM animation dependency `motion` 14.1.0 has been removed. Current entrances and state transitions use CSS/browser APIs. Its historical MIT notice is retained below and in `public/template-license.txt`; it is not a current runtime dependency.
 
 ```text
 The MIT License (MIT)
@@ -76,9 +76,13 @@ SOFTWARE.
 
 ## Three.js and React Router
 
-`three` **0.180.0**, MIT ([source](https://github.com/mrdoob/three.js)), renders original rounded extruded document panels with lit beveled edges, canvas-textured faces and cast shadows. `productArtifacts.js` supplies the same original example content to the textures and semantic alternative. No third-party models, images, shaders or 3D framework are vendored. It is imported only through the lazy Home scene; frames are scheduled on demand and stop offscreen/hidden. Cleanup disposes geometry, materials, textures, shadow targets, renderer and WebGL context.
+`three` **0.180.0**, MIT ([source](https://github.com/mrdoob/three.js)), renders original rounded extruded document panels with lit beveled edges, canvas-textured faces and shadows. `productArtifacts.js` supplies the same original example content to textures and semantic documents. No third-party models, images, shaders or 3D framework are vendored. The renderer is imported only after **Open spatial view**; initial pages and reduced-motion visitors use the semantic presentation. Frames stop when paused, settled, offscreen or hidden. Paused selections/resize repaint once; cleanup disposes renderer resources and context.
 
 `react-router-dom` / `react-router` **7.9.4**, MIT ([source](https://github.com/remix-run/react-router)), supply browser-owned route/query history and basename handling. Their complete MIT notices and the Three.js notice are included in `public/template-license.txt` alongside the historical template and Motion notices. Installed package license files were the attribution source.
+
+## Self-hosted typography
+
+`@fontsource-variable/geist` **5.3.0** supplies Geist Variable WOFF2 assets under **OFL-1.1**. Copyright 2024 The Geist Project Authors ([source](https://github.com/vercel/geist-font)). The font is not modified and is served from the application's own origin. The complete installed-package copyright and license are included in `public/geist-license.txt`, linked from the footer.
 
 ## Existing components
 

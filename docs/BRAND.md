@@ -4,7 +4,7 @@
 
 **Oryveta** (previous working name: MASGENT). Brand statement: **Build thoughtfully. Evolve continuously.** Both the brand statement and any short tagline are secondary to a plain explanation of what the product does; see [Voice and wording](#voice-and-wording). Public-facing copy should lead with the Home eyebrow **Open-source software delivery**, the heading **Build new apps. Improve your code.**, and the footer **Plan software. Review source. Work together.** The earlier **Build. Experiment. Prove.** tagline is retired from product copy.
 
-Two primary entry points: **Start New** and **Evolve**. The current visual direction is bright, product-focused and Galileo-led; see [DESIGN-SYSTEM.md](DESIGN-SYSTEM.md). Avoid names that imply Kaggle-only functionality.
+Two primary entry points: **Start New** and **Evolve**. The current visual direction is the original orbital studio system: off-white public/product surfaces, a dark working rail and cobalt accents; see [DESIGN-SYSTEM.md](DESIGN-SYSTEM.md). Avoid names that imply Kaggle-only functionality.
 
 ## Domain
 
@@ -26,4 +26,4 @@ State what is available and what is planned once, in a clear section, instead of
 
 ## Brand expression
 
-Warm off-white, yellow primary actions, readable technical surfaces and purposeful finite motion. Original dimensional brief/source/story documents explain the product; working screens prioritize the current project, recorded task and result. Preserve accessible static alternatives and avoid excessive glass effects, decorative dashboards and inflated AI claims.
+Off-white surfaces, cobalt actions, self-hosted Geist typography and restrained original orbital graphics. SVG provides immediate dimensional artwork; an optional spatial viewer adds real 3D without slowing the initial page. Working screens prioritize the current project, conversation, recorded task and result. Preserve readable static alternatives, live reduced-motion support and strong contrast; avoid excessive glass effects, fictional dashboards and inflated AI claims.
