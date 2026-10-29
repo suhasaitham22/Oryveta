@@ -1,6 +1,4 @@
 import React, { useEffect, useState } from "react";
-import { motion } from "motion/react";
-import { useReducedMotion } from "@/lib/useReducedMotion";
 import {
   CheckCircle2,
   Circle,
@@ -63,7 +61,6 @@ export default function RunProgress({
   onCancel,
   canceling,
 }) {
-  const reduced = useReducedMotion();
   const [now, setNow] = useState(() => Date.now() / 1000);
   const active = job.status === "queued" || job.status === "running";
   useEffect(() => {
@@ -74,15 +71,17 @@ export default function RunProgress({
   }, [active, stale, job.id]);
   const state = states[job.status];
   if (!state)
-    return <p role="alert">The engine returned an unsupported job state.</p>;
+    return (
+      <p role="alert" className="alert-error">
+        The engine returned an unsupported job state.
+      </p>
+    );
   const Icon = state.icon;
   const events = job.events || [];
   const end = active ? now : job.finished_at || job.updated_at;
   const elapsed = formatDuration(end - job.created_at);
   return (
-    <motion.section
-      layout={reduced ? false : "size"}
-      transition={{ type: "spring", stiffness: 330, damping: 34 }}
+    <section
       className={`run-progress run-${job.status}`}
       aria-label="Real analysis progress"
     >
@@ -90,9 +89,9 @@ export default function RunProgress({
         <span
           className={`run-icon ${job.status === "running" && !stale ? "is-working" : ""}`}
         >
-          <Icon size={21} />
+          <Icon size={21} aria-hidden="true" />
         </span>
-        <div className="min-w-0 flex-1">
+        <div className="run-heading-copy">
           <h3>{stale ? "Connection interrupted" : state.label}</h3>
           <p>
             {projectName ? `${projectName} · ` : ""}Static analysis · local
@@ -184,7 +183,7 @@ export default function RunProgress({
           </Button>
         </div>
       )}
-    </motion.section>
+    </section>
   );
 }
 
@@ -261,7 +260,7 @@ function LifecycleTasks({ job, stale }) {
 export function IllustrativeSequence() {
   return (
     <div className="illustrative-sequence">
-      <div className="flex items-center justify-between gap-3">
+      <div className="illustrative-head">
         <strong>What an analysis can report</strong>
         <span className="status-tag">Illustration · not running</span>
       </div>

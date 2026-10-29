@@ -81,7 +81,7 @@ export default function Journey({
       </div>
     );
   return (
-    <div className="journey-workspace">
+    <div>
       <div className="page-heading journey-heading">
         <div>
           <h1>{title}</h1>

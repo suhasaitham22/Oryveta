@@ -253,9 +253,9 @@ export default function LocalRun({ engine, kind, draft, onChange, selfHosted }) 
               </Button>
             </div>
           )}
-          {draft.jobId && !job && !pollError && <p role="status">Loading recorded job…</p>}
+          {draft.jobId && !job && !pollError && <p role="status" className="empty-state">Loading recorded job…</p>}
           {pollError && (
-            <div className="alert-error" role="alert">
+            <div className="alert-error poll-error" role="alert">
               <p>{pollError} Live updates stopped; no new outcome is assumed.</p>
               <Button variant="outline" size="sm" onClick={() => setRevision((value) => value + 1)}><RefreshCw size={14} />Refresh run</Button>
             </div>

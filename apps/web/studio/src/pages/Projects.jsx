@@ -244,30 +244,27 @@ export default function Projects({ user, preview, onExit }) {
         </p>
       )}
       <section
-        className="surface-panel mb-6"
+        className="surface-panel invitations-panel"
         aria-labelledby="project-invitations-heading"
       >
-        <h2 id="project-invitations-heading" className="text-xl">
+        <h2 id="project-invitations-heading">
           Invitations · {invitations.length}
         </h2>
-        <p className="text-sm text-slate-500 leading-7 mt-2">
+        <p className="panel-note">
           Pending invitations are visible only to their intended recipient. A
           pending invitation shows the project name and nothing else until you
           accept it.
         </p>
         {inboxError && <p role="alert" className="alert-error">{inboxError}</p>}
         {invitations.length ? (
-          <ul className="grid gap-2 mt-4" aria-label="Pending project invitations">
+          <ul className="record-list" aria-label="Pending project invitations">
             {invitations.map((invitation) => (
-              <li
-                key={invitation.id}
-                className="flex flex-wrap items-center justify-between gap-3 border border-slate-100 rounded-xl p-3"
-              >
-                <div className="min-w-0">
-                  <strong className="text-xs font-bold text-slate-700 break-words">
+              <li key={invitation.id} className="record">
+                <div className="record-main">
+                  <strong>
                     {invitation.project_name}
                   </strong>
-                  <small className="block text-[11px] text-slate-400 mt-1">
+                  <small>
                     {roleLabels[invitation.role] || invitation.role} · invited by{" "}
                     {shortId(invitation.invited_by)}
                   </small>
@@ -302,18 +299,16 @@ export default function Projects({ user, preview, onExit }) {
             ))}
           </ul>
         ) : (
-          <p className="text-xs text-slate-400 leading-6 mt-4">
-            Nothing pending.
-          </p>
+          <p className="record-empty">Nothing pending.</p>
         )}
       </section>
       <div className="settings-layout">
-        <div className="space-y-3">
+        <div className="choice-column">
           <div className="section-label">
             Your projects · {projects.length}
           </div>
           {loading && (
-            <p role="status" className="text-xs text-slate-400">
+            <p role="status" className="record-empty">
               Loading projects…
             </p>
           )}
@@ -337,7 +332,7 @@ export default function Projects({ user, preview, onExit }) {
             </button>
           ))}
           {!loading && !projects.length && (
-            <p className="text-xs text-slate-400 leading-6">
+            <p className="record-empty">
               No projects you can read yet. Create one below, or accept an
               invitation when someone shares theirs.
             </p>
@@ -353,7 +348,7 @@ export default function Projects({ user, preview, onExit }) {
             </Button>
           )}
         </div>
-        <div className="space-y-5">
+        <div className="detail-column">
           <form
             className="surface-panel"
             aria-labelledby="project-form-heading"
@@ -400,7 +395,7 @@ export default function Projects({ user, preview, onExit }) {
                 : "Persisted as a brief in a workspace you belong to. Creating a project does not build or deploy anything."}
             </p>
             {active && (
-              <p className="text-xs text-slate-500 mt-2">
+              <p className="role-line">
                 Your role:{" "}
                 <Badge variant="outline">
                   {roles[active.id]
@@ -416,7 +411,6 @@ export default function Projects({ user, preview, onExit }) {
                   <select
                     id="project-workspace"
                     aria-describedby="project-workspace-help"
-                    className="w-full"
                     value={workspaceId}
                     disabled={busy}
                     onChange={(event) =>
@@ -432,7 +426,7 @@ export default function Projects({ user, preview, onExit }) {
                       </option>
                     ))}
                   </select>
-                  <span id="project-workspace-help" className="text-[11px] text-slate-400 leading-5">
+                  <span id="project-workspace-help" className="field-help">
                     Creating a project requires owner, admin or engineer
                     membership in that workspace. The server rejects anything
                     else.
@@ -441,7 +435,7 @@ export default function Projects({ user, preview, onExit }) {
               ) : (
                 <p className="notice">
                   You need a workspace first.{" "}
-                  <Link className="underline" to="/workspace/settings">
+                  <Link to="/workspace/settings">
                     Create a workspace
                   </Link>
                   , then return here.
@@ -452,7 +446,6 @@ export default function Projects({ user, preview, onExit }) {
                 <label htmlFor="project-kind">Project type</label>
                 <select
                   id="project-kind"
-                  className="w-full"
                   value={kind}
                   disabled={busy}
                   onChange={(event) => editForm("kind", event.target.value)}
@@ -520,11 +513,11 @@ export default function Projects({ user, preview, onExit }) {
               className="surface-panel"
               aria-labelledby="project-members-heading"
             >
-              <h2 id="project-members-heading" className="text-xl">
-                <UsersRound size={18} className="inline mr-2" />
+              <h2 id="project-members-heading" className="panel-head-title">
+                <UsersRound size={18} aria-hidden="true" />
                 Members · {members.length}
               </h2>
-              <p className="text-sm text-slate-500 leading-7 mt-2">
+              <p className="panel-note">
                 Project membership is explicit. It never grants access to
                 anyone's private conversations, and the owner cannot be removed
                 or demoted here.
@@ -534,21 +527,16 @@ export default function Projects({ user, preview, onExit }) {
                   {memberNotice}
                 </p>
               )}
-              <ul className="grid gap-2 mt-4" aria-label="Project members">
+              <ul className="record-list" aria-label="Project members">
                 {members.length ? (
                   members.map((member) => (
-                    <li
-                      key={member.user_id}
-                      className="flex flex-wrap items-center justify-between gap-3 border border-slate-100 rounded-xl p-3"
-                    >
-                      <div className="min-w-0">
-                        <strong className="text-xs font-bold text-slate-700">
+                    <li key={member.user_id} className="record">
+                      <div className="record-main">
+                        <strong>
                           Account {shortId(member.user_id)}
                           {member.user_id === user.id ? " (you)" : ""}
                         </strong>
-                        <small className="block text-[11px] text-slate-400 mt-1">
-                          {roleLabels[member.role] || member.role}
-                        </small>
+                        <small>{roleLabels[member.role] || member.role}</small>
                       </div>
                       {canAdmin && member.role !== "owner" && (
                         <Button
@@ -573,23 +561,23 @@ export default function Projects({ user, preview, onExit }) {
                     </li>
                   ))
                 ) : (
-                  <li className="text-xs text-slate-400">
+                  <li className="record-empty">
                     No member list is available to you for this project.
                   </li>
                 )}
               </ul>
               {canAdmin ? (
                 <>
-                  <h3 className="text-sm font-bold text-slate-800 flex gap-2 items-center mt-8">
+                  <h3 className="panel-subhead panel-section">
                     <UserPlus size={18} /> Invite someone
                   </h3>
-                  <p className="text-xs text-slate-500 leading-6 mt-2">
+                  <p className="muted-note">
                     Invite a verified work email or a registered @alias.
                     Recipients gain nothing until they accept in-app, and owner
                     cannot be granted.
                   </p>
                   <form
-                    className="grid sm:grid-cols-[1fr_150px_auto] gap-3 mt-4 items-end"
+                    className="invite-grid"
                     onSubmit={(event) => {
                       event.preventDefault();
                       action(async () => {
@@ -610,14 +598,10 @@ export default function Projects({ user, preview, onExit }) {
                       });
                     }}
                   >
-                    <label
-                      className="text-[11px] font-bold text-slate-600"
-                      htmlFor="project-invite-recipient"
-                    >
+                    <label className="field-label" htmlFor="project-invite-recipient">
                       Recipient
                       <Input
                         id="project-invite-recipient"
-                        className="mt-2"
                         required
                         maxLength={254}
                         placeholder="user@company.com or @alias"
@@ -625,11 +609,10 @@ export default function Projects({ user, preview, onExit }) {
                         onChange={(event) => setRecipient(event.target.value)}
                       />
                     </label>
-                    <div className="text-[11px] font-bold text-slate-600">
+                    <div className="field-label">
                       <label htmlFor="project-invite-role">Role</label>
                       <select
                         id="project-invite-role"
-                        className="w-full mt-2 h-10 rounded-xl border border-slate-200 px-2 text-xs text-slate-600 bg-white"
                         value={grantRole}
                         onChange={(event) => setGrantRole(event.target.value)}
                       >
@@ -644,25 +627,22 @@ export default function Projects({ user, preview, onExit }) {
                       Send invitation <ArrowRight size={15} />
                     </Button>
                   </form>
-                  <div className="section-label mt-8">
+                  <div className="section-label panel-section">
                     Pending invitations · {sentInvites.length}
                   </div>
                   <ul
-                    className="grid gap-2 mt-3"
+                    className="record-list"
                     aria-label="Outstanding project invitations"
                   >
                     {sentInvites.length ? (
                       sentInvites.map((invitation) => (
-                        <li
-                          key={invitation.id}
-                          className="flex flex-wrap items-center justify-between gap-3 border border-slate-100 rounded-xl p-3"
-                        >
-                          <div className="min-w-0">
-                            <strong className="text-xs text-slate-700 break-words">
+                        <li key={invitation.id} className="record">
+                          <div className="record-main">
+                            <strong>
                               {invitation.recipient_email ||
                                 `@${invitation.recipient_alias}`}
                             </strong>
-                            <small className="block text-[11px] text-slate-400 mt-1">
+                            <small>
                               {roleLabels[invitation.role] || invitation.role} ·
                               not yet accepted, no access
                             </small>
@@ -687,14 +667,14 @@ export default function Projects({ user, preview, onExit }) {
                         </li>
                       ))
                     ) : (
-                      <li className="text-xs text-slate-400">
+                      <li className="record-empty">
                         No outstanding invitations.
                       </li>
                     )}
                   </ul>
                 </>
               ) : (
-                <p className="text-xs text-slate-400 leading-6 mt-6 border-t border-slate-100 pt-5">
+                <p className="muted-note panel-section">
                   Only the project owner and admins can invite, cancel
                   invitations or remove members.
                 </p>

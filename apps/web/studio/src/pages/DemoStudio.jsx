@@ -1,6 +1,4 @@
 import React from "react";
-import { motion } from "motion/react";
-import { useReducedMotion } from "@/lib/useReducedMotion";
 import {
   ArrowLeft,
   ArrowRight,
@@ -22,7 +20,8 @@ export default function DemoStudio({
   onChange,
   context,
 }) {
-  const reduced = useReducedMotion();
+  // Scene changes use a keyed CSS animation, so the live OS reduced-motion
+  // preference disables it without re-rendering or a motion runtime.
   const story = stories.find((value) => value.id === storyId);
   if (!story)
     return (
@@ -58,7 +57,7 @@ export default function DemoStudio({
     });
   }
   return (
-    <section className="demo-root" aria-label={`${story.title} story`}>
+    <section aria-label={`${story.title} story`}>
       <div className="demo-heading">
         <div>
           <div className="section-label">
@@ -80,28 +79,18 @@ export default function DemoStudio({
           </span>
         </div>
         <div aria-live="polite" aria-atomic="true">
-          <motion.div
-            key={frame}
-            className="storyboard-scene"
-            initial={reduced ? false : { x: 16 }}
-            animate={{ x: 0 }}
-            transition={
-              reduced
-                ? { duration: 0 }
-                : { type: "spring", stiffness: 340, damping: 32 }
-            }
-          >
+          <div key={frame} className="storyboard-scene">
             <div className="section-label">{scene.eyebrow}</div>
             <h3>{scene.headline}</h3>
             <p>{scene.body}</p>
             <div className="scene-receipt">
-              <Info size={17} />
+              <Info size={17} aria-hidden="true" />
               <span>{scene.receipt}</span>
             </div>
-          </motion.div>
+          </div>
         </div>
         <div className="demo-controls">
-          <div className="flex items-center gap-2">
+          <div className="demo-nav">
             <Button
               size="icon"
               variant="outline"
@@ -121,7 +110,7 @@ export default function DemoStudio({
               <ArrowRight size={16} />
             </Button>
           </div>
-          <div className="flex flex-wrap gap-2">
+          <div className="demo-actions">
             <Button
               size="sm"
               variant="outline"

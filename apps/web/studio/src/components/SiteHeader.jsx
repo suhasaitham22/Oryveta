@@ -66,7 +66,7 @@ export default function SiteHeader({ user, onSignOut, selfHosted }) {
       </a>
       <header className="site-header">
         <div className="site-header-inner">
-          <Link to="/" aria-label="Oryveta Home">
+          <Link className="site-brand" to="/" aria-label="Oryveta Home">
             <Brand />
           </Link>
           <nav className="site-links" aria-label="Primary navigation">
@@ -117,6 +117,7 @@ export default function SiteHeader({ user, onSignOut, selfHosted }) {
                 onClick={() => setOpen(false)}
               >
                 {label}
+                <ChevronRight size={15} aria-hidden="true" />
               </NavLink>
             ))}
           </nav>

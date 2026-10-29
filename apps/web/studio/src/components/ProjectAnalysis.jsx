@@ -157,68 +157,68 @@ export default function ProjectAnalysis({ project, role }) {
 
   return (
     <section className="surface-panel" aria-labelledby="project-analysis-heading" aria-busy={loading}>
-      <div className="flex flex-wrap items-center justify-between gap-3">
+      <div className="panel-head">
         <h2 id="project-analysis-heading">Repository analysis</h2>
         <Button variant="outline" size="sm" disabled={busy} onClick={() => { setError(""); setRevision((value) => value + 1); }}>
           Refresh analyses
         </Button>
       </div>
-      <p className="text-sm text-slate-500 leading-6 mt-2">
+      <p className="panel-note">
         Queue a bounded, read-only review of a public GitHub snapshot. An authorized worker processes it independently of this browser; repository code is never executed.
       </p>
-      {(error || loadError) && <p role="alert" className="alert-error mt-4">{error || loadError}</p>}
-      {loading && <p role="status" className="text-sm text-slate-500 mt-4">Loading repository analyses…</p>}
+      {(error || loadError) && <p role="alert" className="alert-error">{error || loadError}</p>}
+      {loading && <p role="status" className="loading-line">Loading repository analyses…</p>}
       {edit && (
-        <div className="mt-4">
+        <div className="panel-action">
           <Button disabled={busy || !sourceReady} onClick={() => action(submit)}>
             Analyze public repository
           </Button>
-          {!sourceReady && <p className="text-xs text-slate-500 mt-2">Save a public https://github.com/owner/repository source URL first.</p>}
+          {!sourceReady && <p className="muted-note">Save a public https://github.com/owner/repository source URL first.</p>}
         </div>
       )}
-      {!loading && !work.length && !error && !loadError && <p className="text-sm text-slate-500 mt-5">No repository analyses yet.</p>}
+      {!loading && !work.length && !error && !loadError && <p className="loading-line">No repository analyses yet.</p>}
       {work.length > 0 && (
-        <div className="field-label mt-5">
+        <div className="field-label">
           <label htmlFor="analysis-work-item">Recent analyses</label>
-          <select id="analysis-work-item" className="w-full" value={current?.id || ""} onChange={(event) => setSelected(event.target.value)}>
+          <select id="analysis-work-item" value={current?.id || ""} onChange={(event) => setSelected(event.target.value)}>
             {work.map((item) => <option key={item.id} value={item.id}>{statusLabels[item.status] || item.status} · {new Date(item.created_at).toLocaleString()}</option>)}
           </select>
         </div>
       )}
       {current && (
-        <div className="mt-5 border-t border-slate-100 pt-4">
-          <div className="flex flex-wrap items-center gap-3">
+        <div className="panel-section">
+          <div className="status-row">
             <Badge variant="outline">{statusLabels[current.status] || current.status}</Badge>
-            <span className="text-xs text-slate-500">Attempt {current.attempts} of {current.max_attempts}</span>
+            <span>Attempt {current.attempts} of {current.max_attempts}</span>
             {activeStatuses.has(current.status) && visibleDetails.run?.phase && (
-              <span className="text-xs text-slate-500">{phaseLabels[visibleDetails.run.phase] || visibleDetails.run.phase}</span>
+              <span>{phaseLabels[visibleDetails.run.phase] || visibleDetails.run.phase}</span>
             )}
             {edit && activeStatuses.has(current.status) && (
               <Button variant="outline" size="sm" disabled={busy} onClick={() => action(() => api.cancelAnalysis(current.id))}>Cancel analysis</Button>
             )}
           </div>
-          <p className="text-xs text-slate-500 break-all mt-3">{current.source_url}</p>
-          {current.status === "queued" && <p role="status" className="text-sm mt-3">Waiting for an authorized worker. You may close this browser.</p>}
-          {current.error_code && <p className="alert-error mt-3">{Object.hasOwn(errorLabels, current.error_code) ? errorLabels[current.error_code] : `Analysis stopped (${current.error_code}).`}</p>}
-          {visibleDetails.run?.source_commit && <p className="text-xs text-slate-500 break-all mt-3">Source commit: {visibleDetails.run.source_commit}</p>}
-          {visibleDetails.run?.source_digest && <p className="text-xs text-slate-500 break-all mt-3">Snapshot: {visibleDetails.run.source_digest}</p>}
-          <ol className="grid gap-2 mt-4 text-xs text-slate-500" aria-label="Recent analysis events">
+          <p className="meta-line">{current.source_url}</p>
+          {current.status === "queued" && <p role="status" className="meta-line">Waiting for an authorized worker. You may close this browser.</p>}
+          {current.error_code && <p className="alert-error">{Object.hasOwn(errorLabels, current.error_code) ? errorLabels[current.error_code] : `Analysis stopped (${current.error_code}).`}</p>}
+          {visibleDetails.run?.source_commit && <p className="meta-line">Source commit: {visibleDetails.run.source_commit}</p>}
+          {visibleDetails.run?.source_digest && <p className="meta-line">Snapshot: {visibleDetails.run.source_digest}</p>}
+          <ol className="event-list" aria-label="Recent analysis events">
             {visibleDetails.events.map((event) => <li key={event.id}><time dateTime={event.created_at}>{new Date(event.created_at).toLocaleTimeString()}</time> · {event.detail}</li>)}
           </ol>
           {summary && (
-            <div className="mt-5">
-              <p className="text-sm">{summary.source_files_analyzed} source files analyzed · {summary.files_skipped} skipped · {summary.findings_count} candidate findings</p>
-              <p className="text-xs text-slate-500 mt-2">{summary.disclaimer}</p>
-              {truncated && <p className="notice mt-3">Stored {findings.length} of {summary.findings_count} findings. The report and download contain only this bounded subset.</p>}
-              <Button className="mt-3" variant="outline" size="sm" onClick={() => downloadJson(`analysis-${current.id}.json`, visibleDetails.run.result)}>Download analysis JSON</Button>
-              <details className="mt-4">
-                <summary className="cursor-pointer text-sm font-semibold">Inspect candidate findings</summary>
-                <ol className="grid gap-3 mt-3 max-h-96 overflow-auto" aria-label="Static analysis findings">
+            <div className="summary-block">
+              <p>{summary.source_files_analyzed} source files analyzed · {summary.files_skipped} skipped · {summary.findings_count} candidate findings</p>
+              <p className="muted-note">{summary.disclaimer}</p>
+              {truncated && <p className="notice">Stored {findings.length} of {summary.findings_count} findings. The report and download contain only this bounded subset.</p>}
+              <Button variant="outline" size="sm" onClick={() => downloadJson(`analysis-${current.id}.json`, visibleDetails.run.result)}>Download analysis JSON</Button>
+              <details className="disclosure">
+                <summary>Inspect candidate findings</summary>
+                <ol className="finding-list findings-scroll" aria-label="Static analysis findings">
                   {findings.map((finding, index) => (
-                    <li key={`${finding.path}:${finding.line}:${index}`} className="rounded-xl border border-slate-100 p-3 text-sm">
+                    <li key={`${finding.path}:${finding.line}:${index}`}>
                       <strong>{finding.title}</strong>
-                      <p className="text-xs text-slate-500 break-all mt-1">{finding.path}:{finding.line} · {finding.severity} · {finding.confidence} confidence</p>
-                      <p className="mt-2">{finding.recommendation}</p>
+                      <code>{finding.path}:{finding.line} · {finding.severity} · {finding.confidence} confidence</code>
+                      <p>{finding.recommendation}</p>
                     </li>
                   ))}
                 </ol>
@@ -228,10 +228,10 @@ export default function ProjectAnalysis({ project, role }) {
         </div>
       )}
       {administer && (
-        <details className="mt-6 border-t border-slate-100 pt-4">
-          <summary className="cursor-pointer text-sm font-semibold">Worker access</summary>
-          <p className="text-xs text-slate-500 leading-6 mt-2">Provision a dedicated worker identity through operator setup, then register its user ID. Never use a personal account or place worker credentials in this form.</p>
-          <form className="grid gap-3 mt-3" onSubmit={(event) => {
+        <details className="disclosure">
+          <summary>Worker access</summary>
+          <p className="muted-note">Provision a dedicated worker identity through operator setup, then register its user ID. Never use a personal account or place worker credentials in this form.</p>
+          <form className="inline-fields" onSubmit={(event) => {
             event.preventDefault();
             action(async () => {
               await api.registerProjectWorker(project.id, workerId, workerLabel);
@@ -249,10 +249,10 @@ export default function ProjectAnalysis({ project, role }) {
             </div>
             <Button type="submit" disabled={busy}>Register project worker</Button>
           </form>
-          <ul className="grid gap-2 mt-4" aria-label="Registered project workers">
+          <ul className="record-list" aria-label="Registered project workers">
             {workers.map((worker) => (
-              <li key={worker.id} className="flex flex-wrap items-center justify-between gap-3 text-sm">
-                <span>{worker.label} · {worker.enabled ? "Authorized" : "Revoked"}</span>
+              <li key={worker.id} className="record">
+                <span className="record-main">{worker.label} · {worker.enabled ? "Authorized" : "Revoked"}</span>
                 {worker.enabled && <Button variant="outline" size="sm" disabled={busy} onClick={() => action(() => api.revokeProjectWorker(project.id, worker.worker_user_id))} aria-label={`Revoke worker ${worker.label}`}>Revoke worker</Button>}
               </li>
             ))}

@@ -1,5 +1,18 @@
 # Oryveta implementation status
 
+## Orbital studio UI — browser verification, 2026-10-29
+
+The web interface has been redesigned across Home, About, What We Do, sign-in, workspace navigation, project and conversation views, Start New/Evolve briefs, Demo Studio and local execution. It uses self-hosted Geist typography, a shared off-white/cobalt palette, dark product navigation, original SVG artwork and an explicitly opened 3D artifact viewer. Product capabilities and authorization boundaries are unchanged.
+
+- Hosted and self-hosted production builds pass. **302 Python tests**, Ruff and all seven storyboard/security-scan contracts passed.
+- Real Chromium flows passed at desktop/tablet/mobile widths: routing and browser history, drafts and exports, local cookie login, ZIP intake, cancellation, and reduced-motion behavior. A real one-off worker also completed the synthetic source analysis shown in the refreshed UI evidence.
+- The spatial regression exercises actual canvas rendering, a visible chapter change while paused, a stable paused frame, live reduced-motion teardown, semantic content and close-focus restoration.
+- Real isolated Supabase email/new-tab PKCE, project roles/invitations, private-session isolation and revocation passed. All **eight** collaboration response-order cases passed; no auth or database rules were loosened.
+- **48** public/guest route/viewport combinations at 1440, 768, 390 and 320px had no horizontal overflow or violations in the selected axe-core WCAG A/AA rules. This is not a full accessibility certification or a physical-device test.
+- Initial Home JavaScript is **438,846 decoded bytes**, down from **1,058,449** on the previous deployed page (**58.5% less**). Three.js is absent from initial requests, Motion is removed, product CSS is deferred, and the public loading-placeholder/footer shift is removed. Controlled local desktop/mobile runs recorded Home CLS `0`; deployed lab timing evidence is recorded with the UI PR, not treated as field performance.
+
+The design references, original-asset/Geist licensing, screenshots and motion recording are documented in [DESIGN-SYSTEM.md](DESIGN-SYSTEM.md). This work does not deploy a continuous worker, enable model-driven coding or change provider plans.
+
 ## Unattended worker service — source verification, 2026-10-29
 
 The analysis worker now has a container-oriented `factory_service` entry point. It initializes a private credential from a secret only when no persisted file exists, preserves rotated sessions across restart, excludes another service using that private directory, drops root after mounted-volume initialization, and handles SIGTERM through the existing worker teardown. Invalid persisted state is refused rather than replaced by a stale bootstrap.
