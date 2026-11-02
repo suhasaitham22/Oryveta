@@ -37,8 +37,8 @@ jobs:
           python-version: '3.12'
       - name: Install Playwright browser
         run: |
-          python -m pip install 'playwright==1.55.0'
-          python -m playwright install chromium
+          python -m pip install 'playwright==1.64.1'
+          python -m playwright install --with-deps chromium
       - name: Test production-built frontend on desktop/mobile
         run: python scripts/react_ui_smoke.py
       - name: Exercise self-hosted local API and persisted job UI

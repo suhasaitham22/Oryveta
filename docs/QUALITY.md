@@ -18,6 +18,8 @@ The React Studio gate must build both deployment targets: `npm --prefix apps/web
 
 GitHub Actions workflows use minimal read permissions, SHA-pinned official actions, no credentials persisted by checkout, per-job timeouts, and pull-request concurrency cancellation. Dependabot checks Python, GitHub Actions and Docker dependencies weekly. A scheduled weekly security scan runs even when there are no PRs.
 
+Browser jobs pin Playwright `1.64.1` and install Chromium with `--with-deps`, matching the real-auth integration job. The older `1.55.0` pin fails browser provisioning on GitHub's Ubuntu 26 runners; unsupported-host failures must not be bypassed or mistaken for application test failures.
+
 ## Real hosted-auth boundary tests
 
 The auth integration job starts isolated Supabase CLI 2.121.0 native PostgreSQL, Auth, PostgREST and Mailpit, applies the schema and transactional RLS cases, then runs `scripts/auth_ui_smoke.py` against a production-built Studio. The browser requests real email links and opens them in a new tab; three users exercise project/session grants, denial, revocation and replay. No auth responses are mocked. Setup is maintained in [IDENTITY-WORKSPACES.md](IDENTITY-WORKSPACES.md).
