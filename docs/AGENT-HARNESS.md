@@ -4,6 +4,8 @@
 
 Oryveta must perform verifiable software work in Start New and Evolve, while remaining fully inspectable, model-agnostic and free of mandatory commercial model APIs. This document describes the **target architecture**, not an already operational remote agent.
 
+**Implemented local subset (2026-11-02):** `coding_runtime` now runs a fixed, single-agent repair loop with a versioned operator specification, scoped tools, a pinned local Ollama model, bounded Docker execution, controller-owned JSON acceptance checks and private trace/patch receipts. It stops repeated identical failures rather than widening permissions or budgets. [Setup and limits](IMPLEMENTATION.md#local-verified-repair-cli). This does not implement the knowledge graph, central trajectories, adaptive branching, learning lab or hosted coding service described below.
+
 ## Start minimal: the single-agent loop
 
 1. Parse a versioned Outcome Contract: user goal, acceptance criteria, source state, allowed changes, limits, safety policies.
@@ -23,7 +25,7 @@ Oryveta must perform verifiable software work in Start New and Evolve, while rem
 
 Use the graph for change impact, test selection, deployed-source lookup, incident/bug links and evidence-backed lessons. Track unsupported/stale sources, invalidate changed/deleted facts and keep uncertain causal links separate from confirmed relationships. Graph memory does not itself constitute learning.
 
-**Model Adapter:** a typed, text-only `ModelProvider` contract and an operator-configured local `OllamaProvider` now exist in the source. Bounded input/output and SQLite daily token reservations are implemented, but no live Ollama model is provisioned. Tool calling, llama.cpp, vLLM and customer-provider adapters are future work. Large model inference requires user-provided compute.
+**Model Adapter:** the text-only `ModelProvider`/`OllamaProvider` API retains SQLite daily reservations. The separate `LocalToolModel` uses native Ollama tool calls, pinned local model identity, bounded context/output and per-run token accounting. A real Qwen3 8B local repair was exercised; this is not broad coding-quality qualification. llama.cpp, vLLM and customer-provider adapters remain future work. Model inference requires user-provided compute.
 
 **Adaptive Router:** versions of model-to-task policies; choose by observed quality, speed, cost and hardware constraints, not model brand. Permit splitting/defer rather than exceeding budget or silently using a paid service.
 
@@ -45,11 +47,11 @@ Use the graph for change impact, test selection, deployed-source lookup, inciden
 
 | Requirement | Current Oryveta boundary | Implementation decision |
 | --- | --- | --- |
-| Configured as code | Environment settings, deployment files and worker credentials exist; no complete factory-definition loader | Add a versioned, validated declarative execution specification covering model/runner selection, tool references, budgets, skill versions and evaluator references. Record its resolved digest on each execution; secret **references**, never values, belong in version control. |
-| Central conversation history | Private human conversations and durable analysis events exist; general agent trajectories do not | Persist agent runs and tool spans at the control plane, with source/configuration lineage and bounded evidence references. Central storage must retain existing project/session isolation; it is not a global prompt or shared-memory pool. |
+| Configured as code | The local CLI validates and hashes its model/runner, scope, budgets and behavioral-check specification; no complete hosted factory loader or skill/evaluator registry | Extend the existing versioned specification for reviewed tool/skill/evaluator references. Secret **references**, never values, belong in version control. |
+| Central conversation history | Private human conversations and durable analysis events exist; coding trajectories are currently private local files only | Persist agent runs and tool spans at the control plane, with source/configuration lineage and bounded evidence references. Central storage must retain existing project/session isolation; it is not a global prompt or shared-memory pool. |
 | Benchmarking tools | `benchmarks.py` runs small scikit-learn experiments; `learning.py` compares supplied outcome records | Build a software-task runner that restores a pinned pre-action repository/environment snapshot and obtains results from an independent evaluator. Existing helpers are not an agent benchmark or evidence-authentication system. |
 | Factory chat | Saved human chat exists; no general coding-agent conversation loop or Slack execution adapter | Let authorized conversations submit and inspect the same canonical work/run records. Web and later Slack integrations must not invent separate execution state or widen the conversation audience. |
-| Artifacts | Analysis JSON, exports and repository/CI screenshots exist; no general run-artifact registry | Bind patches, reports, screenshots, recordings and external resource IDs to a run, exact source/build, producer and verification level. Apply scope and retention rules to downloads as well as creation. |
+| Artifacts | Analysis JSON, exports, local verified/unverified patches and execution receipts exist; no general run-artifact registry | Bind patches, reports, screenshots, recordings and external resource IDs to a run, exact source/build, producer and verification level. Apply scope and retention rules to downloads as well as creation. |
 | Computer use | Real browser QA scripts exist; an agent-controlled browser/desktop capability does not | Add a brokered, isolated preview session with approved origins/accounts. Prefer deterministic API/DOM operations; use visual interaction when required. A recording complements, rather than replaces, independent assertions and backend readback. |
 | Agent debugger | Analysis events/checkpoints are inspectable; general tool/subagent inspection and safe forks are absent | Expose ordered tool spans, safe inputs/results, routing choices, retries, costs, parent/child runs and artifact links. Distinguish recorded playback from a new sandbox execution. |
 

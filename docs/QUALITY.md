@@ -26,6 +26,14 @@ Local captured email is not external mailbox delivery, GitHub consent or a produ
 
 `scripts/collaboration_race_smoke.py` adds real-service browser regressions for slow and out-of-order responses. It defers delivery of actual HTTP responses rather than mocking successes, covering identity-scoped chat details, collection refresh order, pending mutation acknowledgements, navigation lifetimes and the newest bounded message window. Its fixture cleanup fails loudly instead of claiming success when temporary data remains. The auth-integration workflow runs it after schema setup.
 
+## Local coding-loop verification
+
+CI explicitly provisions a local Python execution image and runs the coding-runtime/sandbox cases on every Python matrix version. These tests use real containers for behavioral acceptance, denied network/host writes, resource limits and teardown; scripted models make proposal/denial cases deterministic. They do not establish model coding quality.
+
+For local execution, set `ORYVETA_TEST_DOCKER_CONTEXT` and `ORYVETA_TEST_DOCKER_IMAGE` to an authorized local context and preloaded immutable image ID. On a Docker VM, set `ORYVETA_TEST_RUN_ROOT` to a shared private host directory. Without explicit context/image selection, real-container cases are skipped; do not describe that run as isolation verification.
+
+The separate `scripts/smoke_coding.py` command exercises the real local model, tools, CLI and independent verifier; setup is in [IMPLEMENTATION.md](IMPLEMENTATION.md#local-verified-repair-cli). Keep actual model outcomes and failed attempts distinct from scripted-model regressions. A passed synthetic repair is not a benchmark or a security certification.
+
 ## Verified local hardening tests
 
 - Browser-bound OAuth state, callback success and one-time replay rejection; auth responses must not be cached.
@@ -46,7 +54,7 @@ Repository **Settings → Branches / Rulesets** should protect `main` by requiri
 ## Production gates not yet satisfied
 
 - Production GitHub identity and project/session authorization are verified; repository-access GitHub App grants and broader enterprise administration remain unimplemented.
-- Hardened isolation/network policy for executing customer code is not implemented.
+- Production multi-tenant isolation/network policy for arbitrary customer code is not implemented; the operator-run local Docker CLI is not that boundary.
 - The single-host worker has heartbeats and admission limits. Remote execution, secrets management, infrastructure rate limits and autoscaling remain unimplemented.
 - No signed/pinned fully reproducible Python dependency lockfile or pinned Docker base-image digest yet.
 - Production OAuth and controlled multi-user browser authorization pass. General email delivery, load tests, disaster recovery and canary/rollback deployment remain separate gates.

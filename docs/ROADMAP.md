@@ -44,6 +44,8 @@ Use open-source Deep Agents/LangGraph primitives where they fit, rather than ado
 
 Each PR must add an exercised capability and may be split further for reviewability. Security and verification start with the first execution; the release and enterprise milestones do not defer baseline isolation or approval. Basic supervision starts in PR 2. Collect learning evidence early, but activate learning only after outcomes are trustworthy. Detailed modernization and on-call contracts are in [PRODUCT.md](PRODUCT.md) and [OPERATIONS.md](OPERATIONS.md).
 
+The 2026-11-02 local CLI delivers the fixed model/tool/execution/verifier subset of Stage 3, with a real synthetic repair and retained success/failure traces. It does not complete Stage 3's durable integration, safe restart, broader decision protocol or target-repository qualification. Those gates precede expanding into hosted coding; a local passing receipt is not an always-on service.
+
 ### Research-informed implementation order
 
 The [factory checklist and research decisions](AGENT-HARNESS.md#factory-as-code-and-inspectable-execution) and [experiment protocol](EVALUATION.md#research-led-experiments) refine these stages; they do not declare them implemented.
