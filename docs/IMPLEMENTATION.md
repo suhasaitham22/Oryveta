@@ -148,6 +148,8 @@ The controller reproduces the defect before inference and refuses a failing pres
 
 Each check executes in a fresh container with networking disabled, non-root UID, dropped capabilities, no-new-privileges, read-only root/source, bounded tmpfs/memory/CPU/PIDs/output, no host credentials and no Docker socket. Writable image-declared volumes and image healthchecks are not permitted to bypass this policy. Daemon/context and image metadata are checked; stopped commands/containers are cleaned up, and uncertain cleanup fails the run. This is **local defense in depth**, not a production multi-tenant isolation certification. Use only operator-approved source and trusted images; Docker shares a kernel, host administrators remain trusted, and source code can inspect files included in its own ZIP even when the model's read allowlist is narrower.
 
+The private container scratch mount is `/oryveta-scratch`, supplied as `HOME` and `TMPDIR`; system `/tmp` remains read-only. CPU quotas round **down** to whole milliseconds in a 100 ms period (0.01 CPU steps), preventing kernels from rounding fractional quotas above the operator's ceiling. Programs must honor the configured scratch location.
+
 After the model finishes, the controller executes both suites independently and compares exit status and parsed JSON to its expected values. A successful exit without correct output is insufficient. `needs_review` means only these declared contracts passed, not general correctness, benchmark qualification or permission to publish.
 
 ### Evidence and limitations

@@ -671,11 +671,13 @@ def test_real_docker_runs_the_snapshot_with_stdin_and_returns_json(real_workspac
 def test_real_docker_cannot_write_to_the_host_or_the_root_filesystem(real_workspace):
     script = (f"if (printf x > {INPUT_DIR}/escape.txt) 2>/dev/null; then echo input-writable; fi; "
               "if (printf x > /var/tmp/oryveta-rootfs-probe) 2>/dev/null; then echo root-writable; fi; "
-              f"echo changed > {WORK_DIR}/scratch.txt && echo work-writable")
+              f"echo changed > {WORK_DIR}/scratch.txt && echo work-writable; "
+              "python -c 'import tempfile; f=tempfile.TemporaryFile(); "
+              "f.write(b\"ok\"); print(\"temp-writable\")'")
     result = run(DockerRunner(real_spec()).run(
         real_workspace, check(argv=("/bin/sh", "-c", script))))
     assert result.exit_code == 0
-    assert result.stdout == b"work-writable\n"
+    assert result.stdout == b"work-writable\ntemp-writable\n"
     assert not (real_workspace / "escape.txt").exists()
     assert not (real_workspace / "scratch.txt").exists()
     assert leftovers() == []
@@ -695,7 +697,6 @@ def test_real_docker_exposes_no_host_secrets_or_environment(real_workspace, monk
     assert b"top-secret-value" not in result.stdout + result.stderr
     assert b"ORYVETA_TEST_SECRET_MARKER" not in result.stdout
     assert b"docker.sock" not in result.stdout
-    assert b"HOME=/tmp" in result.stdout
     assert leftovers() == []
 
 

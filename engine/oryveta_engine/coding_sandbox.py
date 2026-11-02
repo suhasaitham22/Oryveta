@@ -33,7 +33,7 @@ from .coding_contract import CheckSpec, CodingError, ProcessResult, RunnerSpec, 
 
 INPUT_DIR = "/input"
 WORK_DIR = "/work"
-TEMP_DIR = "/tmp"
+TEMP_DIR = "/oryveta-scratch"
 CONTAINER_PREFIX = "oryveta-check-"
 # Reserved by the staging wrapper and by the in-container watchdog so that an
 # infrastructure failure can never be mistaken for a check verdict. A check may
@@ -446,6 +446,9 @@ class DockerRunner:
         spec = self.spec
         scratch = (f"rw,nosuid,nodev,exec,size={spec.tmpfs_mb}m,"
                    f"mode=0700,uid={uid},gid={gid}")
+        # Some kernels round fractional milliseconds of quota upward. Quantize
+        # down to whole milliseconds in a 100 ms period to preserve the ceiling.
+        cpu_quota = int(spec.cpus * 100) * 1000
         return [
             self._binary, *self._connection(), "container", "create",
             "--name", name,
@@ -458,7 +461,8 @@ class DockerRunner:
             "--memory", f"{spec.memory_mb}m",
             # Equal memory and memory-swap disables swap for the container.
             "--memory-swap", f"{spec.memory_mb}m",
-            "--cpus", str(float(spec.cpus)),
+            "--cpu-period", "100000",
+            "--cpu-quota", str(cpu_quota),
             "--shm-size", f"{SHM_MB}m",
             # Output is streamed over the attach connection; the daemon must not
             # also persist unbounded container logs on the host.
