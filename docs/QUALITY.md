@@ -34,6 +34,8 @@ CI explicitly provisions a local Python execution image and runs the coding-runt
 
 For local execution, set `ORYVETA_TEST_DOCKER_CONTEXT` and `ORYVETA_TEST_DOCKER_IMAGE` to an authorized local context and preloaded immutable image ID. On a Docker VM, set `ORYVETA_TEST_RUN_ROOT` to a shared private host directory. Without explicit context/image selection, real-container cases are skipped; do not describe that run as isolation verification.
 
+Controller interruption regressions launch the actual CLI in child processes, run baseline checks in real containers, and use deterministic paused model/runner boundaries for SIGKILL and SIGTERM. They verify retained reservations, attempted-tool counts, unverified patch hashes and graceful cleanup. Separate storage-failure cases require checkpoint admission to fail closed and terminal-write failure to leave no verified artifact. These tests are not live-model performance measurements or host-power-loss simulations.
+
 The separate `scripts/smoke_coding.py` command exercises the real local model, tools, CLI and independent verifier; setup is in [IMPLEMENTATION.md](IMPLEMENTATION.md#local-verified-repair-cli). Keep actual model outcomes and failed attempts distinct from scripted-model regressions. A passed synthetic repair is not a benchmark or a security certification.
 
 ## Verified local hardening tests

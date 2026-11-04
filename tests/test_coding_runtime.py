@@ -7,6 +7,10 @@ import asyncio
 import hashlib
 import json
 import os
+import selectors
+import signal
+import subprocess
+import sys
 import tempfile
 import zipfile
 from dataclasses import asdict, replace
@@ -266,3 +270,137 @@ def test_cli_reports_a_verified_review_candidate(execution, monkeypatch, capsys)
     assert rendered["status"] == "needs_review"
     assert rendered["verification"] == "passed"
     assert rendered["receipt"] == str(output / "receipt.json")
+
+
+INTERRUPTED_CLI = r"""
+import asyncio
+import sys
+sys.path.insert(0, "tests")
+from test_coding_runtime import ScriptedModel
+from oryveta_engine import coding_runtime
+from oryveta_engine.coding_sandbox import DockerRunner
+
+_, config, archive, output, run_root, boundary = sys.argv
+
+async def pause():
+    print("paused", flush=True)
+    await asyncio.Event().wait()
+
+class PausingModel(ScriptedModel):
+    async def turn(self, messages, tools, **limits):
+        if boundary == "model" or (boundary == "after_edit" and self.turns == 2):
+            await pause()
+        return await super().turn(messages, tools, **limits)
+
+class PausingRunner(DockerRunner):
+    async def run(self, workspace, check, **limits):
+        if boundary in {"verification", "tool"} and workspace.name == "candidate":
+            await pause()
+        return await super().run(workspace, check, **limits)
+
+coding_runtime.LocalToolModel = lambda spec: PausingModel("fix" if boundary == "tool" else "skip_development")
+coding_runtime.DockerRunner = PausingRunner
+sys.argv = ["coding_runtime", "--config", config, "--source-zip", archive,
+            "--output", output, "--run-root", run_root, "--goal", "Add two; preserve null."]
+raise SystemExit(coding_runtime.main())
+"""
+
+
+@pytest.mark.parametrize("boundary,turns,phase", [
+    ("model", 1, "model_call"),
+    ("after_edit", 3, "model_call"),
+    ("verification", 3, "verification"),
+    ("tool", 3, "tool_call"),
+])
+@pytest.mark.parametrize("stop", [signal.SIGKILL, signal.SIGTERM])
+def test_interrupted_cli_preserves_accounting_and_unverified_work(execution, boundary, turns, phase, stop):
+    spec, archive, output, run_root = execution
+    config = output.parent / "operator.json"
+    data = asdict(spec)
+    data.pop("digest")
+    config.write_text(json.dumps({"schema_version": 1, **data}))
+    command = [sys.executable, "-c", INTERRUPTED_CLI, str(config), str(archive),
+               str(output), str(run_root), boundary]
+    with subprocess.Popen(command, cwd=Path(__file__).parents[1],
+                          stdout=subprocess.PIPE, stderr=subprocess.PIPE) as child:
+        try:
+            with selectors.DefaultSelector() as selector:
+                selector.register(child.stdout, selectors.EVENT_READ)
+                assert selector.select(timeout=45), "controller did not reach the interruption boundary"
+                assert child.stdout.readline() == b"paused\n"
+            child.send_signal(stop)
+            child.communicate(timeout=30)
+        finally:
+            if child.poll() is None:
+                child.kill()
+                child.communicate(timeout=10)
+    receipt = json.loads((output / "receipt.json").read_text())
+    assert receipt["status"] == ("incomplete" if stop == signal.SIGKILL else "cancelled")
+    assert receipt["turns"] == turns
+    assert receipt["phase" if stop == signal.SIGKILL else "last_phase"] == phase
+    if phase == "model_call":
+        assert receipt["unsettled_token_reservation"] > 0
+    else:
+        assert receipt["unsettled_token_reservation"] == 0
+    assert receipt["tokens_observed"] == (0 if boundary == "model" else 4 if boundary == "after_edit" else 6)
+    assert receipt["tool_calls"] == (0 if boundary == "model" else 3 if boundary == "tool" else 2)
+    if boundary == "tool" and stop == signal.SIGKILL:
+        assert receipt["active_tool"] == "run_checks"
+    assert receipt["source_archive_sha256"] == hashlib.sha256(archive.read_bytes()).hexdigest()
+    assert receipt["verification"] == "not_accepted"
+    assert not (output / "verified.patch").exists()
+    if boundary != "model":
+        patch = (output / "unverified.patch").read_bytes()
+        assert hashlib.sha256(patch).hexdigest() == receipt["candidate_patch_sha256"]
+        assert b"+    print(json.dumps(value + 2))" in patch
+    if stop == signal.SIGTERM:
+        assert list(run_root.iterdir()) == []
+
+
+def test_failed_admission_checkpoint_prevents_model_execution(execution, monkeypatch):
+    write = coding_runtime._json_file
+    def fail_admission(path, value):
+        if path.name == "receipt.json" and value.get("phase") == "model_call":
+            raise OSError("injected checkpoint storage failure")
+        write(path, value)
+    monkeypatch.setattr(coding_runtime, "_json_file", fail_admission)
+    model = ScriptedModel()
+    receipt = invoke(execution, model)
+    assert receipt["error_code"] == "evidence_write_failed"
+    assert receipt["verification"] == "not_accepted"
+    assert model.turns == 0
+    assert not (execution[2] / "verified.patch").exists()
+
+
+def test_failed_terminal_checkpoint_demotes_the_verified_artifact(execution, monkeypatch):
+    write = coding_runtime._json_file
+    def fail_terminal(path, value):
+        if path.name == "receipt.json" and value.get("phase") == "finished":
+            raise OSError("injected terminal storage failure")
+        write(path, value)
+    monkeypatch.setattr(coding_runtime, "_json_file", fail_terminal)
+    with pytest.raises(CodingError) as failure:
+        invoke(execution, ScriptedModel())
+    assert failure.value.code == "evidence_write_failed"
+    receipt = json.loads((execution[2] / "receipt.json").read_text())
+    assert receipt["status"] == "incomplete"
+    assert receipt["verification"] == "not_accepted"
+    assert not (execution[2] / "verified.patch").exists()
+    assert (execution[2] / "unverified.patch").is_file()
+
+
+def test_undoing_all_edits_removes_the_candidate_checkpoint(execution):
+    class UndoingModel(ScriptedModel):
+        async def turn(self, messages, tools, **limits):
+            if self.turns == 2:
+                self.turns += 1
+                observed = json.loads(messages[-1]["content"])
+                return ModelReply("", (ToolCall("replace_text", {
+                    "path": "main.py", "expected_sha256": observed["sha256"],
+                    "old": "value + 2", "new": "value + 1"}),), 1, 1)
+            return await super().turn(messages, tools, **limits)
+    receipt = invoke(execution, UndoingModel())
+    assert receipt["error_code"] == "no_change"
+    assert "candidate_patch_sha256" not in receipt
+    assert not (execution[2] / "unverified.patch").exists()
+    assert not (execution[2] / "verified.patch").exists()

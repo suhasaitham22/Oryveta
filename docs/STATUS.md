@@ -1,5 +1,15 @@
 # Oryveta implementation status
 
+## Durable local repair checkpoints — verification, 2026-11-04
+
+The local coding CLI now persists progress before model/tool admission and independent verification, and after completed results. Receipts retain the phase, attempted work, observed usage, pending token reservation and source identities when the controller is interrupted. Each completed edit is checkpointed as an unverified patch with its digest. Checkpoint storage failure stops new work, and failure to commit the terminal receipt demotes the verified artifact.
+
+A real child-process SIGKILL test reproduced the previous defect: a controller already inside its first model call left a receipt claiming zero turns. The repaired test and all eight SIGKILL/SIGTERM boundary cases passed, covering initial inference, inference after an edit, a development-check tool and final verification. They use deterministic paused proposals/check boundaries with real-container baselines; they are not live-model quality tests. Storage-failure and complete-edit-reversion regressions also passed.
+
+Local verification: **604 Python tests passed**, **87.17% branch-inclusive coverage** against the unchanged 84% gate, Ruff, Bandit, compilation and dependency consistency passed. One existing Starlette/httpx deprecation warning remains. A separate real Qwen3 8B/Docker repair passed all seven behavioral checks, with six model turns, five tool calls and 6,852 observed tokens. Its receipt finished with zero unsettled reservation and matching candidate/verified patch hashes.
+
+Live evidence: run `f635c7c92c6b4e5fbea11a0d35d20def`, implementation digest `bb510466f1a2f484f0a82ecb83be4a4439e132b19a4406d88fee0183aaf2c09f`. This improves interruption accounting and diagnosis, not automatic resume/replay, abandoned-container cleanup, host-power-loss recovery, durable hosted coding or 24/7 service. The trace is ordered JSONL, not a hash chain; the previous documentation overstated that property. [Receipt semantics and limitations](IMPLEMENTATION.md#evidence-and-limitations).
+
 ## Fixed local repair loop — execution verification, 2026-11-02
 
 The separate `python -m oryveta_engine.coding_runtime` CLI now performs model-driven edits of an operator-selected ZIP in a disposable workspace, with a versioned configuration, exact file grants, pinned local model/image identities, bounded tools/execution and independent controller-owned JSON checks. It emits a review candidate, not a commit, PR or deployment. [Setup and limitations](IMPLEMENTATION.md#local-verified-repair-cli).
