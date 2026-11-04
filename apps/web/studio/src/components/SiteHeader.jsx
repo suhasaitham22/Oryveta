@@ -16,6 +16,7 @@ export const workspacePaths = {
 const labels = {
   about: "About",
   "what-we-do": "What We Do",
+  pricing: "Pricing",
   "sign-in": "Sign in",
   workspace: "Workspace",
   new: "Start New",
@@ -29,6 +30,7 @@ const links = [
   ["/", "Home"],
   ["/about", "About"],
   ["/what-we-do", "What We Do"],
+  ["/pricing", "Pricing"],
   ["/workspace", "Workspace"],
 ];
 

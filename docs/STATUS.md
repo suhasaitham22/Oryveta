@@ -1,5 +1,24 @@
 # Oryveta implementation status
 
+## Evidence-led public UI and pricing — source verification, 2026-11-04
+
+The public experience now focuses on small teams reviewing maintenance changes: an evidence-led Home, a dedicated `/pricing` route, updated About/What We Do, consistent navigation and a downloadable **synthetic local repair example**. Community is $0 software with a capacity-limited free hosted preview. Team is a **proposed $49 USD/workspace/month for up to five builders**; paid features, billing and hosted compute are not enabled. [Pricing, hypothetical economics, effort allocation and YC evidence gates](PRICING.md) distinguish the product plan from observed customer results.
+
+The example JSON and patch were extracted from the recorded local run below, without private host paths or raw prompts. Their patch digest matches the original. They are historical build assets, not a live agent feed or customer/benchmark result. The self-hosted API exposes only those two additional static filenames; other dotted routes remain blocked.
+
+Local verification:
+
+- **604 Python tests passed**, **87.13% branch-inclusive coverage**, Ruff and Bandit passed. The checkpoint commit from PR #47 is included: that PR was merged into the feature branch after PR #46's main snapshot, so its already-reviewed change was carried forward rather than silently lost.
+- Hosted and self-hosted production builds passed. Real Chromium exercised Pricing reloads, breadcrumbs, cross-page evidence-anchor focus/scroll, free-workspace entry, JSON/patch downloads with matching hashes, existing draft/history/export behavior and the optional spatial viewer.
+- The actual self-hosted API also passed local cookie login, ZIP intake, analysis cancellation and reduced-motion lifecycle checks at desktop/tablet/mobile sizes.
+- **24 public route/viewport combinations** (six routes at 1440, 768, 390 and 320px) had no document overflow or violations in the selected axe-core WCAG A/AA rules. A 320px pricing-grid overflow was fixed at the grid minimum, not hidden with clipping. This is not full accessibility certification or physical-device coverage.
+- A blocked example request showed an explicit unavailable state without a verification verdict or fabricated record.
+- All **eight** storyboard contracts and Remotion TypeScript checks passed. The three-scene `proof-and-pricing` composition rendered as a 12-second, 1920×1080 H.264 storyboard and its scenes were inspected. The title's containing block was corrected after visual review. This is a captioned storyboard, not recorded application execution or a YC founder video.
+
+Screenshots: [Home desktop](media/yc-home-desktop.png), [Home mobile](media/yc-home-mobile.png), [Pricing desktop](media/yc-pricing-desktop.png), [Pricing mobile](media/yc-pricing-mobile.png). [Rendered pricing storyboard](media/yc-pricing-storyboard.mp4).
+
+This is a review/preview candidate, not a commercial production launch. No payment method, paid service or YC affiliation was added. Commercial hosting entitlement, actual customer validation, founder-verified application facts and the remaining hosted execution gates are still prerequisites. The existing optional Three.js chunk-size advisory and Starlette/httpx deprecation warning remain visible; no Lighthouse or field-performance claim is made.
+
 ## Durable local repair checkpoints — verification, 2026-11-04
 
 The local coding CLI now persists progress before model/tool admission and independent verification, and after completed results. Receipts retain the phase, attempted work, observed usage, pending token reservation and source identities when the controller is interrupted. Each completed edit is checkpointed as an unverified patch with its digest. Checkpoint storage failure stops new work, and failure to commit the terminal receipt demotes the verified artifact.

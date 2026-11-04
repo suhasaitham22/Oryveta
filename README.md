@@ -4,13 +4,15 @@
 
 Oryveta is an open-source software delivery workspace for developers, independent builders and teams. It brings requirements, repository analysis and private collaboration together around two journeys: **Start New** for a new application, and **Evolve** for an existing application or package.
 
-**The goal:** an AI software factory in which agents plan, implement and test changes, while people review results and approve publishing. That complete agent workflow is still in development; the capabilities below describe what can be used now.
+**Working today, locally:** a bounded repair loop for an existing codebase. You grant specific files, a local model proposes SHA-guarded edits that the controller applies to a disposable copy on your host, and controller-owned checks reproduce the defect first and test required behavior afterward. The model cannot rewrite their expected results. Checks execute in fresh network-disabled containers. Passing candidates are ready for human review, not automatic merge.
+
+**The goal:** an AI software factory in which agents plan, implement and test changes, while people review results and approve publishing. That complete agent workflow is still in development, and the hosted site does not run it; the capabilities below describe what can be used now.
 
 ### [Open Oryveta — https://oryveta.vercel.app](https://oryveta.vercel.app)
 
-**Deployment:** [Vercel production](https://oryveta.vercel.app) serves the React Studio. GitHub sign-in, saved projects and private-conversation sharing have production verification. The durable analysis schema is deployed to Supabase; browser submission, result download, cancellation and revocation were verified with a temporary local worker. No always-on cloud worker is configured. Starter generation still uses the separate self-hosted FastAPI engine, which serves `/studio/` and retains a legacy `/` interface.
+**Deployment:** [Vercel production](https://oryveta.vercel.app) serves the React Studio. GitHub sign-in, saved projects and private-conversation sharing have production verification. The durable analysis schema is deployed to Supabase; browser submission, result download, cancellation and revocation were verified with a temporary local worker. No always-on cloud worker is configured. Starter generation still uses the separate self-hosted FastAPI engine, which serves `/studio/` and retains a legacy `/` interface. The local repair CLI is operator-run and is **not** reachable from the hosted site. The public pricing page and the surrounding UI work are a **review candidate on a branch**, not yet deployed to production.
 
-> **Documentation:** [Complete product and technical decisions](docs/INDEX.md) · [Architecture](docs/ARCHITECTURE.md) · [UI design](docs/DESIGN-SYSTEM.md) · [Roadmap](docs/ROADMAP.md) · [Verified status](docs/STATUS.md) · [Quality gates](docs/QUALITY.md)
+> **Documentation:** [Complete product and technical decisions](docs/INDEX.md) · [Architecture](docs/ARCHITECTURE.md) · [UI design](docs/DESIGN-SYSTEM.md) · [Pricing and launch plan](docs/PRICING.md) · [Roadmap](docs/ROADMAP.md) · [Verified status](docs/STATUS.md) · [Quality gates](docs/QUALITY.md)
 
 ## What you can do today
 
@@ -18,7 +20,7 @@ Oryveta is an open-source software delivery workspace for developers, independen
 - **Evolve:** describe a change, import an authorized ZIP or public GitHub snapshot into the self-hosted engine, and review file-linked candidate issues. Analysis is read-only; it does not run imported code or apply verified fixes.
 - **Collaborate:** save project briefs, invite members with explicit roles and discuss work in separately shared private conversations.
 - **Explain the work:** use Demo Studio to write scenes and export a JSON storyboard. It is a demo script, not a rendered video or proof of working software. Journey drafts are kept in memory and must be exported before reloading.
-- **Local repair CLI:** run a separately configured local tool-calling model against an operator-selected source ZIP, then review a patch accepted by controller-owned behavioral checks. This is not connected to the web Evolve flow. See [setup and restrictions](docs/IMPLEMENTATION.md#local-verified-repair-cli).
+- **Local verified repair CLI:** point a separately configured local tool-calling model at an operator-selected source ZIP with an explicit read/write file allowlist. The controller reproduces the defect before inference, refuses a baseline whose preservation checks already fail, applies the model's SHA-guarded edits to a disposable copy on the host, runs every check in a fresh network-disabled container, and then independently re-runs both suites itself. The result is a `verified.patch` marked `needs_review` — declared contracts passed, which is not a commit, a PR, a deployment or a correctness guarantee. One synthetic repair has been verified end to end; real repositories are not yet qualified. Not connected to the hosted site or the web Evolve flow. See [setup and restrictions](docs/IMPLEMENTATION.md#local-verified-repair-cli).
 
 Kaggle and related benchmarks are **internal evaluation scenarios**, not a third product or navigation destination.
 
@@ -30,6 +32,15 @@ Project roles, invitations and separately shared private conversations are enfor
 
 See [current status](docs/STATUS.md) and [open-source policy](docs/OPEN-SOURCE.md).
 
+## Pricing
+
+Two plans, published so the commercial position is reviewable:
+
+- **Community — $0 software.** The source is Apache-2.0 and self-hosting never needs a subscription; those rights cannot be revoked later. The **hosted workspace is free during preview, subject to documented capacity** — shared free-tier allowances with quotas and pausing, not an availability commitment or a perpetual free-hosting promise. You supply the machine, the model weights and the container runtime.
+- **Team — $49 USD per workspace per month, up to 5 builders. Proposed, not billable.** Intended to add shared agent-run history, a patch review workflow and budget administration. None of that is built, and there is no billing, metering or checkout, so the price cannot be charged today.
+
+**No plan includes hosted compute or hosted inference.** This change paywalls nothing that already exists, and any later change to hosted terms requires advance notice, consent before it binds an existing workspace, and a working export path. Commercial use of the hosted site — paid or free — requires a compliant hosting entitlement first; that entitlement is unverified here and no account or plan has been changed. The buyer/job hypothesis, availability boundaries, explicitly hypothetical unit economics, effort allocation and the evidence gates are in [docs/PRICING.md](docs/PRICING.md).
+
 ## Engineering principles
 
 1. Make agent-generated changes testable and independently verifiable.
@@ -38,6 +49,7 @@ See [current status](docs/STATUS.md) and [open-source policy](docs/OPEN-SOURCE.m
 4. Use Kaggle and software benchmarks to evaluate genuine results with reproducible artifacts.
 5. Never claim benchmark wins, production reliability, or completed work without evidence.
 6. Keep free and open-source operation possible with bring-your-own-compute.
+7. Publish prices and limits before charging, meter usage visibly first, and change hosted terms only with advance notice, consent and a working export path.
 
 ## Run the self-hosted engine
 

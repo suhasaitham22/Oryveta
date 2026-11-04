@@ -1,0 +1,37 @@
+{
+  "schema_version": 1,
+  "title": "Numeric version sorting repair",
+  "recorded_at": "2026-11-04",
+  "kind": "local_integration_example",
+  "limitations": [
+    "One synthetic integration example, not a customer result or a benchmark.",
+    "Executed locally with Ollama and Docker, not by this website.",
+    "Seven configured behavioral checks passed; broader correctness is not established.",
+    "Human review is required. The run did not publish code."
+  ],
+  "run_id": "f635c7c92c6b4e5fbea11a0d35d20def",
+  "status": "needs_review",
+  "verification": "passed",
+  "model": {
+    "name": "qwen3:8b",
+    "digest": "500a1f067a9f782620b40bee6f7b0c89e17ae61f686b92c24933e4ca4b2b8b41"
+  },
+  "checks": [
+    {"name": "numeric-order", "passed": true},
+    {"name": "empty-list", "passed": true},
+    {"name": "invalid-input", "passed": true},
+    {"name": "major-order", "passed": true},
+    {"name": "prefix-order", "passed": true},
+    {"name": "stable-duplicates", "passed": true},
+    {"name": "original-spelling", "passed": true}
+  ],
+  "metrics": {"turns": 6, "tool_calls": 5, "tokens_observed": 6852},
+  "provenance": {
+    "source_archive_sha256": "5459301617715653718b71ee3b4be186cf53a6eee0d9356843fc5d89c9ed1a1a",
+    "implementation_sha256": "bb510466f1a2f484f0a82ecb83be4a4439e132b19a4406d88fee0183aaf2c09f",
+    "patch_sha256": "232f8b30bf9744f3f12931482aec1a083d12b613e02827e88e15b9c90f694744"
+  },
+  "source_url": "https://github.com/suhasaitham22/Oryveta/blob/62bab8597c6f337e0263dd4398f8fc3d33e76d3c/scripts/smoke_coding.py",
+  "patch_url": "repair-example.patch",
+  "patch": "--- a/versions.py\n+++ b/versions.py\n@@ -7,4 +7,4 @@\n         for value in values\n     ):\n         raise ValueError(\"invalid versions\")\n-    return sorted(values)\n+    return sorted(values, key=lambda x: tuple(map(int, x.split(\".\"))))\n"
+}

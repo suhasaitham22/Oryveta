@@ -162,6 +162,8 @@ While executing, status remains `incomplete` and verification remains `not_accep
 
 SIGTERM/interrupt and ordinary failures clean disposable work; a hard-killed controller cannot guarantee that cleanup. Evidence is not a crash-resume protocol. The CLI has no hosted queue integration, central trajectory store, browser/desktop tools, learned memory, adaptive model switching, GitHub publication or automatic promotion. Disconnecting a timed-out model request does not prove server-side inference has stopped. Run resource/quality evaluations on real target repositories before widening this local capability.
 
+The public site separately includes a sanitized **synthetic** repair example in `repair-example.json` and `repair-example.patch`. These are reviewed build assets, not a directory of private runs. The self-hosted Studio serves exactly `/studio/repair-example.json` and `/studio/repair-example.patch`; other dotted routes still return 404. No endpoint exposes the operator's evidence directory or grants a visitor authority to execute a repair.
+
 ## Hardening included in first source PR
 
 - Browser-bound OAuth state in an HttpOnly SameSite cookie plus one-time DB state, preventing a different browser from redeeming a valid OAuth state.

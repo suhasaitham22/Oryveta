@@ -46,6 +46,17 @@ Each PR must add an exercised capability and may be split further for reviewabil
 
 The 2026-11-02 local CLI delivers the fixed model/tool/execution/verifier subset of Stage 3, with a real synthetic repair and retained success/failure traces. It does not complete Stage 3's durable integration, safe restart, broader decision protocol or target-repository qualification. Those gates precede expanding into hosted coding; a local passing receipt is not an always-on service.
 
+### Commercial launch gates
+
+Pricing is published as a proposal, not a billing milestone: a **Community** plan where the software is $0 and open source and the hosted workspace is free during preview subject to documented capacity, plus a proposed $49/workspace/month Team plan. Neither includes hosted compute. The commercial plan, hypothetical unit economics, effort allocation and evidence gates G1–G5 are in [PRICING.md](PRICING.md). Before commercial use or any charge, these are required in addition to the capability stages above:
+
+1. **Evidence first.** Real consented repository repairs with a reproduced pre-change failure and passing preservation checks (G1), observed repeat usage (G2) and measured review effort (G3). A synthetic local pass is not qualification.
+2. **Metering and consent.** Per-workspace usage derived from persisted worker events, per-run repository consent, opt-in evidence retention with deletion, and hard stop-rules instead of silent overage or automatic paid fallback.
+3. **Compliant hosting entitlement before commercial use.** Resolve the Vercel Hobby non-commercial restriction below with an approved commercial plan or a compliant alternative host. A free pilot is not automatically non-commercial, so this precedes commercial launch rather than merely the first payment; current entitlement is unverified and no account or plan has been changed.
+4. **No surprise terms.** Nothing already available to preview workspaces is paywalled by publishing prices, and any later change to hosted capacity, retention or price requires advance notice, consent before it binds an existing workspace, and a working export path. Source rights under the license are never retracted.
+
+Website or pricing-page polish is presentation, not product-market fit and not a launch gate that has been met.
+
 ### Research-informed implementation order
 
 The [factory checklist and research decisions](AGENT-HARNESS.md#factory-as-code-and-inspectable-execution) and [experiment protocol](EVALUATION.md#research-led-experiments) refine these stages; they do not declare them implemented.
@@ -83,7 +94,7 @@ Target no mandatory paid service dependency, not unlimited free SaaS capacity. A
 
 AI-native generated applications also need inference resources. Log providers can charge for ingestion, retention, queries and egress. A connector does not make those services free: default to existing authorized allowances or self-hosted sources, enforce budgets and never enable a paid telemetry/model plan automatically.
 
-Free static hosting and Supabase allowances can support a bounded pilot; quotas/pausing are not an availability SLA. Vercel Hobby is non-commercial personal use only. Choose a compliant launch deployment, such as an appropriate Cloudflare static-hosting plan, or explicitly approve a paid plan. Self-hosted Supabase transfers backups, updates and availability to the operator. Native store/signing accounts may require fees; a PWA is not falsely described as App Store delivery.
+Free static hosting and Supabase allowances can support a bounded pilot; quotas/pausing are not an availability SLA. Vercel Hobby is non-commercial personal use only, and a free commercial pilot is not automatically non-commercial. Choose a compliant launch deployment, such as an appropriate Cloudflare static-hosting plan, or explicitly approve a paid plan. That entitlement must be resolved before commercial use, not merely before the first payment; see [PRICING.md](PRICING.md). Self-hosted Supabase transfers backups, updates and availability to the operator. Native store/signing accounts may require fees; a PWA is not falsely described as App Store delivery.
 
 Scale isolated runners and inference separately, using measured queue wait, accepted-task success, review effort and compute per accepted change. Customer-owned pools are an optional deployment mode with explicit enrollment and evidence trust boundaries. Add services only when a measured bottleneck justifies them.
 
@@ -94,6 +105,7 @@ Scale isolated runners and inference separately, using measured queue wait, acce
 3. Capacity-limited multi-user pilot versus a contractual service-level promise.
 4. One real Evolve task and one Start New brief as launch acceptance cases.
 5. The first modernization target, required application/package contracts and the initial on-call telemetry/bug sources, with explicit environments and automation policy.
+6. Whether the proposed Team plan is built as specified, repriced or withdrawn — decided from the [pricing evidence gates](PRICING.md#evidence-gates), not from interest in the pricing page.
 
 The auth code, a local test, a preview deploy and a production release are separate milestones. No source claim replaces actual provider setup or a live test.
 

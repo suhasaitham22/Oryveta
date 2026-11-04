@@ -4,55 +4,37 @@ import {
   ArrowRight,
   ArrowUpRight,
   Code2,
-  FileText,
   GitBranch,
-  LockKeyhole,
-  ScanSearch,
   Sparkles,
+  Terminal,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import ProductScene, { ArtifactDocument } from "@/components/ProductScene.jsx";
 import Reveal from "@/components/Reveal.jsx";
 import {
+  LocalExampleReceipt,
+  LocalExampleRecord,
+} from "@/components/LocalExample.jsx";
+import {
   JourneyMark,
   LostOrbit,
-  OrbitField,
   PrincipleMark,
   StageRail,
 } from "@/components/SiteArt.jsx";
 import { productArtifacts } from "@/components/productArtifacts";
+import { SOURCE_URL, plans } from "@/lib/plans";
 
 /* Public pages render with CSS/SVG artwork only: no animation library and no
-   WebGL in the initial path. Every claim below separates what the workspace
-   does today from what is still being built. */
-
-const capabilities = [
-  {
-    icon: FileText,
-    title: "Write a brief you can export",
-    where: "In your browser",
-    text: "Record users, features, constraints and acceptance criteria, then download the requirements as a project brief.",
-  },
-  {
-    icon: LockKeyhole,
-    title: "Decide who sees what",
-    where: "In your browser",
-    text: "Invite people to a project and keep conversations separate. Project membership does not automatically share private chats.",
-  },
-  {
-    icon: ScanSearch,
-    title: "Read a codebase before changing it",
-    where: "Self-hosted engine",
-    text: "Import a source snapshot, run bounded static analysis and read persisted events and findings. Imported code is never executed.",
-  },
-];
+   WebGL in the initial path. Every claim below says where it runs today —
+   hosted, on your own machine, or planned — and the one result we show is a
+   stored file a visitor can download. */
 
 const paths = [
   {
     variant: "new",
     label: "01 / Start New",
-    title: "Turn an idea into an actionable brief",
-    text: "Describe the application you need and leave with requirements your team can act on.",
+    title: "Scope a new application",
+    text: "Describe the software you need and leave with requirements your team can act on.",
     points: [
       "Users, features, constraints and acceptance criteria",
       "Exportable brief and demo script drafts",
@@ -64,8 +46,8 @@ const paths = [
   {
     variant: "evolve",
     label: "02 / Evolve",
-    title: "Understand a codebase before you touch it",
-    text: "Set a change goal, inspect an authorized snapshot and decide what deserves investigation.",
+    title: "Scope a change to code you maintain",
+    text: "Set the change goal, inspect an authorized snapshot and decide what deserves a repair attempt.",
     points: [
       "Change goal, current behavior and regressions to avoid",
       "Read-only analysis with persisted run events",
@@ -76,31 +58,43 @@ const paths = [
   },
 ];
 
+/* available = hosted workspace, local = your machine, planned = not built. */
 const stages = [
   {
-    title: "Plan the work",
+    title: "Scope the change with your team",
     state: "available",
-    detail: "Briefs, acceptance criteria, invitations and exports in the browser.",
+    detail:
+      "Projects, roles, private chats and exportable briefs in the hosted workspace, free while it is in preview.",
   },
   {
-    title: "Review the source",
-    state: "available",
-    detail: "Bounded read-only analysis with the self-hosted engine.",
+    title: "Read the snapshot before touching it",
+    state: "local",
+    detail:
+      "Bounded static analysis of an imported archive on a self-hosted engine. Imported code is never executed, and background analysis needs a configured worker.",
   },
   {
-    title: "Implement the change",
+    title: "Repair one scoped target",
+    state: "local",
+    detail:
+      "The command-line tool calls your own Ollama model and edits a disposable copy of your code. The configured checks then run in a network-disabled container, and a crash resumes from a checkpoint.",
+  },
+  {
+    title: "Hand the patch to a human",
+    state: "local",
+    detail:
+      "A run ends with a patch, its check results and a needs-review status. Nothing is committed, pushed or deployed for you.",
+  },
+  {
+    title: "Hosted agent runs and shared history",
     state: "planned",
-    detail: "Agents that edit code and explain every change they make.",
+    detail:
+      "Starting repairs from the workspace, with shared run history, a review workflow and budget administration.",
   },
   {
-    title: "Prove it works",
+    title: "Pull requests, previews and on-call",
     state: "planned",
-    detail: "Independent tests and results you can check before review.",
-  },
-  {
-    title: "Publish and maintain",
-    state: "planned",
-    detail: "Reviewed pull requests, previews and on-call follow-up.",
+    detail:
+      "Reviewed pull requests, deploy previews and maintenance follow-up.",
   },
 ];
 
@@ -115,7 +109,7 @@ const principles = [
   },
   {
     title: "Results you can inspect.",
-    text: "Export your brief, inspect source findings and download starter code. Each result says how it was produced and what still needs testing or review.",
+    text: "A change arrives as a patch with the checks that ran against it, the model that produced it and the hashes of what it read. Each result says what it does not prove.",
   },
 ];
 
@@ -126,78 +120,90 @@ export function Home() {
         <div className="section-container home-hero-inner">
           <div className="home-hero-copy">
             <span className="section-label hero-rise">
-              Open-source software delivery
+              Open source · for teams maintaining existing code
             </span>
             <h1 className="hero-rise hero-rise-2">
-              Build new apps.
+              A code change you can
               <br />
-              Improve your code.
+              review, with its evidence.
             </h1>
             <p className="home-deck hero-rise hero-rise-3">
-              Oryveta brings project planning, repository analysis and team
-              collaboration into one workspace. Start with an app idea or a
-              codebase you want to improve.
+              Oryveta is for small engineering teams who maintain software
+              someone else wrote. We start narrow: one scoped repair in a Python
+              service, done on your own machine with your own model, checked
+              against tests it has to pass, then stopped for human review. The
+              hosted workspace is where your team scopes that change and keeps
+              the record.
             </p>
             <div className="home-actions hero-rise hero-rise-4">
               <Button asChild size="lg">
-                <Link to="/workspace/new">
-                  Plan a new app <ArrowRight size={17} aria-hidden="true" />
+                <Link to="/workspace">
+                  Open a free workspace{" "}
+                  <ArrowRight size={17} aria-hidden="true" />
                 </Link>
               </Button>
               <Button asChild variant="outline" size="lg">
-                <Link to="/workspace/evolve">
-                  Explore existing code{" "}
-                  <GitBranch size={17} aria-hidden="true" />
+                <Link to="/#local-example">
+                  See the recorded example{" "}
+                  <ArrowRight size={17} aria-hidden="true" />
                 </Link>
               </Button>
             </div>
             <dl className="home-editions hero-rise hero-rise-5">
               <div>
-                <dt>Available in your browser</dt>
-                <dd>Briefs, projects &amp; private conversations</dd>
+                <dt>Free preview, in your browser</dt>
+                <dd>Projects, roles, private chats &amp; exportable briefs</dd>
               </div>
               <div>
-                <dt>With the self-hosted engine</dt>
-                <dd>Starter code &amp; repository analysis</dd>
+                <dt>Open source, on your machine</dt>
+                <dd>Checked repairs with your own Ollama models</dd>
+              </div>
+              <div>
+                <dt>Not built yet</dt>
+                <dd>Hosted agent runs, shared history &amp; review workflow</dd>
               </div>
             </dl>
           </div>
           <div className="home-hero-art hero-rise hero-rise-2">
-            <OrbitField />
+            <LocalExampleReceipt />
           </div>
         </div>
       </section>
 
-      <section className="home-capabilities section-container">
-        <Reveal className="band-head">
-          <span className="section-label">Available today</span>
-          <h2>What the workspace already does.</h2>
+      <div className="home-example section-container">
+        <LocalExampleRecord />
+      </div>
+
+      <section className="home-next section-container">
+        <Reveal className="home-next-copy">
+          <span className="section-label">Honest status</span>
+          <h2>
+            What runs where,
+            <br />
+            as of today.
+          </h2>
           <p>
-            Three capabilities are working now. Everything else on this page is
-            labelled as planned.
+            The hosted site coordinates the work. The agent that edits code runs
+            locally, under your control, against models you host. We label every
+            step rather than implying one continuous automated pipeline.
           </p>
+          <Link className="text-link" to="/what-we-do">
+            See what you can do today{" "}
+            <ArrowRight size={17} aria-hidden="true" />
+          </Link>
         </Reveal>
-        <ul className="capability-grid">
-          {capabilities.map(({ icon: Icon, title, where, text }, index) => (
-            <Reveal as="li" key={title} delay={index * 90} className="capability">
-              <span className="capability-mark" aria-hidden="true">
-                <Icon size={19} />
-              </span>
-              <h3>{title}</h3>
-              <p>{text}</p>
-              <span className="capability-where">{where}</span>
-            </Reveal>
-          ))}
-        </ul>
+        <Reveal className="home-next-rail" delay={120}>
+          <StageRail stages={stages} />
+        </Reveal>
       </section>
 
       <section className="home-paths section-container">
         <Reveal className="band-head">
           <span className="section-label">Two ways in</span>
           <h2>
-            Start something new.
+            Scope a change.
             <br />
-            Or understand what exists.
+            Or scope something new.
           </h2>
         </Reveal>
         <div className="path-cards">
@@ -229,9 +235,40 @@ export function Home() {
         </div>
       </section>
 
+      <section className="home-plans section-container">
+        <Reveal className="band-head">
+          <span className="section-label">Pricing</span>
+          <h2>Free to start. The paid plan is still a proposal.</h2>
+          <p>
+            The software is Apache-2.0 at $0 and always self-hostable. The
+            hosted workspace is free while it is in preview, inside shared
+            capacity. You supply the compute for anything that runs code.
+          </p>
+        </Reveal>
+        <ul className="plan-teasers">
+          {plans.map((plan, index) => (
+            <Reveal as="li" key={plan.id} delay={index * 90}>
+              <span className={`plan-state plan-state-${plan.availability}`}>
+                {plan.availabilityLabel}
+              </span>
+              <h3>{plan.name}</h3>
+              <p className="plan-price">
+                <strong>{plan.price}</strong>
+                <span>{plan.unit}</span>
+              </p>
+              <p>{plan.summary}</p>
+            </Reveal>
+          ))}
+        </ul>
+        <Link className="text-link" to="/pricing">
+          Read the full pricing page{" "}
+          <ArrowRight size={17} aria-hidden="true" />
+        </Link>
+      </section>
+
       <section className="home-stage section-container">
         <Reveal className="band-head">
-          <span className="section-label">Artifacts, not promises</span>
+          <span className="section-label">Artifacts, not transcripts</span>
           <h2>Everything you produce stays readable.</h2>
           <p>
             Briefs, source reviews and demo scripts leave the workspace as files
@@ -241,30 +278,6 @@ export function Home() {
         </Reveal>
         <Reveal delay={80}>
           <ProductScene />
-        </Reveal>
-      </section>
-
-      <section className="home-next section-container">
-        <Reveal className="home-next-copy">
-          <span className="section-label">The goal · in development</span>
-          <h2>
-            An AI software factory.
-            <br />
-            You stay in control.
-          </h2>
-          <p>
-            Describe the software you need. Our goal is agents that plan,
-            implement and test the work, then prepare changes for your approval.
-            Automated coding, publishing and on-call maintenance are planned—not
-            running in the hosted app today.
-          </p>
-          <Link className="text-link" to="/what-we-do">
-            See what you can do today{" "}
-            <ArrowRight size={17} aria-hidden="true" />
-          </Link>
-        </Reveal>
-        <Reveal className="home-next-rail" delay={120}>
-          <StageRail stages={stages} />
         </Reveal>
       </section>
 
@@ -278,19 +291,21 @@ export function Home() {
               into one workspace.
             </h2>
             <p>
-              Write the brief in your browser, or run the engine yourself to
-              inspect a repository. The implementation is Apache-2.0, so you can
-              read exactly how every result was produced.
+              Scope the change in your browser, then run the engine yourself to
+              inspect the repository or attempt a checked repair. The
+              implementation is Apache-2.0, so you can read exactly how every
+              result was produced.
             </p>
             <div className="home-actions">
               <Button asChild size="lg">
-                <Link to="/workspace/new">
-                  Plan a new app <ArrowRight size={17} aria-hidden="true" />
+                <Link to="/workspace">
+                  Open a free workspace{" "}
+                  <ArrowRight size={17} aria-hidden="true" />
                 </Link>
               </Button>
               <a
                 className="text-link"
-                href="https://github.com/suhasaitham22/Oryveta"
+                href={SOURCE_URL}
                 target="_blank"
                 rel="noreferrer"
               >
@@ -304,8 +319,9 @@ export function Home() {
               Export them before reloading.
             </li>
             <li>
-              Background analysis needs a configured worker, and cloud hosting
-              is not ready yet.
+              Hosted background analysis needs a configured worker, and agent
+              runs are not hosted yet. The checked repair tool runs on your
+              machine.
             </li>
           </ul>
         </div>
@@ -320,33 +336,45 @@ export function About() {
       <header className="page-hero section-container">
         <span className="section-label hero-rise">About Oryveta</span>
         <h1 className="hero-rise hero-rise-2">
-          One workspace
+          One workspace for the
           <br />
-          for software work.
+          code you already maintain.
         </h1>
         <p className="page-deck hero-rise hero-rise-3">
-          For developers, independent builders and teams turning requirements
-          into new applications or improvements to existing code.
+          An open-source project for small engineering teams who spend most of
+          their time changing software they did not write. The first group we
+          are trying to qualify is teams maintaining Python services.
         </p>
       </header>
       <section className="editorial-split section-container">
         <Reveal>
           <h2>
-            From a requirement
+            Why we start with a patch,
             <br />
-            to a reviewed change.
+            not a chat transcript.
           </h2>
         </Reveal>
         <Reveal delay={90}>
           <p>
-            Requirements, source findings and team decisions often live in
-            separate tools. Oryveta organizes them around a project, so you can
-            understand the requested change and decide what to do next.
+            An assistant that answers in prose leaves the hard part — deciding
+            whether a change is safe — exactly where it was. The unit of work we
+            care about is a reviewable diff with the checks that ran against it,
+            the model digest that produced it and the hashes of what it read.
           </p>
           <p>
-            We are building toward AI agents that implement and test that work.
-            People will still control repository access, review results and
-            approve publishing or deployment.
+            So the first thing we built is narrow on purpose: a local agent that
+            repairs one scoped target, re-runs behavioral checks it has to pass,
+            checkpoints itself so a crash does not lose the attempt, then stops
+            at needs-review. The hosted workspace coordinates that work —
+            projects, roles, private conversations and briefs — and keeps the
+            record.
+          </p>
+          <p>
+            What we have not solved, in plain terms: the agent only runs on your
+            machine, hosted agent runs and shared run history are not built, our
+            published evidence is one stored example rather than a track record,
+            and small local models still fail on changes that cross several
+            files. Those limits ship next to every result.
           </p>
         </Reveal>
       </section>
@@ -368,23 +396,29 @@ export function About() {
           <h2>
             Plan together.
             <br />
-            Inspect source locally.
+            Repair locally.
           </h2>
           <p>
-            In the browser, create project briefs, manage invitations and share
-            private conversations. Start New and Evolve also offer exportable
-            planning drafts. With the self-hosted engine, prepare starter
-            repositories and analyze source snapshots. The complete AI coding
-            and delivery workflow is still being built.
+            In the browser: project briefs, invitations, private conversations
+            and draft exports, free while the hosted workspace is in preview.
+            With the self-hosted engine: starter repositories and bounded source
+            analysis. On your own machine: the command-line tool that attempts a
+            checked repair and hands back a patch. Hosted agent runs, a review
+            workflow and billing are not built yet.
           </p>
-          <a
-            className="text-link"
-            href="https://github.com/suhasaitham22/Oryveta"
-            target="_blank"
-            rel="noreferrer"
-          >
-            Explore the source <ArrowUpRight size={17} aria-hidden="true" />
-          </a>
+          <div className="home-actions">
+            <a
+              className="text-link"
+              href={SOURCE_URL}
+              target="_blank"
+              rel="noreferrer"
+            >
+              Explore the source <ArrowUpRight size={17} aria-hidden="true" />
+            </a>
+            <Link className="text-link" to="/pricing">
+              See what it costs <ArrowRight size={17} aria-hidden="true" />
+            </Link>
+          </div>
         </Reveal>
       </section>
     </main>
@@ -397,14 +431,14 @@ export function WhatWeDo() {
       <header className="page-hero section-container">
         <span className="section-label hero-rise">What you can do</span>
         <h1 className="hero-rise hero-rise-2">
-          Start a new app.
+          Scope the work here.
           <br />
-          Understand an existing one.
+          Repair the code locally.
         </h1>
         <p className="page-deck hero-rise hero-rise-3">
-          Choose Start New for an application idea or Evolve for an existing
-          codebase. Both help you define the work, inspect the available results
-          and explain the next step to your team.
+          Three things work today: Start New for an application idea, Evolve for
+          a codebase you maintain, and the local command-line tool that attempts
+          one checked repair and hands back a patch for review.
         </p>
       </header>
 
@@ -499,11 +533,11 @@ export function WhatWeDo() {
               </p>
             </li>
             <li>
-              <strong>Review findings and plan the change</strong>
+              <strong>Review findings, then choose a target</strong>
               <p>
-                Use the reported files, lines and limitations to decide what
-                needs investigation. Verified fixes and automatic PRs are
-                planned.
+                Use the reported files, lines and limitations to pick one scoped
+                repair for the local tool below. Starting that repair from the
+                hosted workspace, and opening pull requests, are still planned.
               </p>
             </li>
           </ol>
@@ -516,33 +550,104 @@ export function WhatWeDo() {
         </Reveal>
       </section>
 
+      <section className="journey-detail journey-detail-local section-container">
+        <Reveal className="journey-detail-main">
+          <span className="section-label">
+            <Terminal size={17} aria-hidden="true" />
+            03 / Checked repair · your machine
+          </span>
+          <h2>
+            Attempt one repair,
+            <br />
+            then prove it was checked.
+          </h2>
+          <p>
+            This part is a command-line tool from the open-source repository,
+            not a button in this website. It needs Docker and your own Ollama
+            model. It never publishes code: a run ends with a patch marked
+            needs-review.
+          </p>
+          <div className="home-actions">
+            <Button asChild variant="outline">
+              <Link to="/#local-example">
+                See a recorded run <ArrowRight size={16} aria-hidden="true" />
+              </Link>
+            </Button>
+            <a
+              className="text-link"
+              href={SOURCE_URL}
+              target="_blank"
+              rel="noreferrer"
+            >
+              Get the tool <ArrowUpRight size={16} aria-hidden="true" />
+            </a>
+          </div>
+          <ol>
+            <li>
+              <strong>Point it at one scoped target</strong>
+              <p>
+                A single failing behavior in a Python module, with the checks
+                that should pass once it is fixed.
+              </p>
+            </li>
+            <li>
+              <strong>Let it edit, then re-check</strong>
+              <p>
+                The model edits a disposable copy of your code on your machine,
+                then the configured checks execute inside a network-disabled
+                container. A checkpoint means a crash does not lose the attempt.
+              </p>
+            </li>
+            <li>
+              <strong>Review the patch and the record</strong>
+              <p>
+                You receive the diff, each check result, the model digest and the
+                hashes of what was read. Applying it stays your decision.
+              </p>
+            </li>
+          </ol>
+        </Reveal>
+        <Reveal className="journey-detail-art" delay={120}>
+          <LocalExampleReceipt />
+          <p className="art-caption">
+            One stored local run · synthetic example, not live activity
+          </p>
+        </Reveal>
+      </section>
+
       <section className="section-container">
         <Reveal className="delivery-boundaries">
           <div>
             <span className="section-label">Available now</span>
             <h2>
-              Planning and collaboration.
+              Hosted planning.
               <br />
-              Self-hosted source tools.
+              Local source tools.
             </h2>
             <p>
               The browser supports project briefs, invitations, private
-              conversations and draft exports. The self-hosted engine adds
-              starter repositories and bounded source analysis. Running
-              background analysis requires a configured worker; cloud hosting is
-              not ready yet.
+              conversations and draft exports, free while the hosted workspace
+              is in preview. The self-hosted engine adds starter repositories
+              and bounded source analysis; background analysis requires a
+              configured worker. The repair tool runs on your machine, with your
+              models.
             </p>
-            <Link className="text-link" to="/workspace">
-              Go to the workspace <ArrowRight size={17} aria-hidden="true" />
-            </Link>
+            <div className="home-actions">
+              <Link className="text-link" to="/workspace">
+                Go to the workspace <ArrowRight size={17} aria-hidden="true" />
+              </Link>
+              <Link className="text-link" to="/pricing">
+                See what it costs <ArrowRight size={17} aria-hidden="true" />
+              </Link>
+            </div>
           </div>
           <div className="boundary-planned">
             <h3>Still in development</h3>
             <ul>
-              <li>AI agents that implement changes and run independent tests.</li>
+              <li>Starting agent runs from the hosted workspace at all.</li>
+              <li>Shared run history, review workflow and budget limits.</li>
               <li>Reviewed GitHub pull requests, previews and deployments.</li>
-              <li>On-call investigation, maintenance and reusable lessons.</li>
-              <li>AI-native modernization of applications and packages.</li>
+              <li>Repairs that span several files or non-Python services.</li>
             </ul>
             <Code2 size={20} aria-hidden="true" />
           </div>

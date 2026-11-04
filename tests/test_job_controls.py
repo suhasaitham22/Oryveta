@@ -227,6 +227,8 @@ def test_studio_redirect_and_missing_build(monkeypatch, tmp_path):
     assert client.get("/studio/").status_code == 503
     assert client.get("/studio/demo-stories.json").status_code == 503
     assert client.get("/studio/template-license.txt").status_code == 503
+    assert client.get("/studio/repair-example.json").status_code == 503
+    assert client.get("/studio/repair-example.patch").status_code == 503
     assert client.get("/studio/about").status_code == 503
     assert client.get("/studio/assets/%2E%2E/index.html").status_code == 404
 
@@ -253,6 +255,7 @@ def test_studio_deep_routes_fallback_without_masking_assets(monkeypatch, tmp_pat
     (dist / "assets").mkdir(parents=True)
     (dist / "index.html").write_text("<!doctype html><div id='root'></div>", encoding="utf-8")
     (dist / "assets" / "app.js").write_text("console.log('ok')", encoding="utf-8")
+    (dist / "private.json").write_text('{"private":"not a public asset"}', encoding="utf-8")
     settings = main_module.Settings(database_path=str(tmp_path / "db.sqlite"),
                                     workspace_root=str(tmp_path / "workspaces"),
                                     local_demo=True)
@@ -262,6 +265,8 @@ def test_studio_deep_routes_fallback_without_masking_assets(monkeypatch, tmp_pat
     assert deep.status_code == 200
     assert deep.text.startswith("<!doctype html>")
     assert client.get("/studio/workspace/evolve").status_code == 200
+    assert client.get("/studio/pricing").status_code == 200
+    assert client.get("/studio/private.json").status_code == 404
     assert client.get("/studio/assets/app.js").text == "console.log('ok')"
     assert client.get("/studio/assets/missing.js").status_code == 404
     assert client.get("/studio/missing.js").status_code == 404

@@ -13,11 +13,11 @@ Public references reviewed on 2026-10-29:
 
 Antigravity, Lunon and Linear were inspected in Chromium; Raycast's public product presentation was also reviewed. These are inspiration, not implementation dependencies. No reference-site source, videos, models, brand marks, customer logos or performance claims were copied. Orbital geometry, illustrations and product examples are original. Geist is self-hosted under OFL-1.1; historical ShadcnStore notices remain. See [THIRD_PARTY.md](../apps/web/studio/THIRD_PARTY.md).
 
-Home leads with the product's job, then capability cards, Start New/Evolve choices, an illustrative artifact viewer, a clearly labelled planned-delivery sequence and a closing CTA. The hero's SVG strata and orbital traces need no 3D renderer or external image. The heavier spatial artifact view is a separate, explicitly opened interaction. Working views use the same typography and controls without ambient graphics competing with forms, messages or results.
+Home now leads with a maintenance-team job and a compact recorded-repair receipt. A labelled synthetic example exposes its patch, checks, provenance and downloads, followed by hosted/local/planned boundaries, Start New/Evolve choices, a pricing preview and a closing CTA. The former decorative orbital hero has been removed. The separate illustrative spatial artifact viewer remains opt-in; its controls and reduced-motion behavior are unchanged. Working views keep the same typography and controls without ambient graphics competing with forms, messages or results.
 
 ## Compact shared navigation
 
-A single shared header exposes **Home / About / What We Do / Workspace**, the Home logo, and the appropriate sign-in action or local-edition label. A compact trail provides semantic linked breadcrumbs; normal pages do not have a generic Back button. Inside Demo Studio only, **Back to brief** returns to the same journey's Brief tab and focuses that tab, including direct demo links. It never relies on browser history to choose the destination. Native browser Back/Forward remains available. Mobile uses an explicitly labelled Workspace menu, separate from site navigation. Desktop context controls appear only when a workspace switcher is needed.
+A single shared header exposes **Home / About / What We Do / Pricing / Workspace**, the Home logo, and the appropriate sign-in action or local-edition label. The footer "Explore" list repeats that order and adds Sign in. A compact trail provides semantic linked breadcrumbs, with **Pricing** as the pricing page's breadcrumb label and `Pricing · Oryveta` as its document title; normal pages do not have a generic Back button. Inside Demo Studio only, **Back to brief** returns to the same journey's Brief tab and focuses that tab, including direct demo links. It never relies on browser history to choose the destination. Native browser Back/Forward remains available. Mobile uses an explicitly labelled Workspace menu, separate from site navigation. Desktop context controls appear only when a workspace switcher is needed.
 
 React Router owns pathname and query history. `BrowserRouter` uses Vite's `BASE_URL` as its basename. Hosted `npm run build` uses `/` and writes `dist`; `npm run build:local` uses `--mode selfhost`, `/studio/`, and a separate `dist-local`. FastAPI serves extensionless local page URLs with the SPA index; asset-like and reserved paths remain real 404s. Unknown page routes render an honest page-not-found view. Vercel serves the hosted SPA. The same source produces both builds without relative-asset ambiguity on deep reload.
 
@@ -25,9 +25,10 @@ Public content is deliberately divided:
 
 | Route | Purpose |
 | --- | --- |
-| `/` | Product story, original orbital illustration, capability/journey sections and optional spatial artifact viewer |
+| `/` | Maintenance-team product story, recorded local repair example, availability/journey sections, pricing preview and optional illustrative spatial viewer |
 | `/about` | Purpose, audience, open-source principles and current stage |
 | `/what-we-do` | Detailed Start New/Evolve journeys, deliverables and boundaries |
+| `/pricing` | The two published plans, preview-versus-paid availability and the example-asset links; a dedicated page, not a tab of `/what-we-do` |
 | `/sign-in` | Real hosted identity setup, or a clear local-identity explanation |
 | `/workspace` | Choose and do work, not another marketing page |
 | `/workspace/new`, `/workspace/evolve` | Brief, Local run and contextual Demo Studio |
@@ -35,6 +36,16 @@ Public content is deliberately divided:
 | `/workspace/settings`, `/workspace/chats`, `/workspace/activity` | Existing workspace functionality with actual URLs |
 
 Journey tabs use `?tab=brief|local|demo`; unknown tab values show an explicit error. Radix tabs use manual activation: arrow keys move focus, Enter/Space activate. This avoids duplicate history entries from simultaneous pointer/focus activation. There is no global Demo Studio navigation option.
+
+## Public pricing surface and the local example
+
+The public focus is now the product's job plus an honest commercial position, so `/pricing` is a first-class page rather than marketing copy inside another route. It renders exactly two plan cards from one shared source, `apps/web/studio/src/lib/plans.js`, so the price and terms shown in navigation, cards and documentation cannot diverge: **Community — $0 software, hosted workspace free during preview**, and **Team $49/workspace/month, up to 5 builders** labelled *Proposed · not billable yet*. Both are bring-your-own-compute. The Community card must describe the hosted side as a capacity-limited free preview rather than a permanent free service, and must not imply an availability commitment; the open-source side is separately described as $0 software whose license rights are not revocable. Both CTAs point at `/workspace`; there is no checkout, subscribe button, annual toggle, "most popular" badge, waitlist confirmation or contact-form success state anywhere, because no billing backend exists. The commercial reasoning, preconditions before commercial use or charging, and the evidence gates live in [PRICING.md](PRICING.md), not in the UI.
+
+Home carries a labelled local-example section at `#local-example` with download anchors for `repair-example.json` and its `repair-example.patch`, resolved through `import.meta.env.BASE_URL` so hosted and `/studio/` builds both link real files. `/pricing` links to `/#local-example` and repeats only the download links, never that run's metrics, keeping one place responsible for describing the example. The section states that this is a single synthetic local example with `needs_review` status — not current activity, a benchmark, a success rate or a customer run — and the asset carries its own `limitations` field.
+
+No Y Combinator name, logo, batch reference, accelerator affiliation or admission claim appears in any public surface. Visual polish is presentation of existing evidence; it is not a capability claim, and every capability sentence still names its edition — hosted, self-hosted or planned.
+
+This page and its navigation entry are a **review candidate**; publishing a design document does not mean the route is deployed to production. Capacity, retention and any future hosted-terms change are commercial questions tracked in [PRICING.md](PRICING.md), and the UI never states a hosted guarantee it cannot keep.
 
 ## Tokens and typography
 
@@ -89,7 +100,7 @@ Persisted queued/running/succeeded/failed/canceled states, event records, stale/
 
 ## Browser evidence
 
-Current media records the compiled implementation, not customer usage:
+The following media records the 2026-10-29 compiled implementation, not customer usage or the later pricing release:
 
 - [Desktop Home](media/studio-landing.png) and [mobile Home](media/studio-mobile.png).
 - [Spatial artifact view](media/studio-story.png), explicitly illustrative and shown paused.
@@ -98,6 +109,10 @@ Current media records the compiled implementation, not customer usage:
 - [Real local analysis](media/studio-local-run.png), completed by a one-off worker against an isolated synthetic source snapshot.
 
 Verification includes actual hosted/self-hosted browser navigation, draft/export flows, paused canvas updates, live reduced-motion teardown and close-focus restoration; real local Supabase email/PKCE, project/session authorization and all eight collaboration ordering cases; and 48 public/guest route/viewport checks at 1440, 768, 390 and 320px with no overflow or violations in the selected axe-core WCAG A/AA rules. This is not a full accessibility certification or a physical-device test.
+
+Those figures and route/viewport counts record the 2026-10-29 verification run. They do not cover the later `/pricing` route or the Home local-example section; that evidence is recorded with the PR that adds them, and the earlier counts are not restated as if they included the new surfaces.
+
+The 2026-11-04 candidate adds [Home desktop](media/yc-home-desktop.png), [Home mobile](media/yc-home-mobile.png), [Pricing desktop](media/yc-pricing-desktop.png) and [Pricing mobile](media/yc-pricing-mobile.png) captures. Its 24 route/viewport accessibility checks, real hosted/self-hosted browser flows and failure-state checks are recorded in [STATUS.md](STATUS.md). The [pricing video](media/yc-pricing-storyboard.mp4) is a rendered three-scene storyboard, not footage of a live coding run.
 
 Initial Home JavaScript measured through the browser is 438,846 decoded bytes versus the previous deployed page's 1,058,449 (58.5% less). Public pages render with the entry module rather than briefly showing a footer beneath a loading placeholder; controlled desktop/mobile checks recorded zero Home layout shift after this change. The optional Three.js chunk is still large and its build advisory remains visible; it is absent from initial requests. Sign-in/auth code and storyboard data are deferred, product CSS is route-loaded, and font assets are self-hosted. Lab timing comparisons belong in release evidence; no field INP or availability claim is inferred from a build.
 

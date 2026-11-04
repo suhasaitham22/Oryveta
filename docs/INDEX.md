@@ -1,6 +1,6 @@
 # Oryveta documentation hub
 
-**Snapshot: 2026-10-24.** This is the main source of architectural intent and product decisions. Oryveta is an open-source software delivery workspace being built into an AI software factory, entered through **Start New** or **Evolve**; see [VISION.md](VISION.md) for the audience and the available-versus-planned boundary. Always distinguish **current implementation** from **planned capabilities**. The public site at https://oryveta.vercel.app serves the hosted React Studio with real sign-in and saved project collaboration; it is not an agent service and does not run Start New or Evolve work.
+**Snapshot: 2026-11-04.** This is the main source of architectural intent and product decisions. Oryveta is an open-source software delivery workspace being built into an AI software factory, entered through **Start New** or **Evolve**; see [VISION.md](VISION.md) for the audience and the available-versus-planned boundary. Always distinguish **current implementation** from **planned capabilities**. The public site at https://oryveta.vercel.app serves the hosted React Studio with real sign-in and saved project collaboration as a free preview; it is not an agent service and does not run Start New or Evolve work. The public pricing page and surrounding UI work are a review candidate, not a production deployment. Model-driven repair exists only in the separate operator-run local CLI described in [IMPLEMENTATION.md](IMPLEMENTATION.md#local-verified-repair-cli), which is not connected to the hosted site.
 
 ## Product and design
 
@@ -37,6 +37,7 @@
 | --- | --- |
 | [ROADMAP.md](ROADMAP.md) | Phases and objectively testable milestones |
 | [STATUS.md](STATUS.md) | Live GitHub and Vercel status, current limitations and in-progress work |
+| [PRICING.md](PRICING.md) | Pricing and launch plan: preview-versus-paid availability, preconditions before charging, effort allocation and evidence gates |
 | [OPEN-SOURCE.md](OPEN-SOURCE.md) | Apache-2.0 licensing, contributor and commercial-use principles |
 | [CONTRIBUTING.md](CONTRIBUTING.md) | Tests, PR requirements, benchmark and security contribution standards |
 | [DEPLOYMENT-PREVIEW.md](DEPLOYMENT-PREVIEW.md) | Hosted Vercel deployment of the React Studio, its build settings and what is not hosted |
@@ -49,11 +50,11 @@
 
 ## What is locked
 
-Oryveta name; current orbital studio visual direction; Start New + Evolve as the two journeys; Kaggle only for testing; Apache-2.0 open-source goal; evidence and permission requirements; $0 required software licensing with optional bring-your-own-compute.
+Oryveta name; current orbital studio visual direction; Start New + Evolve as the two journeys; Kaggle only for testing; Apache-2.0 open-source goal; evidence and permission requirements; $0 required software licensing with optional bring-your-own-compute. Two published plans only — Community, with $0 open-source software and a hosted workspace that is free during preview subject to documented capacity, and a proposed Team plan — with no hosted compute included in either. Hosted-terms changes require advance notice, consent and an export path, and never retract source rights; see [PRICING.md](PRICING.md).
 
 ## What is not yet locked or built
 
-Hosted factory execution, GitHub App repository publication, tenant-safe runner isolation, autonomous verified changes, Slack/mobile delivery, controlled recursive learning and enterprise operational guarantees. Supabase identity/project/session collaboration and the durable-analysis control plane are deployed and production-verified with a one-off local worker. An unattended service entry point is available, but continuous hosting remains pending; evidence and deployment state are tracked in [STATUS.md](STATUS.md).
+Hosted factory execution, GitHub App repository publication, tenant-safe runner isolation, autonomous verified changes, Slack/mobile delivery, controlled recursive learning and enterprise operational guarantees. Supabase identity/project/session collaboration and the durable-analysis control plane are deployed and production-verified with a one-off local worker. An unattended service entry point is available, but continuous hosting remains pending; evidence and deployment state are tracked in [STATUS.md](STATUS.md). Billing, usage metering, quota enforcement and the Team plan's shared run history / review workflow / budget administration are not built, so the Team price in [PRICING.md](PRICING.md) is a proposal that cannot be charged. Long-term hosted-preview terms, capacity limits and a compliant commercial hosting entitlement are also unresolved.
 
 ## Review and updates
 

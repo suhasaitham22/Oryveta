@@ -7,6 +7,7 @@ credentials or production mutations are used.
 """
 from __future__ import annotations
 
+import hashlib
 import io
 import json
 import os
@@ -74,6 +75,43 @@ def _click_primary(page, label):
     else:
         nav = page.get_by_role("navigation", name="Primary navigation")
     nav.get_by_role("link", name=label, exact=True).click()
+
+
+def _check_pricing_and_evidence(page, origin, prefix=""):
+    """Pricing is navigable without billing; recorded evidence really downloads."""
+    pricing = f"{origin}{prefix}/pricing"
+    response = page.goto(pricing, wait_until="domcontentloaded")
+    assert response is not None and response.status == 200
+    page.reload(wait_until="domcontentloaded")
+    expect(page).to_have_title(re.compile(r"Pricing"))
+    expect(page.get_by_role("navigation", name="Breadcrumb").locator("[aria-current=page]")).to_have_text("Pricing")
+    _assert_no_overflow(page)
+    page.locator(f'a[href="{prefix}/#local-example"]').first.click()
+    page.wait_for_url(f"{origin}{prefix}/#local-example")
+    expect(page.get_by_role("region", name="Recorded local repair example")).to_be_in_viewport()
+    for filename in ("repair-example.json", "repair-example.patch"):
+        link = page.locator(f'a[download][href$="/{filename}"]').first
+        with page.expect_download() as event:
+            link.click()
+        content = Path(event.value.path()).read_bytes()
+        if filename.endswith(".json"):
+            receipt = json.loads(content)
+        else:
+            patch = content
+    assert receipt["kind"] == "local_integration_example"
+    assert receipt["status"] == "needs_review"
+    assert receipt["verification"] == "passed"
+    assert hashlib.sha256(patch).hexdigest() == receipt["provenance"]["patch_sha256"]
+    assert patch == receipt["patch"].encode("utf-8")
+    _click_primary(page, "Pricing")
+    page.wait_for_url(pricing)
+    # The offered entry is the existing free workspace, not a pretend purchase.
+    trial = page.locator(f'main a[href^="{prefix}/workspace"]').first
+    destination = trial.get_attribute("href")
+    trial.click()
+    page.wait_for_url(f"{origin}{destination}")
+    expect(page.locator(".workspace-shell")).to_be_visible()
+    print("PASS pricing reload/navigation, free entry and downloadable recorded evidence", prefix or "/")
 
 
 def _check_navigation(page, origin, prefix=""):
@@ -302,9 +340,11 @@ def run():
                 errors = []
                 page.on("pageerror", lambda error: errors.append(str(error)))
                 if os.environ.get("ORYVETA_SMOKE_API_URL"):
+                    _check_pricing_and_evidence(page, api_url, "/studio")
                     _check_navigation(page, api_url, "/studio")
                     _check_local(page, api_url)
                 else:
+                    _check_pricing_and_evidence(page, api_url)
                     _check_navigation(page, api_url)
                     _check_hosted(page, api_url)
                     if label == "desktop":

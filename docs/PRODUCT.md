@@ -6,7 +6,13 @@ Oryveta is an open-source software delivery workspace for developers, independen
 
 The target is an **AI software factory**: agents plan, implement and independently test changes; people review the results and approve publishing. This specification defines that target, not a claim that every capability is live.
 
-Today, the hosted product provides projects, roles, invitations, private conversations and planning/demo exports. Journey drafts must be exported; they are not saved project briefs. A separately operated engine provides starter repositories and read-only source analysis. The durable analysis control plane is deployed to Supabase and verified with a one-off local worker, but has no always-on cloud host. Automated coding, publishing, modernization, on-call and learning remain planned.
+Today, the hosted product provides projects, roles, invitations, private conversations and planning/demo exports. Journey drafts must be exported; they are not saved project briefs. A separately operated engine provides starter repositories and read-only source analysis. The durable analysis control plane is deployed to Supabase and verified with a one-off local worker, but has no always-on cloud host. A separate operator-run **local** CLI performs model-driven repairs of an operator-selected source ZIP with independent controller-owned checks; it is not reachable from the hosted site and is not part of hosted Evolve. Hosted automated coding, publishing, modernization, on-call and learning remain planned.
+
+## First cohort and commercial shape
+
+The initial target hypothesis — unvalidated — is a **small engineering team maintaining an existing codebase**, with the first qualification cohort being **Python services that have a runnable test suite**. The entry point is deliberately narrow: one known defect or small maintenance change, repaired on the team's own compute, returned as a reviewable patch with a reproducible verification record rather than a chat transcript. The long-term product remains the full Start New / Evolve factory described below; the narrow cohort is how it is entered, not a reduction of the goal.
+
+Two plans are published: **Community**, where the software is $0 and open source and the hosted workspace is free during preview subject to documented capacity; and a **proposed** Team plan that is not billable because billing, metering and its workspace-level features do not exist. Neither plan includes hosted compute. Nothing already available is paywalled by this, later hosted-terms changes require advance notice, consent and an export path, and commercial use of the hosted site needs a compliant hosting entitlement that is not yet in evidence. See [PRICING.md](PRICING.md) for the buyer/job hypothesis, availability boundaries, preconditions and the evidence gates that must produce data before any charge.
 
 ## Locked primary product experiences
 
@@ -40,7 +46,7 @@ Target acceptance journey:
 7. Produce an independently tested patch, pull request, explanation and Proof Receipt.
 8. Observe post-merge outcomes with user consent and recommend the next highest-value action.
 
-**Current reality:** the self-hosted engine imports bounded source snapshots and reports candidate findings. The production durable-analysis path has been verified with a temporary local worker; continuous cloud execution still needs a worker host. Full architecture/runtime analysis, AI-native rewriting, private GitHub App access and independently verified fixes remain planned.
+**Current reality:** the self-hosted engine imports bounded source snapshots and reports candidate findings. The production durable-analysis path has been verified with a temporary local worker; continuous cloud execution still needs a worker host. The separate local repair CLI has completed one independently checked synthetic repair: edits are limited to explicitly granted existing files and applied to a disposable copy on the operator's host, declared checks execute in fresh network-disabled containers, and the output is a `needs_review` patch — no commit, PR or deployment, and no connection to these hosted imports. Full architecture/runtime analysis, AI-native rewriting, private GitHub App access and hosted verified fixes remain planned.
 
 ### AI-native modernization contract
 
