@@ -18,6 +18,8 @@ The React Studio gate must build both deployment targets: `npm --prefix apps/web
 
 GitHub Actions workflows use minimal read permissions, SHA-pinned official actions, no credentials persisted by checkout, per-job timeouts, and pull-request concurrency cancellation. Dependabot checks Python, GitHub Actions and Docker dependencies weekly. A scheduled weekly security scan runs even when there are no PRs.
 
+Browser jobs pin Playwright `1.64.1` and install Chromium with `--with-deps`, matching the real-auth integration job. The older `1.55.0` pin fails browser provisioning on GitHub's Ubuntu 26 runners; unsupported-host failures must not be bypassed or mistaken for application test failures.
+
 ## Real hosted-auth boundary tests
 
 The auth integration job starts isolated Supabase CLI 2.121.0 native PostgreSQL, Auth, PostgREST and Mailpit, applies the schema and transactional RLS cases, then runs `scripts/auth_ui_smoke.py` against a production-built Studio. The browser requests real email links and opens them in a new tab; three users exercise project/session grants, denial, revocation and replay. No auth responses are mocked. Setup is maintained in [IDENTITY-WORKSPACES.md](IDENTITY-WORKSPACES.md).
@@ -25,6 +27,14 @@ The auth integration job starts isolated Supabase CLI 2.121.0 native PostgreSQL,
 Local captured email is not external mailbox delivery, GitHub consent or a production deployment. Vercel builds also reject privileged browser keys and Supabase origins absent from the deployed CSP. The source credential scanner covers both React source and legacy browser configuration.
 
 `scripts/collaboration_race_smoke.py` adds real-service browser regressions for slow and out-of-order responses. It defers delivery of actual HTTP responses rather than mocking successes, covering identity-scoped chat details, collection refresh order, pending mutation acknowledgements, navigation lifetimes and the newest bounded message window. Its fixture cleanup fails loudly instead of claiming success when temporary data remains. The auth-integration workflow runs it after schema setup.
+
+## Local coding-loop verification
+
+CI explicitly provisions a local Python execution image and runs the coding-runtime/sandbox cases on every Python matrix version. These tests use real containers for behavioral acceptance, denied network/host writes, resource limits and teardown; scripted models make proposal/denial cases deterministic. They do not establish model coding quality.
+
+For local execution, set `ORYVETA_TEST_DOCKER_CONTEXT` and `ORYVETA_TEST_DOCKER_IMAGE` to an authorized local context and preloaded immutable image ID. On a Docker VM, set `ORYVETA_TEST_RUN_ROOT` to a shared private host directory. Without explicit context/image selection, real-container cases are skipped; do not describe that run as isolation verification.
+
+The separate `scripts/smoke_coding.py` command exercises the real local model, tools, CLI and independent verifier; setup is in [IMPLEMENTATION.md](IMPLEMENTATION.md#local-verified-repair-cli). Keep actual model outcomes and failed attempts distinct from scripted-model regressions. A passed synthetic repair is not a benchmark or a security certification.
 
 ## Verified local hardening tests
 
@@ -46,7 +56,7 @@ Repository **Settings → Branches / Rulesets** should protect `main` by requiri
 ## Production gates not yet satisfied
 
 - Production GitHub identity and project/session authorization are verified; repository-access GitHub App grants and broader enterprise administration remain unimplemented.
-- Hardened isolation/network policy for executing customer code is not implemented.
+- Production multi-tenant isolation/network policy for arbitrary customer code is not implemented; the operator-run local Docker CLI is not that boundary.
 - The single-host worker has heartbeats and admission limits. Remote execution, secrets management, infrastructure rate limits and autoscaling remain unimplemented.
 - No signed/pinned fully reproducible Python dependency lockfile or pinned Docker base-image digest yet.
 - Production OAuth and controlled multi-user browser authorization pass. General email delivery, load tests, disaster recovery and canary/rollback deployment remain separate gates.

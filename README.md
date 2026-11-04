@@ -18,12 +18,13 @@ Oryveta is an open-source software delivery workspace for developers, independen
 - **Evolve:** describe a change, import an authorized ZIP or public GitHub snapshot into the self-hosted engine, and review file-linked candidate issues. Analysis is read-only; it does not run imported code or apply verified fixes.
 - **Collaborate:** save project briefs, invite members with explicit roles and discuss work in separately shared private conversations.
 - **Explain the work:** use Demo Studio to write scenes and export a JSON storyboard. It is a demo script, not a rendered video or proof of working software. Journey drafts are kept in memory and must be exported before reloading.
+- **Local repair CLI:** run a separately configured local tool-calling model against an operator-selected source ZIP, then review a patch accepted by controller-owned behavioral checks. This is not connected to the web Evolve flow. See [setup and restrictions](docs/IMPLEMENTATION.md#local-verified-repair-cli).
 
 Kaggle and related benchmarks are **internal evaluation scenarios**, not a third product or navigation destination.
 
 ## Status
 
-**Not available yet:** model-driven implementation and independent verification, private GitHub App repository access/publication, AI-native application/package modernization, operational on-call automation, scoped agent learning and an operated 24/7 service. These are [roadmap goals](docs/ROADMAP.md), not benefits of merely signing in.
+**Not available yet:** hosted model-driven implementation/verification, private GitHub App repository access/publication, AI-native application/package modernization, operational on-call automation, scoped agent learning and an operated 24/7 service. These are [roadmap goals](docs/ROADMAP.md), not benefits of merely signing in.
 
 Project roles, invitations and separately shared private conversations are enforced by Supabase RLS/RPCs. Real local email/PKCE tests, production GitHub OAuth and deployed multi-user authorization checks pass. No unrestricted repository execution or full software factory is claimed. See [identity, permissions and reproducible verification](docs/IDENTITY-WORKSPACES.md).
 

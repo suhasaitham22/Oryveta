@@ -30,10 +30,10 @@ jobs:
           cache-dependency-path: pyproject.toml
       - run: python -m pip install -e '.[dev]'
       - name: Lint Python
-        run: ruff check apps/api engine tests scripts/production_auth_smoke.py
+        run: ruff check apps/api engine tests scripts/production_auth_smoke.py scripts/smoke_coding.py
       - name: Check Python compilation and dependencies
         run: |
-          python -m compileall -q apps/api engine tests scripts/production_auth_smoke.py
+          python -m compileall -q apps/api engine tests scripts/production_auth_smoke.py scripts/smoke_coding.py
           python -m pip check
       - name: Check browser JavaScript syntax
         run: |
@@ -59,6 +59,11 @@ jobs:
           cache: pip
           cache-dependency-path: pyproject.toml
       - run: python -m pip install -e '.[dev]'
+      - name: Provision the explicit local verification image
+        run: |
+          docker pull python:3.12-slim
+          echo "ORYVETA_TEST_DOCKER_CONTEXT=default" >> "$GITHUB_ENV"
+          echo "ORYVETA_TEST_DOCKER_IMAGE=$(docker image inspect python:3.12-slim --format '{{.Id}}')" >> "$GITHUB_ENV"
       - name: Run isolated tests with branch coverage gate
         run: >-
           python -m pytest -q

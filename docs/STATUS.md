@@ -1,5 +1,21 @@
 # Oryveta implementation status
 
+## Fixed local repair loop — execution verification, 2026-11-02
+
+The separate `python -m oryveta_engine.coding_runtime` CLI now performs model-driven edits of an operator-selected ZIP in a disposable workspace, with a versioned configuration, exact file grants, pinned local model/image identities, bounded tools/execution and independent controller-owned JSON checks. It emits a review candidate, not a commit, PR or deployment. [Setup and limitations](IMPLEMENTATION.md#local-verified-repair-cli).
+
+Real local Qwen3 8B and Linux/arm64 Docker execution repaired the numeric-version ordering defect in `scripts/smoke_coding.py`. The model edited only `versions.py`; the input archive was unchanged. All **seven** development/acceptance cases passed, covering numeric component ordering, prefixes, stable equivalent versions, original spelling, empty input and invalid-input behavior. Acceptance inputs/expected values were kept out of model context. The successful run used **six model turns, five tool calls and 6,852 observed tokens**.
+
+The first live attempt failed after 20 turns because the model repeatedly omitted the edit's required `path`. That failed receipt was retained. After generic schema diagnostics were made actionable, the model corrected its own argument on the next turn and completed the repair. No task-specific patch or implicit path was supplied by the controller. Two identical tool/check failures on the same source revision now terminate the run with `no_progress`; an intervening edit permits another attempt.
+
+Evidence identity: final run `e4c2623e212e4276965c08728879b2e3`, model digest `500a1f067a9f782620b40bee6f7b0c89e17ae61f686b92c24933e4ca4b2b8b41`, implementation digest `7be316eb7193b7fdf9ab3ac4afd9608f1c4ed19cc846d352b0e42767f7c8dbb7`, patch digest `232f8b30bf9744f3f12931482aec1a083d12b613e02827e88e15b9c90f694744`. Full private local receipts retain configuration, baseline/final results, model/tool events and runner provenance.
+
+Final local gate: **593 Python tests passed, 87.07% branch-inclusive coverage** against the unchanged 84% floor; Ruff passed. Compilation and dependency consistency also passed. Overflow/cancellation/timeout tests exercise actual subprocess and container cleanup. The output-overflow pipe leak found during validation was fixed and its EOF regression passed; only the existing Starlette/httpx deprecation warning remained. Real-model inference is a separate smoke, not a mocked test result.
+
+Linux preflight exposed quota rounding above the configured CPU ceiling. The runner now uses an explicit downward-quantized quota; the original strict kernel-bound assertion remains intact. The container uses a dedicated scratch mount rather than system `/tmp`; targeted real-container CPU/tempfile/credential checks and the unchanged Bandit gate passed locally after these changes.
+
+This proves one synthetic repair integration—not a benchmark success rate, real-repository qualification, hosted coding, production sandbox assurance or 24/7 operation. The web/API analysis flows remain unchanged. No paid provider, hosted inference key, automatic publication or learned/self-modifying policy was enabled.
+
 ## Orbital studio UI — browser verification, 2026-10-29
 
 The web interface has been redesigned across Home, About, What We Do, sign-in, workspace navigation, project and conversation views, Start New/Evolve briefs, Demo Studio and local execution. It uses self-hosted Geist typography, a shared off-white/cobalt palette, dark product navigation, original SVG artwork and an explicitly opened 3D artifact viewer. Product capabilities and authorization boundaries are unchanged.
@@ -106,6 +122,6 @@ Demo Studio edits contextual storyboards; exports remain unverified drafts. Loca
 
 `oryveta_engine.learning` compares submitted evidence and requires human review. It does not authenticate execution evidence, train a model, retrieve cross-session memory or promote its own production harness.
 
-**Not implemented:** hosted factory execution, isolated arbitrary customer-code execution, full knowledge graph/analysis, autonomous verified Evolve fixes, AI-native application/package rewriting, custom Start New application generation, project on-call telemetry/correlation/repair, GitHub App repository publication, Slack integration, native mobile distribution, continuously running recursive improvement, enterprise SSO/billing or an availability SLA.
+**Not implemented:** hosted factory execution, production-isolated arbitrary customer-code execution, full knowledge graph/analysis, hosted autonomous Evolve fixes, AI-native application/package rewriting, custom Start New application generation, project on-call telemetry/correlation/repair, GitHub App repository publication, Slack integration, native mobile distribution, continuously running recursive improvement, enterprise SSO/billing or an availability SLA. The separate local repair CLI above does not provide these product capabilities.
 
 See [identity and testing](IDENTITY-WORKSPACES.md), [architecture](ARCHITECTURE.md) and the [staged roadmap](ROADMAP.md). A source change, local test, preview deployment and production release are different evidence levels.

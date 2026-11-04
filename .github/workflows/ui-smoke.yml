@@ -22,7 +22,7 @@ jobs:
           python-version: '3.12'
       - name: Install pinned browser test dependency
         run: |
-          python -m pip install 'playwright==1.55.0'
-          python -m playwright install chromium
+          python -m pip install 'playwright==1.64.1'
+          python -m playwright install --with-deps chromium
       - name: Render real frontend in desktop and mobile browsers
         run: python scripts/ui_smoke.py

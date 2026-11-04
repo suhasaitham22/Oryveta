@@ -1,6 +1,6 @@
 # Local model gateway and token budget
 
-**Scope:** Optional, text-only local Ollama integration in the self-hosted FastAPI service. The public Vercel preview remains static. The optional Docker Compose overlay provisions an Ollama container and pulls an open-weight model on the user's own hardware; Vercel does not run the model.
+**Scope:** Optional, text-only local Ollama integration in the self-hosted FastAPI service. Vercel does not run the model. The optional Docker Compose overlay provisions an Ollama container and pulls an open-weight model on the user's own hardware. The separate [local repair CLI](IMPLEMENTATION.md#local-verified-repair-cli) has its own pinned tool-model configuration and per-run budgets; it does not extend this API's permissions.
 
 ## Why this boundary exists
 
@@ -72,7 +72,7 @@ The authenticated `POST /api/projects/{id}/ai-patch-preview` endpoint takes a cl
 
 ## What is not yet implemented
 
-Agent tool calling, repository modification, prompt injection defense for retrieved code, independent verification, GPU isolation, provider-agnostic streaming, durable idempotency for model calls, model cancellation, production usage billing and per-organization policy are still future milestones.
+This gateway API does not perform agent tool calling, repository modification or independent execution verification. Those capabilities exist only in the separate, operator-run local repair CLI. GPU isolation, provider-agnostic streaming, durable model-call idempotency, guaranteed server-side model cancellation, production usage billing and per-organization policy remain unimplemented.
 
 ## Validation
 
