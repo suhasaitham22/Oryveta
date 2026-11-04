@@ -62,6 +62,11 @@ def _private_write(path: Path, payload: bytes) -> None:
             handle.flush()
             os.fsync(handle.fileno())
         os.replace(temporary, path)
+        descriptor = os.open(path.parent, os.O_RDONLY | os.O_DIRECTORY)
+        try:
+            os.fsync(descriptor)
+        finally:
+            os.close(descriptor)
     finally:
         if temporary is not None:
             temporary.unlink(missing_ok=True)
@@ -173,6 +178,7 @@ async def repair(spec: FactorySpec, source_zip: Path, goal: str, output: Path,
     run_id = uuid.uuid4().hex
     deadline = time.monotonic() + spec.limits.wall_seconds
     receipt = {"schema_version": 1, "run_id": run_id, "status": "incomplete",
+               "phase": "initializing", "verification": "not_accepted",
                "configuration_sha256": spec.digest, "verification_scope": "configured JSON contracts",
                "turns": 0, "tool_calls": 0, "tokens_observed": 0,
                "unsettled_token_reservation": 0, "model": asdict(spec.model),
@@ -188,6 +194,25 @@ async def repair(spec: FactorySpec, source_zip: Path, goal: str, output: Path,
     work = None
     tools = None
     base = None
+
+    def checkpoint(phase: str) -> None:
+        receipt["phase"] = phase
+        receipt["checkpointed_at"] = datetime.datetime.now(datetime.timezone.utc).isoformat()
+        try:
+            _json_file(output / "receipt.json", receipt)
+        except OSError:
+            raise CodingError("evidence_write_failed", "the run checkpoint could not be persisted") from None
+
+    def save_candidate() -> None:
+        patch = source_patch(base, tools)
+        if patch:
+            payload = patch.encode("utf-8")
+            _private_write(output / "unverified.patch", payload)
+            receipt["candidate_patch_sha256"] = sha256(payload).hexdigest()
+        else:
+            (output / "unverified.patch").unlink(missing_ok=True)
+            receipt.pop("candidate_patch_sha256", None)
+
     try:
         payload = _archive(source_zip)
         receipt["source_archive_sha256"] = sha256(payload).hexdigest()
@@ -202,7 +227,9 @@ async def repair(spec: FactorySpec, source_zip: Path, goal: str, output: Path,
         model = model or LocalToolModel(spec.model)
         trace.event("run_started", run_id=run_id, goal=goal,
                     configuration_sha256=spec.digest, source_tree_sha256=receipt["source_tree_sha256"])
+        checkpoint("runner_preflight")
         receipt["runner_observed"] = await asyncio.wait_for(runner.preflight(), _remaining(deadline))
+        checkpoint("baseline")
         baseline = await check_suite(runner, base, spec.development_checks + spec.acceptance_checks, deadline)
         _json_file(output / "baseline.json", baseline)
         if any(not row["passed"] for row in baseline if row["kind"] == "preserve"):
@@ -211,6 +238,7 @@ async def repair(spec: FactorySpec, source_zip: Path, goal: str, output: Path,
         public_baseline = [row for row in baseline if row["name"] in development_names]
         if not any(not row["passed"] and row["kind"] == "regression" for row in public_baseline):
             raise CodingError("not_reproduced", "the development checks do not reproduce the requested defect")
+        checkpoint("model_preflight")
         receipt["model_observed"] = await asyncio.wait_for(model.verify(), _remaining(deadline))
         development = {check.name: check for check in spec.development_checks}
         messages = [{"role": "system", "content": POLICY},
@@ -231,6 +259,7 @@ async def repair(spec: FactorySpec, source_zip: Path, goal: str, output: Path,
                 raise CodingError("token_budget", "remaining tokens cannot fund the next bounded model call")
             receipt["unsettled_token_reservation"] = reservation
             receipt["turns"] = turn + 1
+            checkpoint("model_call")
             reply = await model.turn(messages, TOOL_SCHEMAS,
                                      max_output_tokens=spec.model.output_tokens,
                                      timeout_seconds=min(120.0, _remaining(deadline)))
@@ -239,6 +268,7 @@ async def repair(spec: FactorySpec, source_zip: Path, goal: str, output: Path,
             trace.event("model_turn", turn=turn + 1, content=reply.content,
                         tool_calls=[asdict(call) for call in reply.calls],
                         input_tokens=reply.input_tokens, output_tokens=reply.output_tokens)
+            checkpoint("model_reply")
             if not reply.calls:
                 receipt["model_summary"] = reply.content
                 finished = True
@@ -251,6 +281,9 @@ async def repair(spec: FactorySpec, source_zip: Path, goal: str, output: Path,
                 if receipt["tool_calls"] >= spec.limits.tool_calls:
                     raise CodingError("tool_budget", "the run exhausted its tool-call budget")
                 receipt["tool_calls"] += 1
+                receipt["active_tool"] = call.name
+                checkpoint("tool_call")
+                edits_before = tools.edits
                 failed = False
                 try:
                     if call.name == "run_checks":
@@ -271,6 +304,10 @@ async def repair(spec: FactorySpec, source_zip: Path, goal: str, output: Path,
                     if error.details:
                         result["details"] = error.details
                     failed = True
+                if tools.edits != edits_before:
+                    save_candidate()
+                receipt.pop("active_tool", None)
+                checkpoint("tool_result")
                 trace.event("tool_result", tool=call.name, result=result)
                 messages.append({"role": "tool", "tool_name": call.name, "content": canonical_json(result)})
                 if failed:
@@ -288,6 +325,7 @@ async def repair(spec: FactorySpec, source_zip: Path, goal: str, output: Path,
         if not patch:
             raise CodingError("no_change", "the model proposed no source change")
         trace.event("verification_started", candidate_tree_sha256=tree_digest(candidate))
+        checkpoint("verification")
         final = await check_suite(runner, candidate, spec.development_checks + spec.acceptance_checks, deadline)
         _json_file(output / "verification.json", final)
         if not all(row["passed"] for row in final):
@@ -296,6 +334,7 @@ async def repair(spec: FactorySpec, source_zip: Path, goal: str, output: Path,
         receipt["candidate_tree_sha256"] = tree_digest(candidate)
         receipt["patch_sha256"] = sha256(patch.encode("utf-8")).hexdigest()
         _private_write(output / "verified.patch", patch.encode("utf-8"))
+        (output / "unverified.patch").unlink(missing_ok=True)
         receipt["status"] = "needs_review"
         receipt["verification"] = "passed"
         receipt["checks_passed"] = len(final)
@@ -315,9 +354,7 @@ async def repair(spec: FactorySpec, source_zip: Path, goal: str, output: Path,
     finally:
         if receipt["status"] != "needs_review" and tools is not None and base is not None:
             try:
-                patch = source_patch(base, tools)
-                if patch:
-                    _private_write(output / "unverified.patch", patch.encode("utf-8"))
+                save_candidate()
             except Exception:
                 receipt["diagnostic_patch"] = "unavailable"
         if work is not None:
@@ -326,6 +363,9 @@ async def repair(spec: FactorySpec, source_zip: Path, goal: str, output: Path,
             except OSError:
                 receipt.update(status="failed", error_code="workspace_cleanup_failed",
                                verification="not_accepted")
+        receipt["last_phase"] = receipt["phase"]
+        receipt.pop("active_tool", None)
+        receipt["phase"] = "finished"
         try:
             trace.event("run_finished", **receipt)
         except (CodingError, OSError, UnicodeError):
@@ -335,7 +375,12 @@ async def repair(spec: FactorySpec, source_zip: Path, goal: str, output: Path,
             trace.close()
         if receipt["status"] != "needs_review" and (output / "verified.patch").exists():
             os.replace(output / "verified.patch", output / "unverified.patch")
-        _json_file(output / "receipt.json", receipt)
+        try:
+            checkpoint("finished")
+        except CodingError:
+            if (output / "verified.patch").exists():
+                os.replace(output / "verified.patch", output / "unverified.patch")
+            raise
     return receipt
 
 
