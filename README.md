@@ -1,26 +1,29 @@
 # Oryveta
 
-**Plan software. Review source. Work together.**
+**Scope the change. Check the code. Review the patch.**
 
-Oryveta is an open-source software delivery workspace for developers, independent builders and teams. It brings requirements, repository analysis and private collaboration together around two journeys: **Start New** for a new application, and **Evolve** for an existing application or package.
+Oryveta is an open-source workspace for small teams maintaining existing code. Define a change, review its source and preserve the behavior that matters. **Evolve** is the first qualification focus; **Start New** remains the journey for a new application, with the broader factory built in stages.
 
 **Working today, locally:** a bounded repair loop for an existing codebase. You grant specific files, a local model proposes SHA-guarded edits that the controller applies to a disposable copy on your host, and controller-owned checks reproduce the defect first and test required behavior afterward. The model cannot rewrite their expected results. Checks execute in fresh network-disabled containers. Passing candidates are ready for human review, not automatic merge.
 
-**The goal:** an AI software factory in which agents plan, implement and test changes, while people review results and approve publishing. That complete agent workflow is still in development, and the hosted site does not run it; the capabilities below describe what can be used now.
+**One goal, in order:** an AI software factory in which agents plan, implement and test changes, while people review results and approve publishing. The route to it is deliberately sequential — **verifiable maintenance changes on an existing codebase first**, the broader factory (custom application generation, hosted execution, publication, on-call, learning) afterwards, each stage gated on evidence rather than intent. The complete agent workflow is still in development and the hosted site does not run it; the capabilities below describe what can be used now.
 
 ### [Open Oryveta — https://oryveta.vercel.app](https://oryveta.vercel.app)
 
-**Deployment:** [Vercel production](https://oryveta.vercel.app) serves the React Studio. GitHub sign-in, saved projects and private-conversation sharing have production verification. The durable analysis schema is deployed to Supabase; browser submission, result download, cancellation and revocation were verified with a temporary local worker. No always-on cloud worker is configured. Starter generation still uses the separate self-hosted FastAPI engine, which serves `/studio/` and retains a legacy `/` interface. The local repair CLI is operator-run and is **not** reachable from the hosted site. The public pricing page and the surrounding UI work are a **review candidate on a branch**, not yet deployed to production.
+**Deployment:** [Vercel production](https://oryveta.vercel.app) serves the React Studio built from merged `main`. GitHub sign-in, saved projects and private-conversation sharing have production verification. The durable analysis schema is deployed to Supabase; browser submission, result download, cancellation and revocation were verified with a temporary local worker. No always-on cloud worker is configured. Starter generation still uses the separate self-hosted FastAPI engine, which serves `/studio/` and retains a legacy `/` interface. The local repair CLI is operator-run and is **not** reachable from the hosted site.
 
-> **Documentation:** [Complete product and technical decisions](docs/INDEX.md) · [Architecture](docs/ARCHITECTURE.md) · [UI design](docs/DESIGN-SYSTEM.md) · [Pricing and launch plan](docs/PRICING.md) · [Roadmap](docs/ROADMAP.md) · [Verified status](docs/STATUS.md) · [Quality gates](docs/QUALITY.md)
+**Three states, kept distinct throughout these documents.** *Production* is the deployment serving https://oryveta.vercel.app. *`main`* is merged source and can be ahead of production until a successful rollout. *This review candidate* adds the evidence-led Home, `/pricing`, the downloadable synthetic example, durable local receipts and model-free candidate re-verification. Preview deployments may exist; they are not a production rollout or a customer result. Current evidence is in [STATUS.md](docs/STATUS.md).
+
+> **Documentation:** [Complete product and technical decisions](docs/INDEX.md) · [Architecture](docs/ARCHITECTURE.md) · [UI design](docs/DESIGN-SYSTEM.md) · [Pricing and launch plan](docs/PRICING.md) · [Roadmap](docs/ROADMAP.md) · [Demo standard](docs/DEMO-STUDIO.md) · [Verified status](docs/STATUS.md) · [Quality gates](docs/QUALITY.md)
 
 ## What you can do today
 
 - **Start New:** describe an app's users, features and acceptance criteria, then export the requirements as a brief. With the self-hosted engine, choose a template and download a starter repository. It does not implement a custom application from the brief.
 - **Evolve:** describe a change, import an authorized ZIP or public GitHub snapshot into the self-hosted engine, and review file-linked candidate issues. Analysis is read-only; it does not run imported code or apply verified fixes.
 - **Collaborate:** save project briefs, invite members with explicit roles and discuss work in separately shared private conversations.
-- **Explain the work:** use Demo Studio to write scenes and export a JSON storyboard. It is a demo script, not a rendered video or proof of working software. Journey drafts are kept in memory and must be exported before reloading.
-- **Local verified repair CLI:** point a separately configured local tool-calling model at an operator-selected source ZIP with an explicit read/write file allowlist. The controller reproduces the defect before inference, refuses a baseline whose preservation checks already fail, applies the model's SHA-guarded edits to a disposable copy on the host, runs every check in a fresh network-disabled container, and then independently re-runs both suites itself. The result is a `verified.patch` marked `needs_review` — declared contracts passed, which is not a commit, a PR, a deployment or a correctness guarantee. One synthetic repair has been verified end to end; real repositories are not yet qualified. Not connected to the hosted site or the web Evolve flow. See [setup and restrictions](docs/IMPLEMENTATION.md#local-verified-repair-cli).
+- **Explain the work:** use Demo Studio to write scenes and export a JSON storyboard. The browser editor does not render video: its exports stay `storyboard_only_not_rendered` with `verified: false`. A reviewer can separately render a **captioned storyboard** video from `apps/web/studio/demo`; it is not footage of a live agent run, an application recording or proof of working software. Journey drafts are kept in memory and must be exported before reloading.
+- **Local verified repair CLI:** point a separately configured local tool-calling model at an operator-selected source ZIP with an explicit read/write file allowlist. The controller reproduces the defect before inference, refuses a baseline whose preservation checks already fail, applies the model's SHA-guarded edits to a disposable copy on the host, runs every check in a fresh network-disabled container, and then independently re-runs both suites itself. Progress, observed usage, pending token reservations and per-edit unverified patch digests are checkpointed before model admission and after each result, so an interrupted controller leaves an accurate receipt rather than one claiming no work; that is interruption accounting, not automatic resume or replay. The result is a `verified.patch` marked `needs_review` — declared contracts passed, which is not a commit, a PR, a deployment or a correctness guarantee. **One** synthetic repair is recorded end to end (run `f635c7c92c6b4e5fbea11a0d35d20def`, 2026-11-04): a single dated historical case, not a benchmark, a success rate or a customer run. Real repositories are not yet qualified, and the CLI is not connected to the hosted site or the web Evolve flow. See [setup and restrictions](docs/IMPLEMENTATION.md#local-verified-repair-cli).
+- **Model-free re-verification of a saved candidate:** the same CLI accepts `--candidate-zip` and then contacts no model or inference endpoint at all. It re-reads the operator's reviewed configuration, validates that the candidate changes only files inside the editable allowlist with nothing added or removed, reproduces the baseline, and re-runs every declared final case in fresh local Docker containers. A supplied "passed" claim is never trusted, the candidate is never executed on the host, and this is re-verification rather than resume, approval, remote attestation or anything hosted. The receipt records `mode='verification'` with `model_calls` and `tokens_observed` at `0`.
 
 Kaggle and related benchmarks are **internal evaluation scenarios**, not a third product or navigation destination.
 
@@ -34,7 +37,7 @@ See [current status](docs/STATUS.md) and [open-source policy](docs/OPEN-SOURCE.m
 
 ## Pricing
 
-Two plans, published so the commercial position is reviewable:
+Two plans, published so the commercial position is reviewable. **Pricing is a business hypothesis, not an implemented fact:** the prices, the buyer definition and the Y Combinator application framing in [docs/PRICING.md](docs/PRICING.md) are proposals to be tested, while the implemented facts are the hosted collaboration workspace, the self-hosted analysis engine and the local repair CLI. Y Combinator is a goal the project is being prepared for; it is not an affiliation, an application outcome or an admission, and no YC name, logo or batch reference appears in the product.
 
 - **Community — $0 software.** The source is Apache-2.0 and self-hosting never needs a subscription; those rights cannot be revoked later. The **hosted workspace is free during preview, subject to documented capacity** — shared free-tier allowances with quotas and pausing, not an availability commitment or a perpetual free-hosting promise. You supply the machine, the model weights and the container runtime.
 - **Team — $49 USD per workspace per month, up to 5 builders. Proposed, not billable.** Intended to add shared agent-run history, a patch review workflow and budget administration. None of that is built, and there is no billing, metering or checkout, so the price cannot be charged today.
@@ -104,6 +107,23 @@ docker compose -f compose.yaml -f compose.ollama.yaml up --build
 ```
 
 **Docker mode requires configured GitHub OAuth credentials to sign in**; the loopback-only demo sign-in is deliberately disabled inside Docker. Ollama is not published to the host or internet. See [complete Ollama setup, resource requirements and troubleshooting](docs/MODEL-GATEWAY.md).
+
+### Re-verify a saved candidate without a model
+
+A reviewer who has the candidate archive, the original source archive and the reviewed operator configuration can re-run the checks with no inference of any kind — Ollama does not need to be installed or running:
+
+```bash
+python -m oryveta_engine.coding_runtime \
+  --config operator.json \
+  --source-zip source.zip \
+  --candidate-zip candidate.zip \
+  --goal 'review requirement' \
+  --output reverified-run
+```
+
+`--output` must be a new directory so earlier evidence is never overwritten. Add `--run-root PRIVATE_DIR` if the default private directory is not shared with your Docker VM. Omit `--candidate-zip` to use model-driven repair instead. The verification path uses the reviewed operator spec's allowlists, runner and behavior checks. Terminal execution results are `needs_review`, `rejected`, `failed` or `cancelled`; `incomplete` is an in-flight or interrupted checkpoint, never acceptance. Exit `0` means `needs_review`, not approval or publication.
+
+Named refusals include added/removed files (`candidate_inventory`), edits outside the write allowlist (`candidate_scope`), no changes (`no_change`), unusable candidate ZIPs (`invalid_candidate`), a non-reproducing or already-regressed baseline (`not_reproduced` / `invalid_baseline`), and failed final checks (`verification_failed`). The private `candidate.zip` uses a stable `candidate/` wrapper and is identified by `candidate_archive_sha256`. It contains source code and must not be published by default. Re-verification is neither resume, remote attestation nor a hosted service.
 
 For service boundaries, limitations, and deployment considerations see [implementation guide](docs/IMPLEMENTATION.md).
 

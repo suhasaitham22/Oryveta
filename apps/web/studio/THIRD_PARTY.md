@@ -2,9 +2,9 @@
 
 ## Original visual composition and public references
 
-The current orbital studio composition and dimensional product scene are original Oryveta work. Public references reviewed on 2026-10-29 were [Antigravity](https://antigravity.google/), [Lunon](https://lunon.ai/), [Linear](https://linear.app/) and [Raycast](https://www.raycast.com/): editorial hierarchy, cinematic composition, precise product surfaces and purposeful interaction. Antigravity, Lunon and Linear were inspected in Chromium. Earlier Galileo/template references informed a superseded iteration, not the current palette.
+The current evidence-led maintenance-team presentation and optional dimensional product scene are original Oryveta work. The off-white/Geist/cobalt visual system continues the 2026-10-29 design; the decorative orbital hero was replaced by a labelled recorded-repair summary and pricing surface. Historical public references were [Antigravity](https://antigravity.google/), [Lunon](https://lunon.ai/), [Linear](https://linear.app/) and [Raycast](https://www.raycast.com/) for hierarchy and interaction. Earlier Galileo/template references informed superseded iterations.
 
-No reference-site source, images, videos, models, logos, copy, customer claims or paid assets are included. The orbital hero and supporting SVGs are original; the optional Three.js scene uses original geometry and canvas-drawn documents. Native scrolling and readable static content remain available. No animation framework, scroll hijacking or reference-site hydration code is imported.
+No source, assets, logos, copy or customer claims from those visual-reference sites are included. Supporting SVGs and the optional Three.js geometry/canvas documents are original. The published repair record is a sanitized synthetic local example, not a customer result or third-party endorsement. Native scrolling and readable static content remain available; no animation framework or reference-site hydration code is imported.
 
 ## Historical ShadcnStore adaptation
 

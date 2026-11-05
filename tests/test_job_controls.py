@@ -227,6 +227,7 @@ def test_studio_redirect_and_missing_build(monkeypatch, tmp_path):
     assert client.get("/studio/").status_code == 503
     assert client.get("/studio/demo-stories.json").status_code == 503
     assert client.get("/studio/template-license.txt").status_code == 503
+    assert client.get("/studio/geist-license.txt").status_code == 503
     assert client.get("/studio/repair-example.json").status_code == 503
     assert client.get("/studio/repair-example.patch").status_code == 503
     assert client.get("/studio/about").status_code == 503

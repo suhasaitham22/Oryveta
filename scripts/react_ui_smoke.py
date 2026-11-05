@@ -86,6 +86,11 @@ def _check_pricing_and_evidence(page, origin, prefix=""):
     expect(page).to_have_title(re.compile(r"Pricing"))
     expect(page.get_by_role("navigation", name="Breadcrumb").locator("[aria-current=page]")).to_have_text("Pricing")
     _assert_no_overflow(page)
+    for label in ("Attribution", "Font license"):
+        href = page.get_by_role("link", name=label, exact=True).get_attribute("href")
+        notice = page.request.get(f"{origin}{href}")
+        assert notice.status == 200, (label, notice.status)
+        assert notice.headers["content-type"].startswith("text/plain")
     page.locator(f'a[href="{prefix}/#local-example"]').first.click()
     page.wait_for_url(f"{origin}{prefix}/#local-example")
     expect(page.get_by_role("region", name="Recorded local repair example")).to_be_in_viewport()

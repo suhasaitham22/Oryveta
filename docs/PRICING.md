@@ -23,10 +23,13 @@ Mechanism, as implemented locally today ([setup and limits](IMPLEMENTATION.md#lo
 3. The model may only read/search granted files and apply SHA-guarded replacements to an explicit write allowlist. Those edits are applied by the controller's source tools to a **disposable copy on the host**; the original archive is untouched. Editing is not what runs in a container.
 4. **Check execution** — and only check execution — runs in a fresh network-disabled container with a non-root UID, dropped capabilities, read-only root/source and bounded tmpfs/memory/CPU/PIDs/output.
 5. The controller, not the model, re-runs both suites afterward and compares exit status and parsed JSON. The result is `needs_review`: declared contracts passed, which is not permission to publish.
+6. A reviewer can re-run step 5 independently of the producing run: with `--candidate-zip`, the candidate archive is re-checked against the operator's reviewed configuration, with no model or inference endpoint contacted, nothing added or removed from the file inventory, no edit outside the write allowlist, the baseline reproduced, and all declared final cases re-run in fresh local containers. The receipt records `mode='verification'` with zero model calls and zero observed tokens. It is not resume, approval, remote attestation or hosted verification, and it does not accept any supplied "passed" claim.
 
 The hypothesis to be tested with design partners is that **reviewer minutes per accepted change fall** when the fail→pass transition and the preservation set are shown mechanically rather than asserted. This is unmeasured outside the project, and the opposite outcome — review effort moving rather than shrinking — is entirely possible. Gate G3 exists to detect that.
 
-**Evidence that exists:** one synthetic local repair, recorded in [STATUS.md](STATUS.md) and published as a single downloadable example asset (`repair-example.json` with its `repair-example.patch`, resolved through `import.meta.env.BASE_URL`). It is one local integration example, labelled `needs_review`, with `limitations` in the file itself. It is not current activity, a benchmark, a success rate or a customer run.
+**Evidence that exists:** one synthetic local repair — run `f635c7c92c6b4e5fbea11a0d35d20def`, recorded 2026-11-04 in [STATUS.md](STATUS.md) and published as a single downloadable example asset (`repair-example.json` with its `repair-example.patch`, resolved through `import.meta.env.BASE_URL`). It is one dated local integration example, labelled `needs_review`, with `limitations` in the file itself. It is not current activity, a benchmark, a success rate or a customer run, and a later run never overwrites it as if it were a new result. The same review candidate adds durable interruption receipts to that loop, which improves the accuracy of an interrupted run's record — it is not automatic resume and not additional outcome evidence.
+
+**What the re-verification path is, evidentially:** implemented source in the open review candidate. Step 6 above describes behavior that exists in the CLI; this repository records no run of it as outcome evidence, and the design-partner gates G1–G5 are unaffected by adding it. A capability is not a result.
 
 ## The two plans
 
@@ -56,7 +59,7 @@ Still **bring-your-own-compute**: $49 would cover the control plane, not inferen
 
 Call to action on the public page: **try a free workspace** (both plan cards link to `/workspace`). Not "subscribe", not a waitlist confirmation, not a contact-form success state — none of those backends exist, and no checkout appears anywhere in the UI.
 
-Public surface: a dedicated `/pricing` page renders both plan cards from one shared source (`apps/web/studio/src/lib/plans.js`), so the published price cannot drift between surfaces. It links to the Home `#local-example` section for the example-asset downloads and does not repeat that run's metrics. Presentation details are in [DESIGN-SYSTEM.md](DESIGN-SYSTEM.md).
+Public surface: a dedicated `/pricing` page renders both plan cards from one shared source (`apps/web/studio/src/lib/plans.js`), so the published price cannot drift between surfaces. It links to the Home `#local-example` section for the example-asset downloads and does not repeat that run's metrics. Presentation details are in [DESIGN-SYSTEM.md](DESIGN-SYSTEM.md). That page exists in an **open review candidate**: it is not merged to `main` and is not served by production today, so describing it here is a description of source under review, not of a live pricing page.
 
 ### Availability matrix
 
@@ -152,7 +155,7 @@ Failure is a valid outcome of each gate. A refused or abandoned design partner i
 
 ## YC application positioning
 
-Format follows [How to Apply](https://www.ycombinator.com/howtoapply): clear and concise, matter-of-fact, a narrow entry point, a specific insight, honest obstacles, and a demo.
+Format follows [How to Apply](https://www.ycombinator.com/howtoapply): clear and concise, matter-of-fact, a narrow entry point, a specific insight, honest obstacles, and a demo. **Applying is a goal, nothing more.** Nothing in this repository asserts an affiliation, an application, a batch, an interview or an admission, and no such outcome may ever be written here or shown in the product.
 
 **What it makes (one sentence, deliberately narrow):** a local coding agent for existing Python services that produces review-ready patches only after controller-owned checks reproduce the defect and verify the behavior the team wants preserved.
 
@@ -170,20 +173,20 @@ Format follows [How to Apply](https://www.ycombinator.com/howtoapply): clear and
 - Review effort could move rather than shrink. G3 exists to detect that.
 - Free hosted preview is a subsidy with no agreed term; capacity, retention and terms are open questions, not settled commitments.
 
-**Demo:** the reproducible local run plus the published single example asset — patch, checks, digests and limitations. A reviewer can re-run the operator contract; they are not asked to trust a video.
+**Demo:** the reproducible local run plus the published single example asset — patch, checks, digests and limitations. A reviewer can re-run the operator contract; they are not asked to trust a video. The rendered pricing film is a **captioned storyboard**, not footage of the application or of an agent run, and the product screenshots are application captures of the review candidate rather than customer usage; those three kinds of material are never presented as one another.
 
 ### Proof and missing-evidence checklist
 
 | Claim an application might make | Evidence in this repository | Missing |
 | --- | --- | --- |
-| A fixed agent loop produces independently verified patches | One synthetic repair with retained failed and successful receipts; 604 Python tests and 87.17% branch-inclusive coverage recorded 2026-11-04 ([STATUS.md](STATUS.md)) | Repairs on consented real repositories (G1) |
+| A fixed agent loop produces independently verified patches | One synthetic repair with retained failed and successful receipts; 604 Python tests and 87.13% branch-inclusive coverage recorded 2026-11-04 ([STATUS.md](STATUS.md)) | Repairs on consented real repositories (G1) |
 | Teams would use it repeatedly | None | G2 |
 | It reduces review effort | None | G3 |
 | Teams would pay $49 per workspace | None | G4 |
 | Unit economics work | Hypothetical arithmetic above only | Measured cost per accepted change (G5) |
-| Hosted collaboration works | Production GitHub OAuth, Supabase RLS roles/invitations/private sessions and all 8 collaboration ordering cases; 48 public route/viewport checks from the 2026-10-29 UI verification ([STATUS.md](STATUS.md)) | Nothing hosted runs agents; that is separate work |
+| Hosted collaboration works | Production GitHub OAuth, Supabase RLS roles/invitations/private sessions and all 8 collaboration ordering cases; 24 public route/viewport checks in the 2026-11-04 candidate, and 48 from the earlier 2026-10-29 UI verification ([STATUS.md](STATUS.md)) | Nothing hosted runs agents; that is separate work |
 
-Each metric above keeps its recorded scope: the 604-test/87.17% gate is the 2026-11-04 Python baseline, and the 48 route/viewport checks belong to the 2026-10-29 UI verification. Neither is restated as covering later surfaces.
+Each metric above keeps its recorded scope: the 604-test/87.13% gate is the 2026-11-04 Python baseline; the 24 route/viewport checks cover the 2026-11-04 candidate's six routes at four widths; and the 48 route/viewport checks belong to the separate 2026-10-29 UI verification. Each stays attached to its own date and surfaces, and none is restated as covering the others.
 
 **What this repository does not evidence:** consented external repository runs, repeat usage, measured review time, stated willingness to pay, revenue or customers. Absence here is absence of evidence in this repository, not a measured zero.
 

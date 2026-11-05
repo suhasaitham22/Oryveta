@@ -50,19 +50,12 @@ def case(name, value, expected, kind):
             "expected_json": expected, "kind": kind}
 
 
-def main() -> None:
-    parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--model", required=True)
-    parser.add_argument("--model-digest", required=True)
-    parser.add_argument("--image", required=True, help="preloaded local sha256 image ID")
-    parser.add_argument("--docker-context", default="default")
-    parser.add_argument("--run-root", default=str(Path.home() / ".oryveta/repair-runs"))
-    parser.add_argument("--output", required=True, help="new directory for retained evidence")
-    args = parser.parse_args()
-    specification = {
+def specification(model: str, digest: str, image: str, context: str) -> dict:
+    """The operator contract both the repair smoke and the re-verification smoke use."""
+    return {
         "schema_version": 1,
-        "model": {"name": args.model, "digest": args.model_digest},
-        "runner": {"image": args.image, "docker_context": args.docker_context},
+        "model": {"name": model, "digest": digest},
+        "runner": {"image": image, "docker_context": context},
         "read_paths": ["main.py", "versions.py"], "write_paths": ["versions.py"],
         "development_checks": [
             case("numeric-order", ["1.10", "2.0", "1.2"], ["1.2", "1.10", "2.0"], "regression"),
@@ -76,10 +69,22 @@ def main() -> None:
             case("original-spelling", ["01.2", "1.02", "1.10"], ["01.2", "1.02", "1.10"], "preserve"),
         ],
     }
+
+
+def main() -> None:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--model", required=True)
+    parser.add_argument("--model-digest", required=True)
+    parser.add_argument("--image", required=True, help="preloaded local sha256 image ID")
+    parser.add_argument("--docker-context", default="default")
+    parser.add_argument("--run-root", default=str(Path.home() / ".oryveta/repair-runs"))
+    parser.add_argument("--output", required=True, help="new directory for retained evidence")
+    args = parser.parse_args()
+    contract = specification(args.model, args.model_digest, args.image, args.docker_context)
     with tempfile.TemporaryDirectory(prefix="oryveta-live-repair-") as directory:
         fixture = Path(directory)
         config = fixture / "operator.json"
-        config.write_text(json.dumps(specification), encoding="utf-8")
+        config.write_text(json.dumps(contract), encoding="utf-8")
         config.chmod(0o600)
         archive = fixture / "source.zip"
         with zipfile.ZipFile(archive, "w") as bundle:
@@ -97,6 +102,9 @@ def main() -> None:
             raise RuntimeError("the real repair did not pass its independent contracts")
         if hashlib.sha256(archive.read_bytes()).hexdigest() != original:
             raise RuntimeError("the input archive was modified")
+        candidate = Path(args.output) / "candidate.zip"
+        if hashlib.sha256(candidate.read_bytes()).hexdigest() != receipt["candidate_archive_sha256"]:
+            raise RuntimeError("the exported candidate does not match its recorded digest")
         print(json.dumps({"smoke": "real_local_model_and_containers", "checks_passed": receipt["checks_passed"],
                           "model_turns": receipt["turns"], "tool_calls": receipt["tool_calls"],
                           "tokens_observed": receipt["tokens_observed"], "publication": receipt["publication"]}))

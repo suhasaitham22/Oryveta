@@ -221,5 +221,32 @@
         "receipt": "The browser prepares a brief; it does not execute the coding CLI. Journey drafts are in memory until exported. This video is a storyboard, not execution evidence."
       }
     ]
+  },
+  {
+    "id": "candidate-reverification",
+    "title": "Check a saved candidate without the model",
+    "description": "Keep the candidate private → rerun the operator's checks → inspect fresh review evidence",
+    "version": 1,
+    "state": "storyboard",
+    "scenes": [
+      {
+        "eyebrow": "01 / KEEP THE CANDIDATE",
+        "headline": "Keep the code with its source.",
+        "body": "After a local repair attempt, retain the candidate archive, original source archive and reviewed operator configuration. Compare their recorded identities before handing them to an authorized reviewer.",
+        "receipt": "Candidate archives contain source code. They remain private local files, not automatically published website downloads. A saved candidate may still be unverified."
+      },
+      {
+        "eyebrow": "02 / RE-RUN THE CHECKS",
+        "headline": "Ask the verifier, not the model.",
+        "body": "Invoke the local CLI with --candidate-zip and a new evidence directory. It validates the changed-file scope, reproduces the baseline and runs the declared checks in fresh bounded containers.",
+        "receipt": "No model or inference service is contacted. This is a new verification run, not replay, resume or permission to change the operator's checks."
+      },
+      {
+        "eyebrow": "03 / REVIEW FRESH EVIDENCE",
+        "headline": "Review the exact checked change.",
+        "body": "Inspect the new source, candidate and configuration hashes with the baseline and final results. A passing result requests human review; a mismatch, failed check or incomplete run is not accepted.",
+        "receipt": "Declared checks are not general correctness or remote attestation. Nothing is merged, deployed or charged. This captioned storyboard is not live execution footage."
+      }
+    ]
   }
 ]

@@ -6,7 +6,9 @@ The hosted React Studio uses Supabase Auth and PostgreSQL RLS. Its public config
 
 GitHub provider availability is read from the project's real `/auth/v1/settings` response. An unavailable or unconfirmed provider stays disabled; the frontend cannot enable an unconfigured OAuth provider. Sign-in identifies a person, not repository authority. Repository access still requires a separate GitHub App, which is not implemented by this collaboration change.
 
-The self-hosted FastAPI/SQLite engine retains a separate local identity. Hosted tokens are not forwarded into that engine and a cloud project is not an executed local project.
+The self-hosted FastAPI/SQLite engine retains a **separate** local identity. Hosted tokens are not forwarded into that engine, a cloud project is not an executed local project, and the two identity systems are deliberately not merged in either direction.
+
+The operator-run local repair/reverification CLI sits outside both identity systems entirely. It has no account, session, project, role or workspace: its only boundary is the invoking operator's OS access to the configuration file, the source and candidate archives, the Docker context and the private `0700` run/evidence directories. No hosted or local Oryveta identity can start it, read its evidence or be used to authorize it, and its receipts confer no grant on anything described below.
 
 ## Browser sessions and email links
 
@@ -89,4 +91,4 @@ The Oryveta GitHub OAuth App uses the exact callback `https://nydtmiseclkwauiepq
 
 The production security advisor reports authenticated-callable `SECURITY DEFINER` RPCs by design. These entrypoints are the controlled write boundary: anonymous execution is denied, search paths are fixed and each call checks its actor, resource role and, where applicable, worker identity and lease. Keep the warnings visible rather than granting direct table writes or changing to invoker mode to silence them. Leaked-password protection is also flagged; [Supabase requires Pro or above](https://supabase.com/docs/guides/auth/password-security#password-strength-and-leaked-password-protection), so it remains disabled under the no-paid-service requirement.
 
-The default hosted Supabase email service has restrictions and is not a general-purpose production mail provider. Before launch, verify delivery configuration, rate limits, recovery, MFA/SSO requirements, backup/restore and incident controls. Factory execution, Slack integration and recursive learning remain separate roadmap milestones.
+The default hosted Supabase email service has restrictions and is not a general-purpose production mail provider. Before launch, verify delivery configuration, rate limits, recovery, MFA/SSO requirements, backup/restore and incident controls. Hosted factory execution, Slack integration and recursive learning remain separate roadmap milestones; the local repair CLI is not a step toward hosted identity, because connecting it would require a durable work contract, per-tenant isolation and an authorization model it does not have.

@@ -16,22 +16,24 @@
 
 ```mermaid
 flowchart LR
-  U[Browser: Start New / Evolve] --> API[Auth + Control API]
-  API --> DB[(Jobs / approvals / audit)]
-  DB --> W[Leased worker]
-  W --> P[Policy + budgets - planned]
-  P --> AI[Model provider adapter - planned]
-  AI --> SB[Isolated sandbox - planned]
-  SB --> V[Independent verifier - planned]
-  V --> R[Proof receipts - planned]
-  R --> API
+  U[Browser: Start New / Evolve] --> API[Auth + Control API - deployed]
+  API --> DB[(Grants / durable work / leases / audit - deployed)]
+  DB -.-> W[Leased worker - operator-started, not hosted]
+  W -.-> P[Policy + budgets - planned for the hosted path]
+  P -.-> AI[Model provider adapter - local only]
+  AI -.-> SB[Isolated execution - local CLI only]
+  SB -.-> V[Independent verifier - local CLI only]
+  V -.-> R[Proof receipts - local private files only]
+  R -.-> API
 ```
 
-**Implemented or proposed in this milestone:** single-host SQLite job admission, authenticated status, owner-only cancellation, fenced lease heartbeats, atomic job/event creation, existing local source analysis and read-only Evolve patch previews.
+Solid edges are deployed and continuously available. Dotted edges run only when a person starts them locally, and the local CLI reports to no control plane.
 
-**Implemented in this change:** an opt-in local Ollama text-generation adapter and SQLite per-user token reservations. No model is deployed or exercised against a live inference server by CI.
+**Implemented and deployed:** Supabase Auth identity, PostgreSQL RLS project/session grants, narrow write RPCs, durable work items with fenced leases, bounded attempts, checkpoints, cancellation, worker revocation and typed run events. Production analysis has been completed only by an operator-started one-off local worker.
 
-**Not implemented:** production coding/modernization agents, hard sandbox isolation, knowledge graph, operational on-call automation, GitHub App publication, recursive learning or enterprise operational guarantees. Project/session roles have local real-service verification; this is not comprehensive enterprise identity/governance or a production rollout.
+**Implemented self-hosted or local only:** the single-host SQLite job admission/cancellation/lease path, local heuristic source analysis, read-only Evolve patch previews, the opt-in local Ollama text adapter with SQLite per-user token reservations, and the operator-run repair/reverification CLI with its versioned specification, scoped file allowlists, bounded container check execution, controller-owned verification and durable private receipts.
+
+**Not implemented:** hosted coding/modernization agents, hosted autonomous Evolve fixes, any always-on worker, hardened per-tenant isolation for untrusted customer code, the knowledge graph, operational on-call automation, GitHub App publication, recursive learning, enterprise identity governance, billing and operational guarantees. Local Docker check isolation is **not** the hardened sandbox the gates table below requires. Project/session roles have real-service verification; that is not comprehensive enterprise governance.
 
 ## Enterprise AI release gates
 
@@ -48,9 +50,11 @@ flowchart LR
 | Operations | Backup/restore, rollback, reproducible deploy | Restore drill and canary rollback |
 | Delivery | CI, dependency audit, code review, artifact provenance | Required checks green before merge |
 
+Nothing in that table is satisfied for a hosted multi-tenant launch. Two rows have *partial local* evidence that must not be read as the gate being met: a real local open-weight model completed one synthetic repair with independent controller-owned verification (Model adapter), and the local check runner enforces an ephemeral filesystem, non-root UID, CPU/memory/PID/output limits, disabled networking and kill/cleanup on timeout (Sandbox). Both were exercised on one operator's own machine against operator-approved source and a trusted image. Shared-kernel containers on a trusted host are not escape-tested per-tenant isolation, and one synthetic task is not held-out success evidence.
+
 ## Task state and current limitations
 
-Current lifecycle: `queued → running → succeeded | failed`; `queued | running → canceled`. A worker has a unique lease token, renews it while busy and can commit results only with an unexpired matching token. Cancellation revokes the token atomically, preventing late results or retries. **Running computation can still finish in-process**: this is a persistence fence, not hard termination. Never execute untrusted code until a killable sandbox with a hard deadline exists.
+Current single-host lifecycle: `queued → running → succeeded | failed`; `queued | running → canceled`. A worker has a unique lease token, renews it while busy and can commit results only with an unexpired matching token. Cancellation revokes the token atomically, preventing late results or retries. **Running computation can still finish in-process**: this is a persistence fence, not hard termination, and it is the reason the web/API path still only reads imported source. The separate local repair CLI does have bounded container execution with hard per-command deadlines and verified teardown, but it is operator-run on trusted source and is not this lifecycle. Do not execute untrusted customer code on either path.
 
 A user can have at most **8 queued/running jobs** on the current single-host API. New requests over quota return `429` and `Retry-After: 30`. Matching benchmark idempotency replays work at capacity. Initial imported project and analysis job are inserted atomically, avoiding orphan rows on quota rejection. Job admission and activity records share a transaction.
 

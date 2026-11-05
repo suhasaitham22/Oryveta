@@ -4,6 +4,8 @@
 
 Arena is the **internal test/research system**, not a third consumer product screen. The public product has Start New and Evolve. Kaggle is one benchmark source among software engineering tasks; strong Kaggle scores do **not** by themselves prove superior coding or consultancy delivery.
 
+Most of this document is **protocol for evaluations not yet run**. Read "Current status" below first for what actually exists, and treat every method section as a standard we commit to meeting before publishing a number — not as a description of completed work.
+
 ## Test categories
 
 - Repository repair: bounded bug fixes, regression tests, CI and documentation.
@@ -40,7 +42,26 @@ Respect Kaggle consent, entry/submission limits, team account and external-data 
 
 ## Current status
 
-A local earlier MVP ran small scikit-learn cross-validation benchmarks on built-in datasets. **No Kaggle medals, leaderboard domination, third-party benchmark wins, automated learning gains or deployed Arena worker are established.**
+**No benchmark result, leaderboard placement, Kaggle medal, success rate, customer outcome or automated learning gain is established.** There is no deployed Arena worker. What exists is one local earlier MVP running small scikit-learn cross-validation on built-in datasets, plus the operator-run repair CLI described in [IMPLEMENTATION.md](IMPLEMENTATION.md#local-verified-repair-cli).
+
+The published coding example is a synthetic numeric-version repair recorded 2026-11-04 as run `f635c7c92c6b4e5fbea11a0d35d20def` using local Qwen3 8B and Docker. It passed seven operator-declared cases with six turns, five tool calls and 6,852 observed tokens. The defect failed before the edit and passed afterward, with acceptance inputs withheld from model context. That is not a held-out task corpus or a comparison against another agent/harness. It is one distinct synthetic task, not a benchmark success rate, customer result or real-repository qualification. Additional runs on this fixture do not increase the number of qualified tasks. Dated results remain in [STATUS.md](STATUS.md).
+
+Candidate re-verification is a check-execution capability. An exercised run provides fresh evidence about the declared contracts for its source, candidate and configuration. It does not establish model quality or generalization, and a directory of `needs_review` receipts alone is not a comparative evaluation.
+
+## Path to real evidence: consented repositories, not borrowed benchmarks
+
+The next evaluation milestone is deliberately **not** a public benchmark run. Public suites remain useful later for comparability, but they cannot answer the question that matters for small teams maintaining existing Python services: does a bounded repair on *their* code pass *their* checks without breaking behavior they rely on?
+
+Required before any such evaluation starts:
+
+1. **Written, informed consent per repository**, naming who owns the code, which revision is in scope, what may be copied to the operator's machine, what the model may see, where evidence is stored and for how long, and how to withdraw. Private source entering a local model context and a private evidence directory is a data-handling decision, not a technical detail. Resolve licensing separately from consent — permission to read is not permission to redistribute.
+2. **A real defect with an independently authored check**, taken from the team's own issue, failing test or incident. The check's expected values are written by the repository's own maintainers or the operator, never by the model, and they stay outside the archive and outside model context. Fabricating a defect to demonstrate a fix is a synthetic case; label it as one.
+3. **Maintainer-chosen preservation cases** must pass on the unchanged source; a failing preservation case stops the attempt. Separately, the defect-reproducing case must fail before repair. Do not confuse the required fail-to-pass baseline with an unrelated existing regression.
+4. **Pre-registration of the attempt** — budgets, turn/token limits, what counts as success, what counts as a stop, and that failures and no-change outcomes will be reported. Record every attempt, including abandoned and interrupted ones.
+5. **Human review of the candidate** before anyone calls it a fix. `needs_review` is the ceiling the tool can reach; a maintainer deciding the change is correct and merging it is a separate, human result.
+6. **Honest reporting of n.** With a handful of repositories the output is a case series: per-case descriptions, what the model did, what it got wrong, reviewer time, resource use and the cases where it produced nothing useful. No percentage, no "success rate", no implied rate of improvement, no aggregation across repositories with different difficulty.
+
+Do not infer paid-customer status, reference permission, benchmark performance or market validation merely from an opt-in pilot or passing contract. Each claim needs its own evidence and any required permission. A real paid pilot may be described accurately; participation alone is not permission to display a customer logo.
 
 ## Implemented fail-closed evidence gate (2026-10-12)
 

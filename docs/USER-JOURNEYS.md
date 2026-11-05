@@ -1,6 +1,6 @@
 # End-to-end user journeys and acceptance criteria
 
-Oryveta has two entry points: Start New for a new application, and Evolve for an existing application or package. The complete agent-driven journeys below are acceptance targets, not current feature claims. Today, hosted users can manage projects and private conversations and export planning/demo drafts; the self-hosted engine provides starter code and read-only source analysis. See [STATUS.md](STATUS.md) for exercised deployment evidence.
+Oryveta has two entry points: Start New for a new application, and Evolve for an existing application or package. The complete agent-driven journeys below are acceptance targets, not current feature claims. Today, hosted users can manage projects and private conversations and export planning/demo drafts; the self-hosted engine provides starter code and read-only source analysis; and a separate operator-run local CLI repairs an operator-selected source ZIP under controller-owned checks. The journeys are sequenced deliberately — a reviewable, verified maintenance change first, the wider factory afterwards. See [STATUS.md](STATUS.md) for exercised deployment evidence, and keep *production*, merged *`main`* and the open *review candidate* named separately when describing behavior.
 
 ## Public visitor and GitHub login
 
@@ -18,11 +18,13 @@ Required states: Draft, Planning, Awaiting Approval, Queued, Running, Verifying,
 
 GitHub App/ZIP → repository map → categorized findings → rank impact/risk → select work → optional human approval → isolated patch → regression/security/performance verification → reviewable diff and PR → post-change verification. Dead-code analysis is conservative because dynamic references can defeat static inspection.
 
+Independent re-check, available locally today: a reviewer holding a candidate archive, the original source archive and the reviewed operator configuration can re-run the declared checks with no model at all (`--candidate-zip`). The run validates that only allowlisted files changed, reproduces the baseline, executes every declared case in fresh local containers and records a new private receipt in `mode='verification'`. The acceptance criterion for this journey is that a reviewer never has to trust the producing agent's own claim — not that re-verification approves, resumes or publishes anything.
+
 For a potential Rust rewrite, include a baseline, interoperability/migration strategy, data format compatibility tests, behavior parity, rollback and measurable cost/latency tradeoffs. Require explicit approval; never silently replace working language stacks.
 
 ## Target 24/7 task lifecycle
 
-Durable repository analysis is deployed to Supabase and verified through the production UI with a one-off local worker. No always-on cloud worker host is configured. The full agent lifecycle below still requires that infrastructure and the planned implementation/verifier tools.
+Durable repository analysis is deployed to Supabase and verified through the production UI with a one-off local worker. The always-on cloud worker host is still absent. The full agent lifecycle below therefore still requires that infrastructure, plus hosted equivalents of the implementation/verifier tools — the local CLI already provides a controller-owned verifier on an operator's own machine, so what is missing here is hosted execution rather than the tooling itself.
 
 Authenticated request persists to central SQL state → queue/event wakes remote worker → worker claims expiring lease with idempotency → periodically checkpoints and reports state → stores artifacts and evidence → requests approval for sensitive operations → resumes independently of the browser. Recover transparently from worker outages without duplicate side effects.
 

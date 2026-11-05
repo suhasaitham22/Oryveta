@@ -2,14 +2,18 @@
 
 Every feature, story or customer-facing change must ship with a concise storyboard in `apps/web/studio/public/demo-stories.json`. Each entry contains `id`, `title`, `description`, `state` and at least three `scenes` with `eyebrow`, `headline`, `body` and `receipt`.
 
+Related: [documentation hub](INDEX.md) · [design system](DESIGN-SYSTEM.md) · [pricing and launch plan](PRICING.md) · [recorded status](STATUS.md) · [agent skills](AGENT-SKILLS.md).
+
 ## Demo contract
 1. **Describe the customer problem and the actual implemented capability.** Never narrate an unimplemented feature as deployed.
 2. **Show a visible before/after or engineering flow** with at least three clear beats.
 3. **Record proof**: functional test, screenshot, actual capture, build run ID, commit, limitations and known gaps.
 4. **Review demo claim quality** alongside CI; fail when a story is missing or makes fabricated claims.
-5. **Produce video** through `apps/web/studio/demo`: actual vendored snapcn text-reveal + Remotion compositions. `npm run render:<story>` creates a video locally. Add device frames, real captures or further snapcn registry components as needed. These assets cannot replace feature tests or human sign-off.
+5. **Render locally, and call the output what it is.** `apps/web/studio/demo` holds vendored snapcn text-reveal + Remotion compositions; `npm run render:<story>` produces a video on your own machine. That file is a **captioned storyboard** — titles, captions and still frames explaining a journey. It is not a screen recording of the application, not footage of an agent run and not evidence that anything works. Add device frames or real captures where they help, but a capture pasted into a storyboard does not upgrade the storyboard to application evidence, and none of these assets replace feature tests or human sign-off.
 
-The browser Demo Studio is a functioning editable **storyboard preview**, not video generation. Its JSON export preserves scenes and labels `verified: false`. An automated build/publishing agent should treat `state=storyboard` as an approval gate, not a green launch.
+Three kinds of material must never be conflated: a **renderable storyboard** (JSON scenes, with or without an mp4 rendered from them), an **application capture** (a screenshot or recording of the real UI), and **CLI evidence** (a receipt, patch and digests from an actual run). Each belongs to a different claim, and only the last two record behavior.
+
+The browser Demo Studio is a functioning editable **storyboard preview**, not video generation: it renders no video at all. Its JSON export preserves scenes and labels `verified: false` with `storyboard_only_not_rendered`. An automated build/publishing agent should treat `state=storyboard` as an approval gate, not a green launch.
 
 ## Context and local-run boundaries
 
@@ -20,7 +24,7 @@ The local-run panel may show real coarse worker states and recorded event timeli
 ## Agent integration
 The offline agent's evidence gate (`oryveta_engine.learning`) remains fail-closed. Use the same task IDs and outcome receipts to create a demo script after verification; never promote unreviewed candidate behavior. Feed approved receipts into story captions and version each demo with code/feature revision.
 
-See [snapcn installation](https://snapcn.dev/docs/getting-started/installation) and [product demo skill](https://snapcn.dev/docs/getting-started/agent-skill). The initial shipped compositions cover Start New, Evolve, and Agent Evaluation. Add a scenario for **every** new shipped feature, never just the homepage.
+See [snapcn installation](https://snapcn.dev/docs/getting-started/installation) and [product demo skill](https://snapcn.dev/docs/getting-started/agent-skill). The manifest is the authority on which compositions exist — read `demo-stories.json` rather than trusting a count or list written into prose, which goes stale as stories are added. Add a scenario for **every** new shipped feature, never just the homepage.
 
 
 ## Agent-to-demo generation (offline, review gated)

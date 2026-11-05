@@ -15,6 +15,6 @@ npm run render:evolve
 npm run render:agent-evaluation
 ```
 
-The on-site **Demo Studio** supports edit/preview/export of real storyboards, **not MP4 rendering in the browser**. The Remotion composition uses the vendored `TextReveal` component across each of the three scenarios, exporting an offline video when `@remotion/cli` and a supported renderer are installed. Recorded real workflow evidence, device frames and measurements should be reviewed/attached prior to any public claims. Never substitute scripted scenes for actual feature execution.
+The on-site **Demo Studio** edits/previews/exports storyboards, **not MP4 videos**. `src/Root.tsx` registers a Remotion composition for each story in `../public/demo-stories.json`, using the vendored `TextReveal` component. The source includes the captioned proof/pricing story as well as the product workflows. Run `npx remotion render src/index.ts <story-id> out/<story-id>.mp4` from this directory with the pinned dependencies and a supported local browser. Inspect the rendered frames; an offline storyboard is not footage of working software, a founder video, customer evidence or a YC endorsement. Reviewed workflow evidence and its source/limitations remain separate.
 
 Future additions: add more snapcn components with `npx shadcn@latest add @snapcn/<name>` within this directory and review the source diff. Snapcn's video components are not shadcn/ui's interactive app elements.

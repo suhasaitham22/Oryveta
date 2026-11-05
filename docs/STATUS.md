@@ -1,5 +1,34 @@
 # Oryveta implementation status
 
+## Current capability and release map
+
+**Source snapshot: 2026-11-04.** This map describes the current checkout, including the changes under [PR #48](https://github.com/suhasaitham22/Oryveta/pull/48). A review preview is not production, and merged `main` can be ahead of a successful deployment. The dated sections below preserve the evidence behind deployment and execution claims.
+
+| Surface | Implemented boundary | Not implied |
+| --- | --- | --- |
+| Hosted collaboration | Supabase sign-in, saved projects/briefs, roles/invitations and separately shared private conversations; production authorization evidence is recorded below | Hosted coding or a general availability SLA |
+| Durable analysis | Deployed work/run/event/lease authority; production analysis exercised with an operator-run one-off worker | A continuously hosted worker |
+| Public design and pricing | Evidence-led Home, Pricing, labelled synthetic example downloads and a free-preview entry, verified in the review preview | Billing, customer traction, YC affiliation or a commercial launch |
+| Local FastAPI/SQLite engine | Separate identity, deterministic starters and bounded read-only source analysis | A bridge that forwards hosted sessions into local tools |
+| Local coding CLI | Model-driven scoped repair, interruption checkpoints and private candidate export; model-free re-verification of an explicitly supplied candidate | Resume/replay, automatic approval, GitHub publication, remote attestation or multi-tenant production isolation |
+
+The goal is verifiable maintenance changes for small teams first, then the broader Start New/Evolve factory. Community software is $0; hosted preview capacity and proposed Team pricing remain governed by [PRICING.md](PRICING.md). Consented real-repository outcomes, repeat use, review effort and willingness to pay—not additional website polish—are the next qualification evidence.
+
+## Candidate re-verification and documentation alignment — 2026-11-04
+
+The local CLI now exports a changed candidate as private `candidate.zip` and accepts `--candidate-zip` for a new model-free verification run. It compares normalized inventories and file bytes against the original source and write allowlist before candidate execution, reproduces the defect and checks preservation on the baseline, then runs every declared final case in fresh bounded containers. It does not trust an old success claim or modify the source archive. [Commands, limits and receipt semantics](IMPLEMENTATION.md#candidate-export-and-model-free-re-verification).
+
+Exercised evidence:
+
+- `smoke_reverify.py` passed seven behavioral cases with a deliberately nonexistent model configuration, **zero model calls and zero inference tokens**, and rejected an out-of-scope edit before execution (`candidate_scope`).
+- Real Qwen3 8B repair run `369041c04db04083ac1b13a12f8913c2` exported a candidate. Fresh verification run `cc564a7c99e54b1eb81f68ef49127842` passed the same seven cases with zero model calls/tokens. Candidate archive/tree, configuration and check-suite digests matched across runs. Implementation digest: `9e0da006aecffd8242d4aa98f35807720d23e6e57b6adb42b795aa4dd90bc19a`.
+- **630 Python tests passed**, **87.47% branch-inclusive coverage**, Ruff, Bandit, compilation and dependency consistency passed. Subprocess regressions now explicitly use the current checkout rather than an unrelated editable installation; the single-folder archive fixture preserves its intended layout before testing export/re-import.
+- Hosted and self-hosted builds, real Chromium navigation/download/history flows, local cookie/ZIP/cancellation flows and reduced-motion checks passed. The broken self-hosted Font license link was reproduced and repaired with an explicit static route, not a wider filesystem exposure.
+- All 38 Markdown documents were reviewed for current design, goals, storage/identity boundaries and pricing/release claims. Local links/anchors were checked; historical evidence, legal notices and original ADR decisions remain dated and intact. Advisor results must reflect actual observations, not assumed cleanliness.
+- Nine storyboard contracts and the Remotion TypeScript gate passed. The [12-second re-verification storyboard](media/candidate-reverification-storyboard.mp4) was rendered and its three scenes inspected. It is a captioned workflow explanation, not a recorded agent session or customer result.
+
+These are additional implementation checks on the same synthetic task family, not new real-repository qualification or benchmark results. No paid service, billing path, hosted coding worker or production rollout was enabled. The existing Starlette/httpx deprecation and optional Three.js size advisory remain visible.
+
 ## Evidence-led public UI and pricing — source verification, 2026-11-04
 
 The public experience now focuses on small teams reviewing maintenance changes: an evidence-led Home, a dedicated `/pricing` route, updated About/What We Do, consistent navigation and a downloadable **synthetic local repair example**. Community is $0 software with a capacity-limited free hosted preview. Team is a **proposed $49 USD/workspace/month for up to five builders**; paid features, billing and hosted compute are not enabled. [Pricing, hypothetical economics, effort allocation and YC evidence gates](PRICING.md) distinguish the product plan from observed customer results.

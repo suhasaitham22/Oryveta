@@ -63,6 +63,63 @@ def test_zip_preserves_source_only_top_level_folder(tmp_path):
     assert not (root / "main.py").exists()
 
 
+def test_wrapped_export_round_trips_a_single_nonstandard_folder(tmp_path):
+    """A candidate export must come back with the same files, folder included."""
+    source = tmp_path / "project"
+    assert snapshot_zip(source, zipped({
+        "repo/pkg/main.py": "print(1)", "repo/pkg/util/helper.py": "x=1",
+    })) == 2
+    payload = create_archive(source, wrapper="candidate")
+    with zipfile.ZipFile(io.BytesIO(payload)) as archive:
+        assert sorted(archive.namelist()) == ["candidate/pkg/main.py", "candidate/pkg/util/helper.py"]
+    restored = tmp_path / "reimport"
+    assert snapshot_zip(restored, payload) == 2
+    assert (restored / "pkg" / "main.py").read_text() == "print(1)"
+    assert (restored / "pkg" / "util" / "helper.py").read_text() == "x=1"
+    # Without the wrapper the importer would strip "pkg" as if it were one.
+    bare = tmp_path / "bare"
+    snapshot_zip(bare, create_archive(source))
+    assert not (bare / "pkg").exists()
+
+
+@pytest.mark.parametrize("files", [
+    {"main.py": "print(1)"}, {"src/main.py": "print(1)", "README.md": "hi"},
+])
+def test_wrapped_export_round_trips_flat_and_preserved_layouts(tmp_path, files):
+    source = tmp_path / "project"
+    source.mkdir()
+    for name, data in files.items():
+        (source / name).parent.mkdir(parents=True, exist_ok=True)
+        (source / name).write_text(data)
+    restored = tmp_path / "reimport"
+    snapshot_zip(restored, create_archive(source, wrapper="candidate"))
+    assert {path.relative_to(restored).as_posix(): path.read_text()
+            for path in restored.rglob("*") if path.is_file()} == files
+
+
+def test_export_and_import_skip_the_same_generated_directories(tmp_path):
+    """Asymmetric skipping would change a tree across one export and reimport."""
+    source = tmp_path / "project"
+    (source / "__pycache__").mkdir(parents=True)
+    (source / "__pycache__" / "main.pyc").write_bytes(b"\x00compiled")
+    (source / "main.py").write_text("print(1)")
+    payload = create_archive(source, wrapper="candidate")
+    with zipfile.ZipFile(io.BytesIO(payload)) as archive:
+        assert archive.namelist() == ["candidate/main.py"]
+    restored = tmp_path / "reimport"
+    assert snapshot_zip(restored, payload) == 1
+    assert [path.relative_to(restored).as_posix() for path in restored.rglob("*")] == ["main.py"]
+
+
+@pytest.mark.parametrize("wrapper", ["src", "docs", "..", "", "a/b", "-bad"])
+def test_export_refuses_a_wrapper_that_would_not_round_trip(tmp_path, wrapper):
+    source = tmp_path / "project"
+    source.mkdir()
+    (source / "main.py").write_text("print(1)")
+    with pytest.raises(InvalidRepository, match="round-trip safe"):
+        create_archive(source, wrapper=wrapper)
+
+
 def test_zip_cleanup_if_second_file_extraction_fails(tmp_path, monkeypatch):
     archive = zipped({"repo-main/first.py": "x=1", "repo-main/second.py": "x=2"})
     original_open = zipfile.ZipFile.open

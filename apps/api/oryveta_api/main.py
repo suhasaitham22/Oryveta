@@ -657,6 +657,13 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             return studio_unavailable()
         return FileResponse(license_file, media_type="text/plain")
 
+    @app.get("/studio/geist-license.txt")
+    def studio_font_license():
+        license_file = studio_dist / "geist-license.txt"
+        if not license_file.is_file():
+            return studio_unavailable()
+        return FileResponse(license_file, media_type="text/plain")
+
     @app.get("/studio/repair-example.json")
     def studio_repair_example():
         example = studio_dist / "repair-example.json"

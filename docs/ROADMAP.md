@@ -2,6 +2,8 @@
 
 This is a delivery plan, not a claim that the factory already exists. Sequence numbers below identify planned PRs, not GitHub PR IDs. Current implementation and exercised evidence are recorded separately in [STATUS.md](STATUS.md).
 
+**One goal, approached in order.** A verifiable maintenance change on an existing codebase comes first; the broader factory follows. Each stage below is entered on recorded evidence from the one before, and the ordering is sequencing rather than a narrowed ambition. When reading any line here, keep *production* (what the hosted site serves), merged *`main`* and an open *review candidate* distinct — a roadmap entry describing candidate source is not a deployed capability.
+
 ## Shared goal
 
 One platform for personal users and teams: a polished web/mobile experience and Slack client operating the same accounts, projects, private/shared sessions, durable work items, runs, approvals and scoped knowledge.
@@ -44,7 +46,9 @@ Use open-source Deep Agents/LangGraph primitives where they fit, rather than ado
 
 Each PR must add an exercised capability and may be split further for reviewability. Security and verification start with the first execution; the release and enterprise milestones do not defer baseline isolation or approval. Basic supervision starts in PR 2. Collect learning evidence early, but activate learning only after outcomes are trustworthy. Detailed modernization and on-call contracts are in [PRODUCT.md](PRODUCT.md) and [OPERATIONS.md](OPERATIONS.md).
 
-The 2026-11-02 local CLI delivers the fixed model/tool/execution/verifier subset of Stage 3, with a real synthetic repair and retained success/failure traces. It does not complete Stage 3's durable integration, safe restart, broader decision protocol or target-repository qualification. Those gates precede expanding into hosted coding; a local passing receipt is not an always-on service.
+The 2026-11-02 local CLI delivers the fixed model/tool/execution/verifier subset of Stage 3, with a real synthetic repair and retained success/failure traces. The open review candidate adds durable checkpoints to that loop: progress, usage, pending reservations and per-edit unverified patch digests are persisted, so an interrupted controller leaves an accurate receipt. That is interruption accounting and diagnosis — it is **not** automatic resume or replay, and it is source under review rather than a merged or deployed capability. Stage 3 therefore still lacks durable hosted integration, automatic resume, a decision protocol beyond `no_progress`, and target-repository qualification for the Python cohort. Those gates precede expanding into hosted coding; a local passing receipt is not an always-on service.
+
+The same review candidate adds a model-free re-verification entry point to that CLI (`--candidate-zip`): a saved candidate archive is re-checked against the operator's own reviewed configuration, with inventory and write-scope validation, a reproduced baseline and all declared final cases re-run in fresh local containers, recorded as a separate run in `mode='verification'` with zero model calls. This strengthens the independence of the verifier boundary that Stages 3 and 7 depend on. It is not hosted verification, not resume, not automatic approval and not remote attestation, and it does not by itself qualify a real repository.
 
 ### Commercial launch gates
 
