@@ -2,6 +2,7 @@ import React from "react";
 import { Link } from "react-router-dom";
 import { ArrowUpRight } from "lucide-react";
 import Brand from "./Brand.jsx";
+import { EXAMPLE_RECORD_FILE, exampleAssetUrl } from "@/lib/localExample";
 
 export default function SiteFooter() {
   return (
@@ -10,9 +11,10 @@ export default function SiteFooter() {
         <div className="footer-brand">
           <Brand />
           <p>
-            Plan software, review source and work together in one workspace.
-            Planning and source review are available today; the AI delivery
-            workflow is still being built.
+            Scope a change, review the source and keep the record in one
+            workspace. Planning and source review work today; checked repairs
+            run on your own machine, and hosted agent runs are still being
+            built.
           </p>
           <span className="status-tag">Apache-2.0 · self-hostable</span>
         </div>
@@ -25,6 +27,9 @@ export default function SiteFooter() {
               </li>
               <li>
                 <Link to="/about">About</Link>
+              </li>
+              <li>
+                <Link to="/pricing">Pricing</Link>
               </li>
               <li>
                 <Link to="/workspace">Workspace</Link>
@@ -52,6 +57,14 @@ export default function SiteFooter() {
                 </a>
               </li>
               <li>
+                <a
+                  href={exampleAssetUrl(EXAMPLE_RECORD_FILE)}
+                  download={EXAMPLE_RECORD_FILE}
+                >
+                  Recorded example
+                </a>
+              </li>
+              <li>
                 <a href={`${import.meta.env.BASE_URL}geist-license.txt`}>
                   Font license
                 </a>
@@ -61,7 +74,7 @@ export default function SiteFooter() {
         </nav>
       </div>
       <div className="site-footer-base section-container">
-        <span>Oryveta · Plan software. Review source. Work together.</span>
+        <span>Oryveta · Scope the change. Check the code. Review the patch.</span>
         <span>Starter templates and third-party licenses remain their own.</span>
       </div>
     </footer>

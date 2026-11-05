@@ -17,6 +17,15 @@ REPO_PATTERN = re.compile(r"^[A-Za-z0-9_.-]{1,100}$")
 # A pinned source is an exact commit, never a branch or tag: a work item's
 # retry must fetch the same bytes the first attempt resolved.
 COMMIT_PATTERN = re.compile(r"^[0-9a-f]{40}$")
+# A GitHub-style archive wraps everything in one folder, so the importer drops a
+# single wrapper. These top-level names are meaningful project layout instead
+# and are always kept; an export wrapper must therefore not be one of them.
+PRESERVED_TOP_LEVEL = frozenset({"src", "app", "lib", "tests", "test", "docs",
+                                 "packages", "public"})
+WRAPPER_PATTERN = re.compile(r"[A-Za-z0-9][A-Za-z0-9_-]{0,63}\Z")
+# Import and export skip the same generated directories, so an exported tree
+# re-imports with exactly the files it was exported from.
+SKIPPED_PARTS = frozenset({".git", "node_modules", ".venv", "__pycache__"})
 
 
 class InvalidRepository(ValueError):
@@ -124,7 +133,7 @@ def snapshot_zip(root: Path, payload: bytes) -> int:
         # only of src/* or tests/* must NOT silently lose that meaningful folder.
         top = next(iter(first), "")
         strip_root = (len(first) == 1 and any(len(p.parts) > 1 for p in file_paths)
-                      and top not in {"src", "app", "lib", "tests", "test", "docs", "packages", "public"})
+                      and top not in PRESERVED_TOP_LEVEL)
         planned: list[tuple[zipfile.ZipInfo, tuple[str, ...]]] = []
         seen: set[str] = set()
         total = 0
@@ -143,7 +152,7 @@ def snapshot_zip(root: Path, payload: bytes) -> int:
             if mode == stat.S_IFDIR:
                 raise InvalidRepository("Invalid directory entry")
             parts = tuple(components[1:] if strip_root else components)
-            if not parts or any(part in {".git", "node_modules", ".venv", "__pycache__"} for part in parts):
+            if not parts or any(part in SKIPPED_PARTS for part in parts):
                 continue
             key = "/".join(parts).casefold()
             if key in seen:
@@ -189,14 +198,24 @@ def snapshot_zip(root: Path, payload: bytes) -> int:
         return len(planned)
 
 
-def create_archive(root: Path) -> bytes:
-    """Export a workspace ZIP, refusing oversized exports before buffering files."""
+def create_archive(root: Path, *, wrapper: str | None = None) -> bytes:
+    """Export a workspace ZIP, refusing oversized exports before buffering files.
+
+    ``wrapper`` nests every entry under one extra folder. ``snapshot_zip``
+    removes exactly one wrapper on reimport, so a tree whose only top-level
+    entry is itself a folder survives an export and reimport unchanged instead
+    of silently losing that folder. Existing callers export the bare tree.
+    """
+    if wrapper is not None and (not isinstance(wrapper, str)
+                                or not WRAPPER_PATTERN.fullmatch(wrapper)
+                                or wrapper in PRESERVED_TOP_LEVEL):
+        raise InvalidRepository("Export wrapper folder name is not round-trip safe")
     root = root.resolve()
     planned: list[Path] = []
     total = 0
     for item in sorted(root.rglob("*")):
         relative = item.relative_to(root)
-        if any(part in {".git", "node_modules", ".venv"} for part in relative.parts):
+        if any(part in SKIPPED_PARTS for part in relative.parts):
             continue
         if item.is_symlink() or not item.is_file():
             continue
@@ -209,7 +228,8 @@ def create_archive(root: Path) -> bytes:
     output = io.BytesIO()
     with zipfile.ZipFile(output, "w", compression=zipfile.ZIP_DEFLATED) as archive:
         for item in planned:
-            archive.write(item, item.relative_to(root).as_posix())
+            name = item.relative_to(root).as_posix()
+            archive.write(item, name if wrapper is None else f"{wrapper}/{name}")
     if output.tell() > MAX_UNPACKED:
         raise InvalidRepository("Project export exceeds 32 MB")
     return output.getvalue()

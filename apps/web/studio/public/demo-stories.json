@@ -194,5 +194,59 @@
         "receipt": "Verified with real local Supabase, GitHub downloads and Chromium, including worker crash recovery. The production worker is not deployed. This storyboard is not a live run or proof of autonomous code changes."
       }
     ]
+  },
+  {
+    "id": "proof-and-pricing",
+    "title": "Review the proof, understand the price",
+    "description": "Inspect a recorded repair → compare the available preview with the proposed Team plan → start a real brief",
+    "version": 1,
+    "state": "storyboard",
+    "scenes": [
+      {
+        "eyebrow": "01 / INSPECT THE EXAMPLE",
+        "headline": "Read the change and its checks.",
+        "body": "Open the recorded example on Home. Inspect the proposed patch, read the declared check results, and download the record and patch to compare their hashes.",
+        "receipt": "One synthetic local integration example, not live activity, a customer result or a benchmark. Passed checks still require human review."
+      },
+      {
+        "eyebrow": "02 / UNDERSTAND THE PRICE",
+        "headline": "Free preview. A proposed Team plan.",
+        "body": "Open Pricing and compare Community with the clearly labelled Team proposal. Read what is available, what remains planned and why both plans require your own compute.",
+        "receipt": "No checkout, subscription or invoice exists. The hosted preview is capacity-limited; the proposed price is not an offer to run hosted agents."
+      },
+      {
+        "eyebrow": "03 / START WITH A REAL TASK",
+        "headline": "Write a brief for your codebase.",
+        "body": "Open the free workspace, choose Evolve and describe the defect, expected behavior and regressions to avoid. Export the brief and use the local setup guide for operator-run repair.",
+        "receipt": "The browser prepares a brief; it does not execute the coding CLI. Journey drafts are in memory until exported. This video is a storyboard, not execution evidence."
+      }
+    ]
+  },
+  {
+    "id": "candidate-reverification",
+    "title": "Check a saved candidate without the model",
+    "description": "Keep the candidate private → rerun the operator's checks → inspect fresh review evidence",
+    "version": 1,
+    "state": "storyboard",
+    "scenes": [
+      {
+        "eyebrow": "01 / KEEP THE CANDIDATE",
+        "headline": "Keep the code with its source.",
+        "body": "After a local repair attempt, retain the candidate archive, original source archive and reviewed operator configuration. Compare their recorded identities before handing them to an authorized reviewer.",
+        "receipt": "Candidate archives contain source code. They remain private local files, not automatically published website downloads. A saved candidate may still be unverified."
+      },
+      {
+        "eyebrow": "02 / RE-RUN THE CHECKS",
+        "headline": "Ask the verifier, not the model.",
+        "body": "Invoke the local CLI with --candidate-zip and a new evidence directory. It validates the changed-file scope, reproduces the baseline and runs the declared checks in fresh bounded containers.",
+        "receipt": "No model or inference service is contacted. This is a new verification run, not replay, resume or permission to change the operator's checks."
+      },
+      {
+        "eyebrow": "03 / REVIEW FRESH EVIDENCE",
+        "headline": "Review the exact checked change.",
+        "body": "Inspect the new source, candidate and configuration hashes with the baseline and final results. A passing result requests human review; a mismatch, failed check or incomplete run is not accepted.",
+        "receipt": "Declared checks are not general correctness or remote attestation. Nothing is merged, deployed or charged. This captioned storyboard is not live execution footage."
+      }
+    ]
   }
 ]

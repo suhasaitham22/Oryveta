@@ -1,5 +1,63 @@
 # Oryveta implementation status
 
+## Current capability and release map
+
+**Source snapshot: 2026-11-04.** This map describes the current checkout, including the changes under [PR #48](https://github.com/suhasaitham22/Oryveta/pull/48). A review preview is not production, and merged `main` can be ahead of a successful deployment. The dated sections below preserve the evidence behind deployment and execution claims.
+
+| Surface | Implemented boundary | Not implied |
+| --- | --- | --- |
+| Hosted collaboration | Supabase sign-in, saved projects/briefs, roles/invitations and separately shared private conversations; production authorization evidence is recorded below | Hosted coding or a general availability SLA |
+| Durable analysis | Deployed work/run/event/lease authority; production analysis exercised with an operator-run one-off worker | A continuously hosted worker |
+| Public design and pricing | Evidence-led Home, Pricing, labelled synthetic example downloads and a free-preview entry, verified in the review preview | Billing, customer traction, YC affiliation or a commercial launch |
+| Local FastAPI/SQLite engine | Separate identity, deterministic starters and bounded read-only source analysis | A bridge that forwards hosted sessions into local tools |
+| Local coding CLI | Model-driven scoped repair, interruption checkpoints and private candidate export; model-free re-verification of an explicitly supplied candidate | Resume/replay, automatic approval, GitHub publication, remote attestation or multi-tenant production isolation |
+
+The goal is verifiable maintenance changes for small teams first, then the broader Start New/Evolve factory. Community software is $0; hosted preview capacity and proposed Team pricing remain governed by [PRICING.md](PRICING.md). Consented real-repository outcomes, repeat use, review effort and willingness to pay—not additional website polish—are the next qualification evidence.
+
+## Candidate re-verification and documentation alignment — 2026-11-04
+
+The local CLI now exports a changed candidate as private `candidate.zip` and accepts `--candidate-zip` for a new model-free verification run. It compares normalized inventories and file bytes against the original source and write allowlist before candidate execution, reproduces the defect and checks preservation on the baseline, then runs every declared final case in fresh bounded containers. It does not trust an old success claim or modify the source archive. [Commands, limits and receipt semantics](IMPLEMENTATION.md#candidate-export-and-model-free-re-verification).
+
+Exercised evidence:
+
+- `smoke_reverify.py` passed seven behavioral cases with a deliberately nonexistent model configuration, **zero model calls and zero inference tokens**, and rejected an out-of-scope edit before execution (`candidate_scope`).
+- Real Qwen3 8B repair run `369041c04db04083ac1b13a12f8913c2` exported a candidate. Fresh verification run `cc564a7c99e54b1eb81f68ef49127842` passed the same seven cases with zero model calls/tokens. Candidate archive/tree, configuration and check-suite digests matched across runs. Implementation digest: `9e0da006aecffd8242d4aa98f35807720d23e6e57b6adb42b795aa4dd90bc19a`.
+- **630 Python tests passed**, **87.47% branch-inclusive coverage**, Ruff, Bandit, compilation and dependency consistency passed. Subprocess regressions now explicitly use the current checkout rather than an unrelated editable installation; the single-folder archive fixture preserves its intended layout before testing export/re-import.
+- Hosted and self-hosted builds, real Chromium navigation/download/history flows, local cookie/ZIP/cancellation flows and reduced-motion checks passed. The broken self-hosted Font license link was reproduced and repaired with an explicit static route, not a wider filesystem exposure.
+- All 38 Markdown documents were reviewed for current design, goals, storage/identity boundaries and pricing/release claims. Local links/anchors were checked; historical evidence, legal notices and original ADR decisions remain dated and intact. Advisor results must reflect actual observations, not assumed cleanliness.
+- Nine storyboard contracts and the Remotion TypeScript gate passed. The [12-second re-verification storyboard](media/candidate-reverification-storyboard.mp4) was rendered and its three scenes inspected. It is a captioned workflow explanation, not a recorded agent session or customer result.
+
+These are additional implementation checks on the same synthetic task family, not new real-repository qualification or benchmark results. No paid service, billing path, hosted coding worker or production rollout was enabled. The existing Starlette/httpx deprecation and optional Three.js size advisory remain visible.
+
+## Evidence-led public UI and pricing — source verification, 2026-11-04
+
+The public experience now focuses on small teams reviewing maintenance changes: an evidence-led Home, a dedicated `/pricing` route, updated About/What We Do, consistent navigation and a downloadable **synthetic local repair example**. Community is $0 software with a capacity-limited free hosted preview. Team is a **proposed $49 USD/workspace/month for up to five builders**; paid features, billing and hosted compute are not enabled. [Pricing, hypothetical economics, effort allocation and YC evidence gates](PRICING.md) distinguish the product plan from observed customer results.
+
+The example JSON and patch were extracted from the recorded local run below, without private host paths or raw prompts. Their patch digest matches the original. They are historical build assets, not a live agent feed or customer/benchmark result. The self-hosted API exposes only those two additional static filenames; other dotted routes remain blocked.
+
+Local verification:
+
+- **604 Python tests passed**, **87.13% branch-inclusive coverage**, Ruff and Bandit passed. The checkpoint commit from PR #47 is included: that PR was merged into the feature branch after PR #46's main snapshot, so its already-reviewed change was carried forward rather than silently lost.
+- Hosted and self-hosted production builds passed. Real Chromium exercised Pricing reloads, breadcrumbs, cross-page evidence-anchor focus/scroll, free-workspace entry, JSON/patch downloads with matching hashes, existing draft/history/export behavior and the optional spatial viewer.
+- The actual self-hosted API also passed local cookie login, ZIP intake, analysis cancellation and reduced-motion lifecycle checks at desktop/tablet/mobile sizes.
+- **24 public route/viewport combinations** (six routes at 1440, 768, 390 and 320px) had no document overflow or violations in the selected axe-core WCAG A/AA rules. A 320px pricing-grid overflow was fixed at the grid minimum, not hidden with clipping. This is not full accessibility certification or physical-device coverage.
+- A blocked example request showed an explicit unavailable state without a verification verdict or fabricated record.
+- All **eight** storyboard contracts and Remotion TypeScript checks passed. The three-scene `proof-and-pricing` composition rendered as a 12-second, 1920×1080 H.264 storyboard and its scenes were inspected. The title's containing block was corrected after visual review. This is a captioned storyboard, not recorded application execution or a YC founder video.
+
+Screenshots: [Home desktop](media/yc-home-desktop.png), [Home mobile](media/yc-home-mobile.png), [Pricing desktop](media/yc-pricing-desktop.png), [Pricing mobile](media/yc-pricing-mobile.png). [Rendered pricing storyboard](media/yc-pricing-storyboard.mp4).
+
+This is a review/preview candidate, not a commercial production launch. No payment method, paid service or YC affiliation was added. Commercial hosting entitlement, actual customer validation, founder-verified application facts and the remaining hosted execution gates are still prerequisites. The existing optional Three.js chunk-size advisory and Starlette/httpx deprecation warning remain visible; no Lighthouse or field-performance claim is made.
+
+## Durable local repair checkpoints — verification, 2026-11-04
+
+The local coding CLI now persists progress before model/tool admission and independent verification, and after completed results. Receipts retain the phase, attempted work, observed usage, pending token reservation and source identities when the controller is interrupted. Each completed edit is checkpointed as an unverified patch with its digest. Checkpoint storage failure stops new work, and failure to commit the terminal receipt demotes the verified artifact.
+
+A real child-process SIGKILL test reproduced the previous defect: a controller already inside its first model call left a receipt claiming zero turns. The repaired test and all eight SIGKILL/SIGTERM boundary cases passed, covering initial inference, inference after an edit, a development-check tool and final verification. They use deterministic paused proposals/check boundaries with real-container baselines; they are not live-model quality tests. Storage-failure and complete-edit-reversion regressions also passed.
+
+Local verification: **604 Python tests passed**, **87.17% branch-inclusive coverage** against the unchanged 84% gate, Ruff, Bandit, compilation and dependency consistency passed. One existing Starlette/httpx deprecation warning remains. A separate real Qwen3 8B/Docker repair passed all seven behavioral checks, with six model turns, five tool calls and 6,852 observed tokens. Its receipt finished with zero unsettled reservation and matching candidate/verified patch hashes.
+
+Live evidence: run `f635c7c92c6b4e5fbea11a0d35d20def`, implementation digest `bb510466f1a2f484f0a82ecb83be4a4439e132b19a4406d88fee0183aaf2c09f`. This improves interruption accounting and diagnosis, not automatic resume/replay, abandoned-container cleanup, host-power-loss recovery, durable hosted coding or 24/7 service. The trace is ordered JSONL, not a hash chain; the previous documentation overstated that property. [Receipt semantics and limitations](IMPLEMENTATION.md#evidence-and-limitations).
+
 ## Fixed local repair loop — execution verification, 2026-11-02
 
 The separate `python -m oryveta_engine.coding_runtime` CLI now performs model-driven edits of an operator-selected ZIP in a disposable workspace, with a versioned configuration, exact file grants, pinned local model/image identities, bounded tools/execution and independent controller-owned JSON checks. It emits a review candidate, not a commit, PR or deployment. [Setup and limitations](IMPLEMENTATION.md#local-verified-repair-cli).

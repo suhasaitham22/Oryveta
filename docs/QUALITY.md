@@ -1,6 +1,6 @@
 # Engineering quality gates and reliability policy
 
-**Status:** CI hardening and security audit repair merged via PR #7; Evolve patch previews merged via PR #8. This document is a policy and a testable baseline, not a claim of enterprise production readiness.
+**Status:** This document is a policy and a testable baseline, not a claim of enterprise production readiness and not a record of results. Dated evidence — test counts, coverage, builds, browser runs — belongs in [STATUS.md](STATUS.md); do not restate or revise it here, and never describe a check as executed unless an actual run recorded it.
 
 ## Every pull request must pass
 
@@ -14,7 +14,7 @@
 
 ## React Studio route/build gate
 
-The React Studio gate must build both deployment targets: `npm --prefix apps/web/studio run build` (`dist`, hosted root) and `npm --prefix apps/web/studio run build:local` (`dist-local`, self-hosted `/studio/`). Compiled browser checks must cover direct route reloads, Back/Forward, breadcrumb navigation, draft retention, keyboard/mobile headers, and reduced-motion behavior. HTTP checks must confirm extensionless routes receive the app shell while missing dotted assets and reserved API-like paths remain `404`; an absent self-hosted build remains an honest `503`.
+The React Studio gate must build both deployment targets: `npm --prefix apps/web/studio run build` (`dist`, hosted root) and `npm --prefix apps/web/studio run build:local` (`dist-local`, self-hosted `/studio/`). Compiled browser checks must cover direct route reloads, Back/Forward, breadcrumb navigation, draft retention, keyboard/mobile headers, and reduced-motion behavior across the current public routes (`/`, `/about`, `/what-we-do`, `/pricing`, `/sign-in`) and the signed-in workspace. HTTP checks must confirm extensionless routes receive the app shell while reserved API-like paths remain `404`. Each allowlisted dotted distribution file must have a **positive** check that it is actually served — `demo-stories.json`, `template-license.txt`, `geist-license.txt`, `repair-example.json`, `repair-example.patch` — because a built file with no route is silently a `404`, and a negative-only "dotted paths 404" assertion cannot catch that. Any other dotted path must stay `404`, and an absent self-hosted build must remain an honest `503`.
 
 GitHub Actions workflows use minimal read permissions, SHA-pinned official actions, no credentials persisted by checkout, per-job timeouts, and pull-request concurrency cancellation. Dependabot checks Python, GitHub Actions and Docker dependencies weekly. A scheduled weekly security scan runs even when there are no PRs.
 
@@ -34,7 +34,11 @@ CI explicitly provisions a local Python execution image and runs the coding-runt
 
 For local execution, set `ORYVETA_TEST_DOCKER_CONTEXT` and `ORYVETA_TEST_DOCKER_IMAGE` to an authorized local context and preloaded immutable image ID. On a Docker VM, set `ORYVETA_TEST_RUN_ROOT` to a shared private host directory. Without explicit context/image selection, real-container cases are skipped; do not describe that run as isolation verification.
 
-The separate `scripts/smoke_coding.py` command exercises the real local model, tools, CLI and independent verifier; setup is in [IMPLEMENTATION.md](IMPLEMENTATION.md#local-verified-repair-cli). Keep actual model outcomes and failed attempts distinct from scripted-model regressions. A passed synthetic repair is not a benchmark or a security certification.
+Controller interruption regressions launch the actual CLI in child processes, run baseline checks in real containers, and use deterministic paused model/runner boundaries for SIGKILL and SIGTERM. They verify retained reservations, attempted-tool counts, unverified patch hashes and graceful cleanup. Separate storage-failure cases require checkpoint admission to fail closed and terminal-write failure to leave no verified artifact. These tests are not live-model performance measurements or host-power-loss simulations.
+
+The separate `scripts/smoke_coding.py` command exercises the real local model, tools, CLI and independent verifier; setup is in [IMPLEMENTATION.md](IMPLEMENTATION.md#local-verified-repair-cli). Keep actual model outcomes and failed attempts distinct from scripted-model regressions. A passed synthetic repair is not a benchmark or a security certification — see the single-case framing in [EVALUATION.md](EVALUATION.md#current-status).
+
+The model-free candidate re-verification mode (`--candidate-zip`) needs its own gate, and it is a *different* gate from the repair loop because it must hold with no model present at all. Required coverage, stated as policy rather than as a completed result: a candidate whose only changes are inside `write_paths` reaches `needs_review`; a candidate that adds or removes any file is refused as `candidate_inventory`; a candidate touching a file outside `write_paths` is refused as `candidate_scope` **before any execution**; an unchanged candidate is `no_change`; a malformed, oversized or unsafe archive is `invalid_candidate`; a tampered candidate that fails a declared case yields `verification_failed` and leaves `unverified.patch` plus `candidate.zip` as evidence with no `verified.patch`; a run with **no Ollama endpoint reachable** still completes normally with `model_calls`, `turns`, `tool_calls` and `tokens_observed` all `0` and no `model_observed`/`model_summary`; a supplied `passed` claim inside the candidate changes nothing; a repair-mode candidate export round-trips through the importer, including a project whose only top-level entry is itself a folder; and `candidate_tree_sha256` matches between a repair run and the re-verification of its exported archive. Omitting the no-model case would let an accidental model dependency pass unnoticed, which is why `scripts/smoke_reverify.py` defaults to a nonexistent model name and an all-zero digest rather than to a working one.
 
 ## Verified local hardening tests
 
@@ -47,7 +51,7 @@ The separate `scripts/smoke_coding.py` command exercises the real local model, t
 - Fenced worker completion and failure: a worker that loses/expires its lease cannot publish stale results.
 - Atomic repository analysis completion and job status updates.
 
-Earlier hardening preflight passed 61 tests locally. Enterprise job controls require independent remote Python 3.11–3.13 CI validation before merge. Coverage is not a measure of autonomous agent performance.
+That early hardening preflight passed 61 tests locally at the time; it is a historical figure, not the current suite — current counts and coverage are in [STATUS.md](STATUS.md). Enterprise job controls require independent remote Python 3.11–3.13 CI validation before merge. Coverage is a floor, not a measure of autonomous agent performance.
 
 ## Required repository protection (manual GitHub admin configuration)
 
@@ -56,11 +60,13 @@ Repository **Settings → Branches / Rulesets** should protect `main` by requiri
 ## Production gates not yet satisfied
 
 - Production GitHub identity and project/session authorization are verified; repository-access GitHub App grants and broader enterprise administration remain unimplemented.
-- Production multi-tenant isolation/network policy for arbitrary customer code is not implemented; the operator-run local Docker CLI is not that boundary.
-- The single-host worker has heartbeats and admission limits. Remote execution, secrets management, infrastructure rate limits and autoscaling remain unimplemented.
+- Production multi-tenant isolation/network policy for arbitrary customer code is not implemented; the operator-run local Docker CLI is not that boundary, and neither is its re-verification mode.
+- The single-host worker has heartbeats and admission limits. Remote execution, secrets management, infrastructure rate limits and autoscaling remain unimplemented, and no always-on worker is hosted.
 - No signed/pinned fully reproducible Python dependency lockfile or pinned Docker base-image digest yet.
 - Production OAuth and controlled multi-user browser authorization pass. General email delivery, load tests, disaster recovery and canary/rollback deployment remain separate gates.
-- No evidence of autonomous coding performance or Kaggle leaderboard success.
+- No evidence of autonomous coding performance or Kaggle leaderboard success. One historical synthetic repair exists; it is not a rate, a benchmark or real-repository qualification, and candidate re-verification produces verdicts about declared contracts rather than evaluation evidence.
+- Recorded security-advisor findings include reviewed exceptions. Report current results only from an actual check; see [AUTH-SECURITY.md](AUTH-SECURITY.md#release-gates).
+- Operated restoration, recovery objectives, availability and compliance claims remain unestablished in the recorded evidence; no paid deployment is authorized.
 
 Do not enable arbitrary repository execution or offer consultancy-grade SLA until these gaps have been addressed and tested. See [AUTH-SECURITY.md](AUTH-SECURITY.md) and [OPERATIONS.md](OPERATIONS.md).
 

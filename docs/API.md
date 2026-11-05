@@ -2,7 +2,7 @@
 
 ## Current public website
 
-The hosted frontend uses Supabase for identity, persisted project briefs, membership and private conversations once the required schema is applied. Start New/Evolve execution remains unavailable online: a saved brief is not a generated application or a completed analysis.
+The hosted frontend uses Supabase for identity, persisted project briefs, membership and private conversations, plus the durable analysis control plane below. Start New/Evolve **execution** remains unavailable online: a saved brief is not a generated application, and a submitted analysis only runs when an authorized worker process is started by an operator. No hosted endpoint performs model-driven code changes.
 
 ## Hosted project collaboration
 
@@ -71,9 +71,11 @@ The published FastAPI source supports health/config, GitHub identity OAuth callb
 ## Self-hosted React Studio
 
 - `/studio` redirects to canonical `/studio/`, which serves the self-hosted Vite build from `apps/web/studio/dist-local`.
-- Extensionless page paths such as `/studio/about` and `/studio/workspace/evolve` serve the same app shell for client-side routing. Paths containing a dot, reserved API/auth prefixes, and missing `/studio/assets/*` files return `404` rather than HTML.
-- `/studio/assets/*`, `/studio/demo-stories.json` and `/studio/template-license.txt` are same-origin built distribution files.
+- Extensionless page paths such as `/studio/about`, `/studio/pricing` and `/studio/workspace/evolve` serve the same app shell for client-side routing. Paths containing a dot, reserved API/auth prefixes, and missing `/studio/assets/*` files return `404` rather than HTML.
+- Dotted distribution files are served **only** through an explicit per-file allowlist, never a general dotted-path fallback. The allowlisted files are `/studio/assets/*`, `/studio/demo-stories.json`, `/studio/template-license.txt`, `/studio/geist-license.txt`, `/studio/repair-example.json` and `/studio/repair-example.patch`. Any other dotted path stays `404`. Adding a new built file to `apps/web/studio/public/` therefore requires adding its route too; a file that exists in the build but has no route is served as `404`.
+- `/studio/repair-example.json` and `/studio/repair-example.patch` are the sanitized **synthetic** repair example — reviewed static build assets extracted from one historical local run, not a live feed, a benchmark, a customer result or a view into any operator's private evidence directory. No endpoint exposes a run directory or lets a caller start a repair.
 - If the self-hosted build is absent, Studio page and distribution routes return HTTP `503` while legacy `/` remains available. Escaped asset paths return `404`.
+- The hosted Vercel build serves the same `public/` files at the origin root (for example `/repair-example.json`), because its SPA rewrite excludes any path containing a dot. `/studio/*` belongs to the self-hosted FastAPI surface only.
 
 ## Optional local model gateway (self-hosted only)
 
@@ -82,12 +84,14 @@ The published FastAPI source supports health/config, GitHub identity OAuth callb
 - The API reserves worst-case tokens before inference, settles verified provider usage, rejects over-limit output, and fails closed on timeout/unknown usage. Default allowance is 20,000 tokens/day/account and two concurrent calls. No prompts or generated text are stored in the usage ledger.
 - No tool calls, repository writes, independent verification or real model quality guarantees are provided by this endpoint. See [MODEL-GATEWAY.md](MODEL-GATEWAY.md).
 
-## AI-assisted Evolve patch proposal (read-only)
+## AI-assisted Evolve patch proposal (read-only, single file, no execution)
 
 - `POST /api/projects/{project_id}/ai-patch-preview`: authenticated, CSRF-protected and owner-scoped. Requires `path`, `expected_sha256`, `source` (the exact file contents, at most 1,500 characters) and `instruction` (8–350 characters).
 - First checks that the supplied source hashes to the expected digest, then validates the actual workspace file and safe path. Only then does it spend a local-model budget reservation.
 - The model proposes a **complete replacement file**; Oryveta checks the unchanged baseline again and returns a unified diff, SHA-256 digests, Python syntax check where applicable, usage and `review_required` status. The original file is never written.
 - Rejects unsafe paths, symlinks, stale content, invalid Python output and unavailable local models. No commands, tests, GitHub writes or deployments run. See [EVOLVE-PATCH-PREVIEW.md](EVOLVE-PATCH-PREVIEW.md).
+
+**This endpoint is not the coding CLI.** It is a read-only, one-file, syntax-only suggestion with no execution and no behavioral verification. The separate operator-run `python -m oryveta_engine.coding_runtime` performs multi-turn model-driven edits across an allowlisted file set with controller-owned check execution in isolated containers, and it has **no HTTP surface at all**: it cannot be invoked by an authenticated user, a project, a hosted worker or any route on either deployment. Nothing in this API reads or writes its evidence directories. See [IMPLEMENTATION.md](IMPLEMENTATION.md#local-verified-repair-cli).
 
 ## Target versioned HTTP resources
 

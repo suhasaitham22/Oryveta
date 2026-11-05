@@ -4,7 +4,20 @@
 
 The production Vercel project at https://oryveta.vercel.app serves the **React Studio** built from `apps/web/studio`. The hosted site is a browser client only; it is intentionally separate from the Python API, the durable worker and any agent execution. The archived `preview/` directory is a historical static prototype and must never be Vercel's project root — see [the historical preview notes](../preview/README.md). For local engine and Studio commands see the repository README.
 
-Hosted today: GitHub sign-in, saved projects and briefs, project roles/invitations, private conversations and the Supabase durable-analysis control plane. Production verification is recorded in [STATUS.md](STATUS.md). Analysis completed through the deployed UI using a one-off local worker; no always-on cloud worker is configured. Starter generation still requires the separate self-hosted FastAPI engine. A saved brief is not a generated application, and Kaggle remains an internal benchmark rather than a product journey.
+Hosted today: Supabase GitHub/email sign-in, saved projects and briefs, project roles/invitations, private conversations, and the Supabase durable-analysis control plane. Public routes are `/`, `/about`, `/what-we-do`, `/pricing` and `/sign-in`; `/workspace/*` is behind sign-in. The build also publishes two static synthetic evidence files, `/repair-example.json` and `/repair-example.patch`, which the Pricing and Home evidence sections read and offer for download. They are reviewed build assets extracted from one historical local run — not a live agent feed, a benchmark or a customer result — and no endpoint lets a visitor start a repair.
+
+Production verification is recorded in [STATUS.md](STATUS.md). Analysis completed through the deployed UI using a **one-off local worker**; no always-on cloud worker is configured, so there is no continuous or unattended execution and no availability commitment. Starter generation, the local model gateway and the operator-run repair/reverification CLI all require the separate self-hosted engine or an operator shell; none is reachable from this deployment. A saved brief is not a generated application, and Kaggle remains an internal benchmark rather than a product journey.
+
+### Naming the environments precisely
+
+Four states exist and conflating any two of them produces a false claim:
+
+- **Production** — what https://oryveta.vercel.app currently serves.
+- **Preview** — a Vercel deployment built from a branch. A review candidate **can** be deployed to a preview, so never describe an unmerged branch as simply "not deployed": say it is **not merged and not deployed to production**. A preview URL is also not production evidence.
+- **`main`** — the merged source. Merged is not released: `main` can be ahead of production until a rollout succeeds, so do not equate the two or infer production behavior from merged code.
+- **Local / self-hosted** — an operator's own machine. Nothing here is served by Vercel.
+
+A source change, a local test, a preview deployment and a successful production rollout are four different evidence levels. Vercel reporting a build READY is a build result, not proof that the production alias serves it or that the behavior works.
 
 ### Vercel configuration
 

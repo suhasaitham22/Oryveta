@@ -2,6 +2,8 @@
 
 This is a delivery plan, not a claim that the factory already exists. Sequence numbers below identify planned PRs, not GitHub PR IDs. Current implementation and exercised evidence are recorded separately in [STATUS.md](STATUS.md).
 
+**One goal, approached in order.** A verifiable maintenance change on an existing codebase comes first; the broader factory follows. Each stage below is entered on recorded evidence from the one before, and the ordering is sequencing rather than a narrowed ambition. When reading any line here, keep *production* (what the hosted site serves), merged *`main`* and an open *review candidate* distinct — a roadmap entry describing candidate source is not a deployed capability.
+
 ## Shared goal
 
 One platform for personal users and teams: a polished web/mobile experience and Slack client operating the same accounts, projects, private/shared sessions, durable work items, runs, approvals and scoped knowledge.
@@ -44,7 +46,20 @@ Use open-source Deep Agents/LangGraph primitives where they fit, rather than ado
 
 Each PR must add an exercised capability and may be split further for reviewability. Security and verification start with the first execution; the release and enterprise milestones do not defer baseline isolation or approval. Basic supervision starts in PR 2. Collect learning evidence early, but activate learning only after outcomes are trustworthy. Detailed modernization and on-call contracts are in [PRODUCT.md](PRODUCT.md) and [OPERATIONS.md](OPERATIONS.md).
 
-The 2026-11-02 local CLI delivers the fixed model/tool/execution/verifier subset of Stage 3, with a real synthetic repair and retained success/failure traces. It does not complete Stage 3's durable integration, safe restart, broader decision protocol or target-repository qualification. Those gates precede expanding into hosted coding; a local passing receipt is not an always-on service.
+The 2026-11-02 local CLI delivers the fixed model/tool/execution/verifier subset of Stage 3, with a real synthetic repair and retained success/failure traces. The open review candidate adds durable checkpoints to that loop: progress, usage, pending reservations and per-edit unverified patch digests are persisted, so an interrupted controller leaves an accurate receipt. That is interruption accounting and diagnosis — it is **not** automatic resume or replay, and it is source under review rather than a merged or deployed capability. Stage 3 therefore still lacks durable hosted integration, automatic resume, a decision protocol beyond `no_progress`, and target-repository qualification for the Python cohort. Those gates precede expanding into hosted coding; a local passing receipt is not an always-on service.
+
+The same review candidate adds a model-free re-verification entry point to that CLI (`--candidate-zip`): a saved candidate archive is re-checked against the operator's own reviewed configuration, with inventory and write-scope validation, a reproduced baseline and all declared final cases re-run in fresh local containers, recorded as a separate run in `mode='verification'` with zero model calls. This strengthens the independence of the verifier boundary that Stages 3 and 7 depend on. It is not hosted verification, not resume, not automatic approval and not remote attestation, and it does not by itself qualify a real repository.
+
+### Commercial launch gates
+
+Pricing is published as a proposal, not a billing milestone: a **Community** plan where the software is $0 and open source and the hosted workspace is free during preview subject to documented capacity, plus a proposed $49/workspace/month Team plan. Neither includes hosted compute. The commercial plan, hypothetical unit economics, effort allocation and evidence gates G1–G5 are in [PRICING.md](PRICING.md). Before commercial use or any charge, these are required in addition to the capability stages above:
+
+1. **Evidence first.** Real consented repository repairs with a reproduced pre-change failure and passing preservation checks (G1), observed repeat usage (G2) and measured review effort (G3). A synthetic local pass is not qualification.
+2. **Metering and consent.** Per-workspace usage derived from persisted worker events, per-run repository consent, opt-in evidence retention with deletion, and hard stop-rules instead of silent overage or automatic paid fallback.
+3. **Compliant hosting entitlement before commercial use.** Resolve the Vercel Hobby non-commercial restriction below with an approved commercial plan or a compliant alternative host. A free pilot is not automatically non-commercial, so this precedes commercial launch rather than merely the first payment; current entitlement is unverified and no account or plan has been changed.
+4. **No surprise terms.** Nothing already available to preview workspaces is paywalled by publishing prices, and any later change to hosted capacity, retention or price requires advance notice, consent before it binds an existing workspace, and a working export path. Source rights under the license are never retracted.
+
+Website or pricing-page polish is presentation, not product-market fit and not a launch gate that has been met.
 
 ### Research-informed implementation order
 
@@ -83,7 +98,7 @@ Target no mandatory paid service dependency, not unlimited free SaaS capacity. A
 
 AI-native generated applications also need inference resources. Log providers can charge for ingestion, retention, queries and egress. A connector does not make those services free: default to existing authorized allowances or self-hosted sources, enforce budgets and never enable a paid telemetry/model plan automatically.
 
-Free static hosting and Supabase allowances can support a bounded pilot; quotas/pausing are not an availability SLA. Vercel Hobby is non-commercial personal use only. Choose a compliant launch deployment, such as an appropriate Cloudflare static-hosting plan, or explicitly approve a paid plan. Self-hosted Supabase transfers backups, updates and availability to the operator. Native store/signing accounts may require fees; a PWA is not falsely described as App Store delivery.
+Free static hosting and Supabase allowances can support a bounded pilot; quotas/pausing are not an availability SLA. Vercel Hobby is non-commercial personal use only, and a free commercial pilot is not automatically non-commercial. Choose a compliant launch deployment, such as an appropriate Cloudflare static-hosting plan, or explicitly approve a paid plan. That entitlement must be resolved before commercial use, not merely before the first payment; see [PRICING.md](PRICING.md). Self-hosted Supabase transfers backups, updates and availability to the operator. Native store/signing accounts may require fees; a PWA is not falsely described as App Store delivery.
 
 Scale isolated runners and inference separately, using measured queue wait, accepted-task success, review effort and compute per accepted change. Customer-owned pools are an optional deployment mode with explicit enrollment and evidence trust boundaries. Add services only when a measured bottleneck justifies them.
 
@@ -94,6 +109,7 @@ Scale isolated runners and inference separately, using measured queue wait, acce
 3. Capacity-limited multi-user pilot versus a contractual service-level promise.
 4. One real Evolve task and one Start New brief as launch acceptance cases.
 5. The first modernization target, required application/package contracts and the initial on-call telemetry/bug sources, with explicit environments and automation policy.
+6. Whether the proposed Team plan is built as specified, repriced or withdrawn — decided from the [pricing evidence gates](PRICING.md#evidence-gates), not from interest in the pricing page.
 
 The auth code, a local test, a preview deploy and a production release are separate milestones. No source claim replaces actual provider setup or a live test.
 

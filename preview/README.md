@@ -4,6 +4,8 @@
 
 The `preview/` directory is a **historical standalone static prototype**, kept for reference. It is **not** the deployed application: the Vercel project builds the React Studio from `apps/web/studio` (Root Directory `apps/web`, build `cd studio && npm run build`, output `studio/dist`). The prototype has no backend, no authentication and no code execution, and it is intentionally separate from the Python API and agent work. It shows the two product entry points: Start New for a new application and Evolve for an application you already have. Kaggle is an internal benchmark, not a top-level UI journey.
 
+**Archive status is deliberate and retained.** This prototype is frozen as a record of an earlier stage. It does **not** follow the current design system, it does not carry the current public navigation (Home / About / What We Do / Pricing / Workspace) and it has no pricing page. Do not restyle it to match the current product, do not add current features to it, and do not read its screens as a description of today's application — see [the documentation hub](../docs/INDEX.md) and [the design system](../docs/DESIGN-SYSTEM.md) for what is current. Keep changes here limited to accuracy fixes, licence/attribution notices and keeping the page working.
+
 ### Run locally
 
 ```bash
@@ -17,7 +19,8 @@ What lives elsewhere, not in this directory:
 
 - **Deployed React Studio (`apps/web/studio`)** — GitHub sign-in, persisted projects and project briefs, roles and invitations, and private conversations that are only shared when you share them.
 - **Self-hosted `apps/api` with the legacy UI at `apps/web/index.html`** — deterministic starter repositories, authorized ZIP or public GitHub snapshot intake, bounded static source analysis and downloads. Analysis reads source without executing it and reports candidate issues; it is not a security audit or a passing test suite.
-- **Planned, not implemented** — the model-directed implement/test/repair loop, private GitHub App access and publication, and any always-on cloud worker.
+- **Operator-run local tools, outside this directory** — a local CLI repairs an operator-selected source ZIP under controller-owned checks in fresh containers, and re-verifies a saved candidate archive with no model at all. Those tools exist today on an operator's own machine; they are not part of this prototype and are not reachable from any website.
+- **Planned, not implemented** — *hosted* model-directed implement/test/repair, private GitHub App access and publication, and any always-on cloud worker. What is missing is hosted execution, not model tooling.
 
 ### Deployment
 

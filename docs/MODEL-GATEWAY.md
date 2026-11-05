@@ -1,6 +1,6 @@
 # Local model gateway and token budget
 
-**Scope:** Optional, text-only local Ollama integration in the self-hosted FastAPI service. Vercel does not run the model. The optional Docker Compose overlay provisions an Ollama container and pulls an open-weight model on the user's own hardware. The separate [local repair CLI](IMPLEMENTATION.md#local-verified-repair-cli) has its own pinned tool-model configuration and per-run budgets; it does not extend this API's permissions.
+**Scope:** Optional, text-only local Ollama integration in the self-hosted FastAPI service. Vercel does not run the model, and the hosted deployment has no backend that could. The optional Docker Compose overlay provisions an Ollama container and pulls an open-weight model on the user's own hardware. The separate [local repair CLI](IMPLEMENTATION.md#local-verified-repair-cli) has its own pinned tool-model configuration, its own per-run budgets and its own token accounting; it does not read this API's SQLite ledger, does not consume this allowance and does not extend this API's permissions. Its reverification mode contacts no model at all.
 
 ## Why this boundary exists
 
@@ -72,7 +72,7 @@ The authenticated `POST /api/projects/{id}/ai-patch-preview` endpoint takes a cl
 
 ## What is not yet implemented
 
-This gateway API does not perform agent tool calling, repository modification or independent execution verification. Those capabilities exist only in the separate, operator-run local repair CLI. GPU isolation, provider-agnostic streaming, durable model-call idempotency, guaranteed server-side model cancellation, production usage billing and per-organization policy remain unimplemented.
+This gateway API does not perform agent tool calling, repository modification or independent execution verification. Tool-calling, allowlisted multi-file edits and controller-owned behavioral verification exist only in the separate, operator-run local repair CLI, which is not reachable from this or any other endpoint. GPU isolation, provider-agnostic streaming, durable model-call idempotency, guaranteed server-side model cancellation, production usage billing and per-organization policy remain unimplemented. There is no hosted inference, no paid provider fallback and no model-call path on the deployed site.
 
 ## Validation
 

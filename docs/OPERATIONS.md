@@ -8,7 +8,9 @@ The initial public preview has a dedicated workflow in .github/workflows/preview
 
 ## Durable job state
 
-Persist New → Queued → Leased → Running → Verifying → Awaiting Approval → Completed/Failed/Canceled. Include heartbeat, lease expiration, idempotency, retry counter and dead-letter records. Workers may crash/restart or lose network. Reconcile outputs and replay safe operations only; never blindly repeat deployments, emails or destructive data writes.
+Target lifecycle: New → Queued → Leased → Running → Verifying → Awaiting Approval → Completed/Failed/Canceled, with heartbeat, lease expiration, idempotency, retry counter and dead-letter records. Workers may crash/restart or lose network. Reconcile outputs and replay safe operations only; never blindly repeat deployments, emails or destructive data writes.
+
+Implemented today: the hosted durable-analysis path covers New/Queued/Leased/Running/Completed/Failed/Canceled with real heartbeats, lease fencing, bounded attempts and cancellation — but **not** Verifying or Awaiting Approval, because no hosted verifier or approval gate exists. Verification exists only in the operator-run local CLI below, which has no queue, no lease and no approval state. Keep the two models distinct when writing runbooks.
 
 ## Durable analysis worker operations
 
@@ -76,6 +78,22 @@ For a code rollback, retain the **latest** credential volume. Restoring an old t
 
 The production Supabase schema and Vercel UI have been verified with a one-off local analysis worker, in addition to the isolated local/CI checks. No always-on cloud worker is configured and there is no availability promise. The worker requires outbound access to Supabase and GitHub, with no inbound port. Its credential-free analyzer process reads imported source but does not execute it; this is not a hardened per-tenant sandbox.
 
+## Local repair and re-verification operations
+
+This covers the operator-run `python -m oryveta_engine.coding_runtime` command. It is **not** a service: there is no daemon, no queue, no inbound port, no scheduled run, no supervisor and nothing to keep alive. It runs once, in a shell, on hardware the operator owns, and exits. Exact flags, the configuration contract and artifact names are in [IMPLEMENTATION.md](IMPLEMENTATION.md#local-verified-repair-cli).
+
+Operational rules that are easy to get wrong:
+
+- **The configuration and the operator's access are the only authority.** Supply the reviewed current specification from a path outside the source archive, and an archive you are authorized to hold. A receipt from an earlier run grants nothing: it cannot re-authorize a source, re-establish a grant, vouch for the host or stand in for the configuration. Never re-run against a specification that has drifted from the reviewed one, and never treat an old receipt as evidence that today's inputs are approved.
+- **Every run needs a new output directory.** The command refuses an existing path. Do not reuse, merge or overwrite an evidence directory, and do not point two runs at one destination.
+- **Evidence is confidential.** The output directory holds real source, model prompts and outputs, and the operator's private expected values. Keep the run root and every output directory operator-owned and mode `0700`, on storage that is not shared with other tenants' work. Decide retention and deletion deliberately — nothing expires on its own, and nothing is uploaded, served or indexed.
+- **Re-verification is a fresh run, not a resume.** It allocates a new run ID and reproduces the baseline and all declared final checks from scratch in fresh containers. It never restores a checkpoint, never continues an interrupted conversation, never re-issues a recorded tool result and never contacts a model — not even if a model is running locally. Do not describe it as resume, replay, approval, remote attestation or a hosted integration.
+- **A supplied result claim is never trusted.** The candidate archive's own assertions, filenames, embedded reports or `passed` fields have no standing. The controller re-derives the verdict from execution it owns.
+- **Interrupted work is restarted from inputs, not continued.** A hard-killed controller leaves its last checkpoint unfinalized, still reading `incomplete`. That is not a result and not a liveness signal — only `needs_review`, `rejected`, `failed` and `cancelled` are terminal execution statuses. A pending action may already have executed and its effects may be newer than the saved patch. Never automatically replay it. Treat a result as verified only on a terminal receipt with a matching verified-patch hash; an `unverified.patch` is evidence of a diff, not a verdict.
+- **Old patch-only records cannot be re-verified.** A unified diff is not an archive. Runs that recorded only a patch need the original source archive and an equivalent candidate archive before they can be re-checked at all; without both, leave the historical record as it stands rather than implying it was re-confirmed.
+- **Cleanup is not guaranteed under a hard kill.** SIGTERM, interrupt and ordinary failures clean the disposable workspace; SIGKILL can leave directories and, in bad cases, containers behind. Sweep the run root manually after an abnormal exit and confirm no stray containers remain.
+- **Nothing here is an incident response path.** There is no alerting, no on-call rotation, no degraded-mode signalling and no availability commitment for this command.
+
 ## Observability
 
 Structured logs (request ID, tenant ID, task ID, repository, harness/model version); OpenTelemetry spans across API/queue/worker; CPU/memory/token cost; artifact refs; benchmark precision; explicit user-visible degradation; secrets redaction and retention rules.
@@ -83,6 +101,8 @@ Structured logs (request ID, tenant ID, task ID, repository, harness/model versi
 ## Approval and audit
 
 Record the user, permission, precise proposed commit/change, risk classification, evidence, policy version, approval timestamp and release target. Separate approval of a task plan from approval of a production deployment. Provide cancellation, revert instructions and recovery.
+
+Security-advisor output is an observed audit record. Record actual findings and reviewed exceptions, including the authenticated-only RPC write boundary and provider-plan-limited password controls documented at rollout. Do not claim clean results without fresh evidence or weaken controls to clear warnings. See [AUTH-SECURITY.md](AUTH-SECURITY.md#release-gates).
 
 ## Incidents / playbooks
 
@@ -100,7 +120,7 @@ Encrypted backups for SQL and artifacts, regular restore drills, schema migratio
 
 ## Current limitation
 
-The production collaboration and durable-analysis control plane are deployed. A temporary local worker proved the real execution path, but continuous worker hosting, an operated incident system and availability/recovery guarantees remain roadmap gates.
+The production collaboration and durable-analysis control plane are deployed. A temporary operator-started local worker proved the real execution path, but continuous worker hosting, an operated incident system, backup/restore drills and availability/recovery guarantees remain roadmap gates. The local repair/re-verification CLI is an operator tool, not an operated service, and does not change that. No paid deployment, SLA or compliance commitment exists. The single dated current-state record is [STATUS.md](STATUS.md); this page documents how to operate what is there rather than restating its evidence.
 
 ## Project on-call mode — planned product capability
 

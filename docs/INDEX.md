@@ -1,16 +1,24 @@
 # Oryveta documentation hub
 
-**Snapshot: 2026-10-24.** This is the main source of architectural intent and product decisions. Oryveta is an open-source software delivery workspace being built into an AI software factory, entered through **Start New** or **Evolve**; see [VISION.md](VISION.md) for the audience and the available-versus-planned boundary. Always distinguish **current implementation** from **planned capabilities**. The public site at https://oryveta.vercel.app serves the hosted React Studio with real sign-in and saved project collaboration; it is not an agent service and does not run Start New or Evolve work.
+**Snapshot: 2026-11-04.** This is the main source of architectural intent and product decisions, and the complete hub: every active document is linked below. Oryveta is an open-source software delivery workspace being built into an AI software factory, entered through **Start New** or **Evolve**; see [VISION.md](VISION.md) for the audience and the available-versus-planned boundary. Always distinguish **current implementation** from **planned capabilities**.
+
+**One goal, approached in order.** Verifiable maintenance changes to an existing codebase come first — a bounded repair that a reviewer can check — and the broader factory (custom application generation, hosted execution, repository publication, on-call, learning) follows, each stage gated on recorded evidence. Narrowing the entry point is sequencing, not a reduction of the goal.
+
+**Three states, named separately everywhere.** *Production* is what https://oryveta.vercel.app serves: the hosted React Studio with real sign-in and saved project collaboration as a free preview, which is not an agent service and does not run Start New or Evolve work. *`main`* is the merged source behind it. *This review candidate* is the open, unmerged branch adding the evidence-led Home, the dedicated `/pricing` route, the downloadable synthetic repair example, the local CLI's durable interruption receipts and its model-free candidate re-verification path — source under review, not merged and not deployed.
+
+**Model tooling exists, locally.** Two separate local, opt-in paths use a model today: the operator-run repair CLI in [IMPLEMENTATION.md](IMPLEMENTATION.md#local-verified-repair-cli) and the local Ollama adapter in [MODEL-GATEWAY.md](MODEL-GATEWAY.md). The same CLI also runs **model-free re-verification** of a saved candidate archive (`--candidate-zip`), which contacts no model or inference endpoint at all, re-runs the operator's own declared checks in fresh local Docker containers and records `mode='verification'` with zero model calls and zero observed tokens. None of this is reachable from the hosted site, and none of it is hosted inference. What is absent is hosted model-driven coding and an always-on cloud worker — not model tooling itself.
 
 ## Product and design
 
 | Document | Covers |
 | --- | --- |
-| [VISION.md](VISION.md) | Mission, competitor differentiation, user pain points, ProofLoop and Verified Outcome Graph |
-| [PRODUCT.md](PRODUCT.md) | Start New and Evolve definitions, consultancy scenarios, outcome contracts |
+| [VISION.md](VISION.md) | Mission, audience, the problem being solved, research directions stated as hypotheses, success metrics |
+| [PRODUCT.md](PRODUCT.md) | Start New and Evolve definitions, first maintenance cohort, consultancy scenarios, outcome contracts |
 | [USER-JOURNEYS.md](USER-JOURNEYS.md) | Auth/onboarding, builds, Evolve patching, approvals, client handover, error states |
-| [DESIGN-SYSTEM.md](DESIGN-SYSTEM.md) | Orbital studio typography/surfaces, original graphics and optional 3D, real routes, accessibility and motion |
-| [BRAND.md](BRAND.md) | Oryveta identity, domain and naming history |
+| [DESIGN-SYSTEM.md](DESIGN-SYSTEM.md) | Off-white/cobalt Geist system with a dark workspace rail, the real public routes including `/pricing`, original graphics, the opt-in spatial viewer, accessibility and motion |
+| [BRAND.md](BRAND.md) | Oryveta identity, voice, domain and naming history |
+| [PRICING.md](PRICING.md) | The two published plans, the buyer hypothesis and the commercial proposal (also listed under governance) |
+| [DEMO-STUDIO.md](DEMO-STUDIO.md) | Storyboard contract, the browser editor's export-only boundary and local captioned-storyboard rendering |
 
 ## Platform engineering
 
@@ -19,7 +27,7 @@
 | [IMPLEMENTATION.md](IMPLEMENTATION.md) | Source layout, local setup, test coverage and current security limitations |
 | [ARCHITECTURE.md](ARCHITECTURE.md) | Control/intelligence/execution planes, technology selections, current vs target stack |
 | [ENTERPRISE-FOUNDATIONS.md](ENTERPRISE-FOUNDATIONS.md) | Enterprise AI invariants, task safety, quotas, evaluation gates and scale triggers |
-| [DATABASE.md](DATABASE.md) | SQLite, D1, optional PostgreSQL/Supabase, schema ownership and artifacts |
+| [DATABASE.md](DATABASE.md) | Local SQLite engine state, the deployed Supabase PostgreSQL control plane that owns durable work/runs/leases, schema ownership, artifacts and recovery |
 | [AUTH-SECURITY.md](AUTH-SECURITY.md) | GitHub OAuth vs GitHub App, roles, sandbox/prompt injection, approvals |
 | [IDENTITY-WORKSPACES.md](IDENTITY-WORKSPACES.md) | Hosted sign-in, workspace onboarding, RLS boundaries, setup and launch gates |
 | [API.md](API.md) | Local MVP versus planned API contracts |
@@ -37,9 +45,13 @@
 | --- | --- |
 | [ROADMAP.md](ROADMAP.md) | Phases and objectively testable milestones |
 | [STATUS.md](STATUS.md) | Live GitHub and Vercel status, current limitations and in-progress work |
+| [PRICING.md](PRICING.md) | Pricing and launch plan: preview-versus-paid availability, preconditions before charging, effort allocation and evidence gates |
 | [OPEN-SOURCE.md](OPEN-SOURCE.md) | Apache-2.0 licensing, contributor and commercial-use principles |
 | [CONTRIBUTING.md](CONTRIBUTING.md) | Tests, PR requirements, benchmark and security contribution standards |
 | [DEPLOYMENT-PREVIEW.md](DEPLOYMENT-PREVIEW.md) | Hosted Vercel deployment of the React Studio, its build settings and what is not hosted |
+| [AGENT-SKILLS.md](AGENT-SKILLS.md) | Repository-native agent skills, the review requirement before installing upstream packs |
+
+Also active outside `docs/`: the [repository README](../README.md) is the entry overview, and [`preview/README.md`](../preview/README.md) documents the **historical static prototype** that is retained as an archive and must not be deployed.
 
 ## Architecture decision records
 
@@ -49,11 +61,11 @@
 
 ## What is locked
 
-Oryveta name; current orbital studio visual direction; Start New + Evolve as the two journeys; Kaggle only for testing; Apache-2.0 open-source goal; evidence and permission requirements; $0 required software licensing with optional bring-your-own-compute.
+Oryveta name; the current off-white/cobalt Geist visual direction with a dark workspace rail (the earlier olive/yellow treatment is retired); Home / About / What We Do / Pricing / Workspace as the public navigation; Start New + Evolve as the two journeys; Kaggle only for testing; Apache-2.0 open-source goal; evidence and permission requirements; $0 required software licensing with optional bring-your-own-compute. Two published plans only — Community, with $0 open-source software and a hosted workspace that is free during preview subject to documented capacity, and a proposed Team plan — with no hosted compute included in either. Apache-2.0 rights already granted are never retracted, which is not a promise of perpetual free hosted capacity. Hosted-terms changes require advance notice, consent and an export path; see [PRICING.md](PRICING.md).
 
 ## What is not yet locked or built
 
-Hosted factory execution, GitHub App repository publication, tenant-safe runner isolation, autonomous verified changes, Slack/mobile delivery, controlled recursive learning and enterprise operational guarantees. Supabase identity/project/session collaboration and the durable-analysis control plane are deployed and production-verified with a one-off local worker. An unattended service entry point is available, but continuous hosting remains pending; evidence and deployment state are tracked in [STATUS.md](STATUS.md).
+Hosted factory execution, GitHub App repository publication, tenant-safe runner isolation, autonomous verified changes, Slack/mobile delivery, controlled recursive learning and enterprise operational guarantees. Supabase identity/project/session collaboration and the durable-analysis control plane are deployed and production-verified with a one-off local worker. An unattended service entry point is available, but the **always-on cloud worker is still absent**, so continuous hosting remains pending; the missing piece is hosted execution, not local model tooling, which exists. Evidence and deployment state are tracked in [STATUS.md](STATUS.md). Billing, usage metering, quota enforcement and the Team plan's shared run history / review workflow / budget administration are not built, so the Team price in [PRICING.md](PRICING.md) is a proposal that cannot be charged. Long-term hosted-preview terms, capacity limits and a compliant commercial hosting entitlement are also unresolved, and the self-hosted FastAPI/SQLite engine identity stays deliberately separate from the hosted Supabase identity.
 
 ## Review and updates
 

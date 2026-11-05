@@ -1,0 +1,8 @@
+--- a/versions.py
++++ b/versions.py
+@@ -7,4 +7,4 @@
+         for value in values
+     ):
+         raise ValueError("invalid versions")
+-    return sorted(values)
++    return sorted(values, key=lambda x: tuple(map(int, x.split("."))))

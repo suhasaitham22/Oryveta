@@ -12,6 +12,7 @@ import { WorkspaceState } from "@/lib/WorkspaceState.jsx";
 import { useLocalEngine } from "@/lib/localEngine";
 import Footer from "./components/SiteFooter.jsx";
 import { Home, About, WhatWeDo, NotFound } from "./pages/PublicPages.jsx";
+import Pricing from "./pages/Pricing.jsx";
 
 const Workspace = lazy(() => import("./pages/Workspace.jsx"));
 const SignIn = lazy(() => import("./pages/SignIn.jsx"));
@@ -152,6 +153,7 @@ function Application() {
             <Route path="/" element={<Home />} />
             <Route path="/about" element={<About />} />
             <Route path="/what-we-do" element={<WhatWeDo />} />
+            <Route path="/pricing" element={<Pricing />} />
             <Route
               path="/sign-in"
               element={<SignIn user={user} selfHosted={selfHosted} />}

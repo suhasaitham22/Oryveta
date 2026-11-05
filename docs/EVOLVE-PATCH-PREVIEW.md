@@ -1,6 +1,8 @@
 # Evolve: read-only patch proposal preview
 
-**Scope:** First verification primitive for the future Evolve patch engine. This is not yet autonomous repair, a code execution sandbox, a GitHub pull request generator or proof of runtime correctness.
+**Scope:** The hosted/self-hosted HTTP patch-preview endpoints. These remain **read-only**: one text file, a hash-guarded baseline, a diff and a syntax check. They are not autonomous repair, not a code execution sandbox, not a GitHub pull request generator and not proof of runtime correctness.
+
+**Do not confuse this with the local repair CLI.** A separate operator-run command, `python -m oryveta_engine.coding_runtime`, already performs model-driven edits across an operator-allowlisted file set and executes controller-owned behavioral checks in isolated containers, and it can re-verify a supplied candidate archive with no model contact at all. That capability is deliberately *not* wired into these endpoints, any project, the hosted site or any worker: it has no HTTP surface and runs only from an operator's shell on the operator's own hardware. See [IMPLEMENTATION.md](IMPLEMENTATION.md#local-verified-repair-cli). The endpoints below gained no execution, no multi-file scope and no verification authority from it.
 
 ## API
 
@@ -18,14 +20,14 @@ The response includes the old/new content hashes, bounded unified diff, explicit
 
 ## Independent evidence and limits
 
-The service checks a single text file up to 128 KiB and caps the diff at 24,000 characters. Python replacements are AST-parsed but **not executed**; for other languages only the source hash and diff are checked. The next milestones are isolated test execution, persisted proposal records, explicit human approval, safe application in a separate worktree, GitHub App installation permissions and reviewable PR creation. Never advertise a syntax-checked preview as a verified production fix.
+The service checks a single text file up to 128 KiB and caps the diff at 24,000 characters. Python replacements are AST-parsed but **not executed**; for other languages only the source hash and diff are checked. A syntax-checked preview is never a verified production fix — and passing the separate local CLI's behavioral checks is not one either, since that only means the operator's declared contracts held for that candidate. The next milestones for *this* path are isolated test execution, persisted proposal records, explicit human approval, safe application in a separate worktree, GitHub App installation permissions and reviewable PR creation.
 
 ## Security
 
 Never follow source symlinks or accept path traversal. Read from the authenticated user's bounded workspace only. No imported source is executed or loaded as a Python module. The service is currently a single-host MVP; hard multi-tenant OS/container isolation and runtime sandboxing remain future work.
 
-## Optional AI-assisted proposal (this change)
+## Optional AI-assisted proposal
 
 An authenticated user can provide the **exact source text** they intend to change, its SHA-256, the relative path and a short instruction. The API verifies that the client-supplied text matches the hash and that the workspace file still matches before invoking the configured local Ollama model. The model returns a full replacement file, which is passed through the same bounded `preview_patch` validation and baseline check. The API returns only a reviewable diff and hashes, never applies changes, runs repository commands or publishes a PR. No source is transmitted to an unconfigured external model.
 
-The proposal uses the same per-user daily token reservation as `/api/ai/generate`. Model output is untrusted, and passing syntax checks is not proof of correctness. Files larger than the 1,500-character client-source limit cannot use this first AI path. The public static Vercel preview does not yet call this endpoint.
+The proposal uses the same per-user daily token reservation as `/api/ai/generate`. Model output is untrusted, and passing syntax checks is not proof of correctness. Files larger than the 1,500-character client-source limit cannot use this first AI path. The hosted Vercel deployment never calls this endpoint: it is a browser client with no FastAPI backend, so these routes exist only on a self-hosted engine.
