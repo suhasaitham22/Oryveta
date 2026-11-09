@@ -314,7 +314,8 @@ h3.panel-subhead {
 
 .choice-column { display: grid; gap: 10px; align-content: start; min-width: 0; }
 .choice-column > .studio-button { justify-self: start; margin-top: 4px; }
-.detail-column { display: grid; gap: 20px; min-width: 0; }
+/* Nested evidence wraps or scrolls instead of widening every detail panel. */
+.detail-column { display: grid; grid-template-columns: minmax(0, 1fr); gap: 20px; min-width: 0; }
 .space-choice {
   display: block;
   width: 100%;
@@ -776,6 +777,7 @@ h3.panel-subhead {
   color: var(--muted);
   font-size: 13px;
   line-height: 1.6;
+  overflow-wrap: anywhere;
 }
 .event-list time { color: var(--ink); font-variant-numeric: tabular-nums; }
 .summary-block { margin-top: 20px; }

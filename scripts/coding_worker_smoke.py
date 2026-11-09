@@ -248,8 +248,34 @@ def exercise(connection, args, home):
                         with page.expect_download() as download:
                             download_button.click()
                         assert Path(download.value.path()).read_bytes() == run["result"]["patch"].encode()
-                        assert page.evaluate("document.documentElement.scrollWidth <= window.innerWidth + 1")
+                        patch_view = panel.get_by_label("Proposed patch", exact=True)
+                        assert patch_view.text_content() == run["result"]["patch"]
+                        if patch_view.evaluate("node => node.scrollWidth > node.clientWidth"):
+                            patch_view.focus()
+                            page.keyboard.press("ArrowRight")
+                            page.wait_for_function(
+                                "node => node.scrollLeft > 0", arg=patch_view.element_handle(), timeout=5000)
+                            patch_view.evaluate("node => { node.scrollLeft = 0; }")
+                        layout = page.evaluate("""() => ({
+                            viewport: innerWidth,
+                            document: document.documentElement.scrollWidth,
+                            overflowing: [...document.querySelectorAll("body *")]
+                                .filter(node => {
+                                    const box = node.getBoundingClientRect();
+                                    return box.width > 0 && box.right > innerWidth + 1;
+                                })
+                                .slice(0, 20)
+                                .map(node => ({
+                                    tag: node.tagName, id: node.id, className: String(node.className),
+                                    parentClass: String(node.parentElement?.className),
+                                    right: node.getBoundingClientRect().right,
+                                    width: node.getBoundingClientRect().width,
+                                    minWidth: getComputedStyle(node).minWidth,
+                                    whiteSpace: getComputedStyle(node).whiteSpace
+                                }))
+                        })""")
                         page.screenshot(path=str(Path(args.evidence) / f"repair-completed-{number}.png"), full_page=True)
+                        assert layout["document"] <= layout["viewport"] + 1, json.dumps(layout)
                     assert process.wait(timeout=30) == 0
                 report["continuous_tasks"] = 2
                 report["browser_closed_during_execution"] = True
