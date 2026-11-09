@@ -102,8 +102,30 @@ async function submitAi(form){
  }catch(e){output.textContent=e.message;toast(e.message,true)}
  finally{button.disabled=state.modelStatus!=='ready'}
 }
-async function load(){if(state.preview)return;const [projects,overview,activity]=await Promise.all([api('/api/projects'),api('/api/overview'),api('/api/activity')]);state.projects=projects;state.overview=overview;state.activity=activity}
-async function navigate(page,projectId){state.current=page;if(page==='detail'){state.project=await api(`/api/projects/${encodeURIComponent(projectId)}`)}if(['home','projects','activity'].includes(page))await load();$('#breadcrumb-current').textContent=titles[page]||page;$('#page').innerHTML=pages[page]?.()||pages.home();document.querySelectorAll('#nav .nav-link').forEach(n=>n.classList.toggle('active',n.dataset.page===(page==='detail'?'projects':page)));document.body.classList.remove('mobile-nav-open');window.scrollTo({top:0,behavior:'instant'});}
+/* Every navigation is numbered and only the newest one owns shared state and the page.
+   An older navigation whose response arrives after the user has moved on is dropped: it must not
+   overwrite the project lists or the selected project, replace the newer page and the draft typed
+   into it, or report its failure on a page it no longer owns. */
+let navigationRequest=0;
+async function load(live){
+ if(state.preview)return true;
+ const [projects,overview,activity]=await Promise.all([api('/api/projects'),api('/api/overview'),api('/api/activity')]);
+ if(live&&!live())return false;
+ state.projects=projects;state.overview=overview;state.activity=activity;
+ return true;
+}
+async function navigate(page,projectId){
+ const request=++navigationRequest;
+ const live=()=>request===navigationRequest;
+ let project=null;
+ try{
+  if(page==='detail'){project=await api(`/api/projects/${encodeURIComponent(projectId)}`);if(!live())return}
+  if(['home','projects','activity'].includes(page)&&!(await load(live)))return;
+ }catch(error){if(!live())return;throw error}
+ state.current=page;
+ if(page==='detail')state.project=project;
+ $('#breadcrumb-current').textContent=titles[page]||page;$('#page').innerHTML=pages[page]?.()||pages.home();document.querySelectorAll('#nav .nav-link').forEach(n=>n.classList.toggle('active',n.dataset.page===(page==='detail'?'projects':page)));document.body.classList.remove('mobile-nav-open');window.scrollTo({top:0,behavior:'instant'});
+}
 async function submitNew(form){if(state.preview)throw new Error('Static preview only — start the local API to create projects');const btn=$('#create-button');btn.disabled=true;try{const result=await api('/api/projects',{method:'POST',data:{name:form.elements.name.value.trim(),brief:form.elements.brief.value.trim(),blueprint:form.elements.blueprint.value}});toast('Starter repository created');await navigate('detail',result.id)}finally{btn.disabled=false}}
 async function submitGitHub(){if(state.preview)throw new Error('Static preview only — run the local API to import repositories');const btn=$('#import-button');btn.disabled=true;try{const url=$('#repository-url').value.trim();const result=await api('/api/projects/import/github',{method:'POST',data:{url}});toast('Repository imported. Analysis queued.');await navigate('detail',result.id)}finally{btn.disabled=false}}
 async function submitZip(){if(state.preview)throw new Error('Static preview only — run the local API to import repositories');const btn=$('#import-button');btn.disabled=true;try{const file=$('#zip-file').files[0];if(!file||file.size>12*1024*1024)throw new Error('Choose a ZIP smaller than 12 MB');const name=$('#zip-name').value.trim();const result=await api('/api/projects/import/zip',{method:'POST',body:file,headers:{'Content-Type':'application/zip','X-Project-Name':name}});toast('Repository imported. Analysis queued.');await navigate('detail',result.id)}finally{btn.disabled=false}}

@@ -70,6 +70,13 @@ export default function Workspace({
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const mobileNav = useRef(null);
+  /* The workspace list, the selection and the settings drafts live in the
+     provider above this route, so they outlive this page instance. One
+     generation orders the read this page starts on mount against every read
+     that follows a mutation, and `mounted` keeps an instance that has been left
+     from writing to shared state a newer instance now owns. */
+  const listRequest = useRef(0);
+  const mounted = useRef(false);
   const active =
     selected === ""
       ? null
@@ -98,27 +105,33 @@ export default function Workspace({
     : { ...storedDraft, projectId: null, jobId: null };
 
   async function refresh() {
-    if (preview || selfHosted) return;
-    const values = await listWorkspaces();
-    setSpaces(values);
-    setSelected((id) =>
-      values.some((space) => space.id === id) ? id : values[0]?.id || null,
-    );
+    if (preview || selfHosted || !mounted.current) return;
+    const request = ++listRequest.current;
+    try {
+      const values = await listWorkspaces();
+      if (request !== listRequest.current || !mounted.current) return;
+      setSpaces(values);
+      setSelected((id) =>
+        /* "" is the deliberate new-workspace selection; no list cancels it. */
+        id === "" || values.some((space) => space.id === id)
+          ? id
+          : values[0]?.id || null,
+      );
+    } catch (problem) {
+      if (request === listRequest.current && mounted.current) throw problem;
+    }
   }
   useEffect(() => {
     if (preview || selfHosted) return;
-    let live = true;
-    listWorkspaces()
-      .then((values) => {
-        if (live) setSpaces(values);
-      })
-      .catch((error) => {
-        if (live) setError(error.message);
-      });
+    mounted.current = true;
+    refresh().catch((problem) => {
+      if (mounted.current) setError(problem.message);
+    });
     return () => {
-      live = false;
+      mounted.current = false;
+      listRequest.current++;
     };
-  }, [preview, selfHosted, setSpaces]);
+  }, [preview, selfHosted]);
   function navigate(id) {
     setError("");
     setSuccess("");
@@ -128,6 +141,7 @@ export default function Workspace({
   async function save(event) {
     event.preventDefault();
     if (preview || selfHosted) return;
+    const submitted = settings[settingsKey];
     setBusy(true);
     setError("");
     setSuccess("");
@@ -139,6 +153,7 @@ export default function Workspace({
           name: name.trim(),
           description: description.trim(),
         });
+        if (!mounted.current) return;
         setSuccess("Workspace settings saved");
       } else {
         const created = await createWorkspace(user, {
@@ -146,14 +161,22 @@ export default function Workspace({
           slug: slug.trim().toLowerCase(),
           description: description.trim(),
         });
+        if (!mounted.current) return;
         setSelected(created.id);
         setSuccess("Your private workspace is ready");
       }
+      /* An acknowledgement consumes only its own draft, never newer input. */
+      setSettings((current) => {
+        if (current[settingsKey] !== submitted) return current;
+        const next = { ...current };
+        delete next[settingsKey];
+        return next;
+      });
       await refresh();
     } catch (error) {
-      setError(error.message);
+      if (mounted.current) setError(error.message);
     } finally {
-      setBusy(false);
+      if (mounted.current) setBusy(false);
     }
   }
   function updateDraft(values) {
