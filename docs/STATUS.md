@@ -2,7 +2,7 @@
 
 ## Current capability and release map
 
-**Source snapshot: 2026-11-04.** This map describes the current checkout, including the changes under [PR #48](https://github.com/suhasaitham22/Oryveta/pull/48). A review preview is not production, and merged `main` can be ahead of a successful deployment. The dated sections below preserve the evidence behind deployment and execution claims.
+**Source snapshot: 2026-11-09.** PR #48 is merged. This checkout adds the controlled durable repair integration on `feat/controlled-repair-runtime`; it is a follow-on source candidate, not a production migration or cloud-worker deployment. A review preview, merged source and production execution remain separate evidence levels.
 
 | Surface | Implemented boundary | Not implied |
 | --- | --- | --- |
@@ -11,18 +11,37 @@
 | Public design and pricing | Evidence-led Home, Pricing, labelled synthetic example downloads and a free-preview entry, verified in the review preview | Billing, customer traction, YC affiliation or a commercial launch |
 | Local FastAPI/SQLite engine | Separate identity, deterministic starters and bounded read-only source analysis | A bridge that forwards hosted sessions into local tools |
 | Local coding CLI | Model-driven scoped repair, interruption checkpoints and private candidate export; model-free re-verification of an explicitly supplied candidate | Resume/replay, automatic approval, GitHub publication, remote attestation or multi-tenant production isolation |
+| Controlled durable repair | Approved public commit/configuration policy, project queue, dedicated operator worker, bounded recorded progress and candidate-patch downloads | Provisioned cloud compute, arbitrary self-service execution, automatic publication, billing or an availability promise |
 
 The goal is verifiable maintenance changes for small teams first, then the broader Start New/Evolve factory. Community software is $0; hosted preview capacity and proposed Team pricing remain governed by [PRICING.md](PRICING.md). Consented real-repository outcomes, repeat use, review effort and willingness to pay—not additional website polish—are the next qualification evidence.
 
-## Workspace and legacy lifecycle ordering — source candidate, 2026-11-09
+## State-machine audit and browser lifecycle fixes — source verification, 2026-11-09
 
-Outcome contract: a delayed list/detail/error or an acknowledgement from an abandoned workspace instance must not replace newer navigation, selection or unsaved input. A successful mutation consumes only the draft it submitted. Current-request failures must remain visible.
+The [39-family lifecycle inventory](STATE-MACHINES.md) separates already-explicit business states from implicit request ordering, draft ownership, observation, evidence and process coordination. The decision is to reuse the existing authorities and local guards, not add a global state machine, dependency, queue or wire-status migration.
 
-- Workspace mount and post-mutation reads share a generation and liveness guard, including failures; intentional new-workspace selection survives refresh. Abandoned save/create callbacks cannot rewrite shared selection. Only the submitted settings draft is cleared.
-- Legacy navigation commits list/detail data, rendering and errors only for its current request generation, preserving the newer page and draft when an old response arrives.
-- Real loopback API/Auth/browser reproductions failed before these fixes. The integrated source passed 12 collaboration cases and a separate 13-check legacy API smoke; permanent regressions are in `collaboration_race_smoke.py` and `ui_smoke.py`. The legacy static-server regression uses explicit API fixtures; it is not the real-API proof.
+- The controlled-repair panel no longer says no policy is enrolled after its policy read fails. Real local Auth/PostgREST and Chromium reproduced the conflicting error/enrollment guidance at 1440px and 390px before the fix; afterward only the read error remains, queueing stays disabled, and a successful empty refresh restores enrollment guidance. The browser smoke aborts the failed request without inventing a response.
+- Legacy navigation now commits list/detail state, rendering and feedback only for its current request generation. A real temporary FastAPI/cookie-login/browser scenario reproduced late Projects/detail/error responses replacing newer routes and drafts before the fix. The corrected source passed all 13 checks, including preserved newer drafts, ordinary create/navigation and reporting an error belonging to the current request. The permanent static-server regression uses explicit deterministic API fixtures; it is separate from that real-API smoke.
+- Workspace initial and post-mutation reads now share one generation, including errors. Abandoned save/create acknowledgements cannot overwrite the newer selection; successful mutations consume only the submitted settings draft. Real-response browser cases failed before correction: an acknowledged creation disappeared, a stale failure replaced successful-save feedback, an abandoned creation replaced a newer form, and the next new-workspace form retained the already-created name. All four workspace cases then passed against the compiled application.
+- Integrated gates passed: hosted/self-hosted builds and nine storyboard checks; all five transactional SQL suites; real new-tab email/PKCE and project/private-session authorization; all **12** collaboration-ordering cases; the repair policy failure/recovery case; and browser-closed execution by the real public-repository analysis worker with exact result download and cancellation of a subsequent run.
+- Compiled hosted and self-hosted browser flows passed at desktop/tablet/mobile sizes, including navigation, drafts, downloads, local cookie/ZIP/job lifecycle and reduced motion. The legacy smoke also passed its navigation regression. Ruff passed. The existing optional Three.js chunk-size and Starlette/httpx deprecation advisories remain visible.
+- Python verification initially passed **733 cases** with **45 container-gated cases skipped**, leaving coverage below the unchanged 84% floor. Those cases were then exercised using the existing local Colima context and pinned image. An initial bind-mount setup failure was corrected by placing task data under the VM's already-approved mount, without changing application code or mount policy. All previously skipped cases subsequently passed; combined branch-inclusive coverage is **86.59%**. This is full-suite plus targeted-container evidence, not a single uninterrupted 778-case run or live-model quality result.
 
-This main-compatible change is separate from controlled repair: no policy/schema/worker change, state-machine dependency, auth/storage migration, deployment or GitHub publication capability is added to the app. Existing storyboard journeys remain accurate; these are lifecycle corrections, not a new advertised feature. Exact PR-head verification is recorded on its GitHub checks.
+These are local source changes layered on the controlled-repair candidate, not a production deployment or hosted-worker rollout. PostgreSQL/SQLite state transitions, identity/RLS, policy/lease fencing, model budgets and human-review/publication semantics are unchanged.
+
+## Controlled durable repair — verification, 2026-11-09
+
+The project panel and `coding_worker` connect explicitly submitted goals to the existing Supabase work/run/lease authority. The worker uses an ordinary dedicated Auth identity; its credential-free child runs the fixed local model/tool/verifier loop. Policies freeze the public source commit and operator configuration; retries recompute rather than resume a model trajectory. Full private evidence stays on the operator host; the bounded shared result remains `needs_review`.
+
+Exercised implementation checks:
+
+- The forward migration upgraded the original repair shape and applied twice successfully. All five transactional SQL suites passed, including controlled repair, existing factory runtime, project/workspace authorization and retained attribution.
+- Ten existing analysis concurrency cases and the controlled-repair two-session suite passed. Repair admission serializes with policy/worker revocation in both commit orders; revoked authority cannot leave newly admitted unclaimable work.
+- Real local Auth account deletion with a human-created, never-claimed goal retained the frozen worker identity, cleared the live reference, settled the goal and denied further admission. Both enabled and already-revoked policies passed, including the mobile UI's deleted-identity display. A reproduced long-hash overflow was fixed by wrapping record metadata, not hiding content.
+- Git-applicable patch round trips passed for LF, missing final LF, quoted Unicode filenames, U+2028, form feed, bare CR and CRLF. The U+2028 case failed before the LF-only serialization fix.
+- The 2026-11-08 full Python gate passed **778 tests at 86.67% branch-inclusive coverage**. After recovering the temporary workspace and narrowing Docker-context propagation, **144 worker/tool regressions** and Ruff passed on the recovered source. Other contexts, arbitrary metadata, TLS keys and registry credentials no longer reach the child.
+- Hosted-style and self-hosted Chromium flows passed on desktop/tablet/mobile, including real local API lifecycle and reduced motion. Bandit, dependency consistency and a built-wheel worker CLI launch also passed before workspace recovery. The existing Starlette/httpx deprecation and optional Three.js chunk-size advisory remain visible.
+
+The source/verification work does not apply production migrations, provision a cloud VM, enroll customer repositories, change hosting plans or spend money. The [controlled design-partner gates and YC founder checklist](PRICING.md) explicitly retain those external prerequisites. Free-tier quota, pausing/reclamation, target-host throughput and recovery are not established by a local test.
 
 ## Candidate re-verification and documentation alignment — 2026-11-04
 

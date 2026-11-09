@@ -121,6 +121,10 @@ def test_missing_edit_path_is_reported_without_inferring_a_previous_read(tmp_pat
     ("main.py", b"one\ntwo\n", b"one\nthree\n"),
     ("main.py", b"one\ntwo", b"one\nthree"),
     ("caf\u00e9 file.py", b"one\ntwo\n", b"one\nthree\n"),
+    ("main.py", b"one\xe2\x80\xa8context\ntwo\n", b"one\xe2\x80\xa8context\nthree\n"),
+    ("main.py", b"one\fcontext\ntwo\n", b"one\fcontext\nthree\n"),
+    ("main.py", b"one\rtwo", b"one\rthree"),
+    ("main.py", b"one\r\ntwo\r\n", b"one\r\nthree\r\n"),
 ])
 def test_generated_patch_applies_to_the_original_bytes(tmp_path, name, original, updated):
     base = tmp_path / "base"

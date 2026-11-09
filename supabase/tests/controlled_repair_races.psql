@@ -1,0 +1,972 @@
+-- Two-session lock-order regression for the controlled repair runtime.
+--
+-- One connection cannot deadlock against itself, so the single-transaction
+-- suite in supabase/tests/controlled_repair_runtime.sql cannot cover the
+-- interactions below. This file is the executable definition of those cases:
+-- it is run FOUR times, in two concurrent halves, against the same stack.
+--
+--   1. psql -v ON_ERROR_STOP=1 -v setup=1    -f supabase/tests/controlled_repair_races.psql
+--   2. psql -v ON_ERROR_STOP=1 -v session_a=1 -f supabase/tests/controlled_repair_races.psql &
+--      psql -v ON_ERROR_STOP=1 -v session_b=1 -f supabase/tests/controlled_repair_races.psql &
+--      wait
+--   3. psql -v ON_ERROR_STOP=1 -v audit=1    -f supabase/tests/controlled_repair_races.psql
+--   4. psql -v ON_ERROR_STOP=1 -v teardown=1 -f supabase/tests/controlled_repair_races.psql
+--
+-- Start the two halves together; session B rendezvouses by watching pg_locks
+-- for session A's in-flight write, so it does not depend on how fast either
+-- one connects. Step 4 must run even if step 2 or 3 failed.
+--
+-- The .psql extension keeps this out of the automatic *.sql rollback suite.
+-- Its setup step COMMITS so the two sessions can see the same fixture rows.
+-- Run this only against an
+-- isolated local stack or a dedicated development project, never anywhere
+-- real, and always run the teardown. Every fixture is a synthetic
+-- example.invalid account and a workspace named 'Repair Races'; the teardown
+-- removes exactly those.
+--
+-- Owner/superuser connection required: it stages the worker service
+-- designation in auth.users.raw_app_meta_data, provisions workspace
+-- memberships and reads private.factory_run_leases, none of which any client
+-- role may do. Every call under test still goes through the real RPCs as the
+-- authenticated role with a worker or admin JWT subject.
+--
+-- THE RULE UNDER TEST. Any transaction that needs more than one of these rows
+-- takes them in this order and never in another:
+--
+--     public.project_workers  ->  public.project_repair_policies
+--                             ->  public.work_items
+--                             ->  public.factory_runs
+--
+-- claim_repair_work takes the registration FOR SHARE, then the policy FOR
+-- UPDATE (not FOR SHARE: it writes last_seen_at, and two share locks that both
+-- need upgrading is a deadlock), then one queued work item FOR UPDATE SKIP
+-- LOCKED, then inserts the attempt. heartbeat/finish/fail_repair_run resolve
+-- ids with unlocked reads and then take policy, work item, run in that order.
+-- revoke_project_repair_policy takes the policy, then its work items, then
+-- their runs. revoke_project_worker takes the registration, then every policy
+-- of that identity in one statement, then work items, then runs. The analysis
+-- paths touch no policy at all and keep exactly the order they already had.
+--
+-- submit_repository_repair takes the bound worker's registration FOR SHARE and
+-- then that worker's policy FOR SHARE, and holds both until the work item is
+-- inserted: the same order, one step shorter. FOR SHARE rather than FOR UPDATE
+-- because admission writes neither row, so two submissions never serialize
+-- behind each other, while a revocation of either row - which takes FOR UPDATE
+-- - cannot interleave with an admission at all. Cases 4 to 7 exercise that in
+-- both commit orders: a revocation that commits second must settle the work the
+-- submission admitted, and one that commits first must make the submission fail
+-- closed instead of queueing work that nobody is authorized to run. Without
+-- those share locks the second direction silently admits such work, because the
+-- deferred foreign key checks that the enrollment exists, not that it is still
+-- enabled.
+--
+-- A violation of that rule shows up as SQLSTATE 40P01 in one of the two
+-- halves, which fails that psql run. Each case therefore asserts both that no
+-- deadlock was reported and that the committed outcome is one of the states
+-- the serialized orders can produce - never a half-applied one.
+
+\if :{?setup}
+-- ===========================================================================
+-- SETUP (commits)
+-- ===========================================================================
+begin;
+
+insert into auth.users
+  (id,instance_id,aud,role,email,encrypted_password,email_confirmed_at,
+   raw_app_meta_data,created_at,updated_at)
+values
+('8a111111-1111-4111-8111-111111111111','00000000-0000-0000-0000-000000000000','authenticated','authenticated','oryveta-races-owner@example.invalid','',now(),'{}'::jsonb,now(),now()),
+('8a222222-2222-4222-8222-222222222222','00000000-0000-0000-0000-000000000000','authenticated','authenticated','oryveta-races-engineer@example.invalid','',now(),'{}'::jsonb,now(),now()),
+('8b111111-1111-4111-8111-111111111111','00000000-0000-0000-0000-000000000000','authenticated','authenticated','oryveta-races-worker@example.invalid','',now(),'{"oryveta_role":"factory_worker"}'::jsonb,now(),now())
+on conflict (id) do nothing;
+
+set local role authenticated;
+do $setup$
+declare
+  v_owner uuid := '8a111111-1111-4111-8111-111111111111';
+  v_worker uuid := '8b111111-1111-4111-8111-111111111111';
+  v_commit text := repeat('7', 40);
+  v_config text := repeat('7a', 32);
+  v_ws uuid;
+  v_p_beat uuid; v_p_claims uuid; v_p_registration uuid;
+  v_case record;
+  v_p_admit uuid;
+begin
+  perform set_config('request.jwt.claim.sub', v_owner::text, true);
+  insert into public.workspaces(name,slug,created_by)
+  values ('Repair Races','repair-races',v_owner) returning id into v_ws;
+
+  -- One project per case, so the three cases cannot interfere through a
+  -- shared project, registration or reclaim scan.
+  select t.id into v_p_beat from public.create_project(
+    v_ws, 'Races Heartbeat', 'heartbeat against policy revocation', 'evolve',
+    'https://github.com/octocat/Hello-World') t;
+  select t.id into v_p_claims from public.create_project(
+    v_ws, 'Races Claims', 'two concurrent claims', 'evolve',
+    'https://github.com/octocat/Hello-World') t;
+  select t.id into v_p_registration from public.create_project(
+    v_ws, 'Races Registration', 'claim against worker revocation', 'evolve',
+    'https://github.com/octocat/Hello-World') t;
+
+  perform 1 from public.register_project_worker(v_p_beat, v_worker, 'Races Worker') t;
+  perform 1 from public.register_project_worker(v_p_claims, v_worker, 'Races Worker') t;
+  perform 1 from public.register_project_worker(
+    v_p_registration, v_worker, 'Races Worker') t;
+
+  perform 1 from public.register_project_repair_policy(
+    v_p_beat, v_worker, 'Races Heartbeat', v_commit, v_config) t;
+  perform 1 from public.register_project_repair_policy(
+    v_p_claims, v_worker, 'Races Claims', v_commit, v_config) t;
+  perform 1 from public.register_project_repair_policy(
+    v_p_registration, v_worker, 'Races Registration', v_commit, v_config) t;
+
+  -- One project per admission case, so cases 4 to 7 cannot interfere with one
+  -- another through a shared project, registration or enrollment. None of them
+  -- is given a queued goal here: the submission under test is the one session A
+  -- makes while the administrative half withdraws something.
+  for v_case in
+    select * from (values
+      ('Races Admit Late', 'submission admitted, enrollment withdrawn second'),
+      ('Races Admit Refused', 'enrollment withdrawn first, submission refused'),
+      ('Races Admit Worker', 'submission admitted, worker withdrawn second'),
+      ('Races Admit Worker Refused', 'worker withdrawn first, submission refused')
+    ) as t(label, purpose)
+  loop
+    select t.id into v_p_admit from public.create_project(
+      v_ws, v_case.label, v_case.purpose, 'evolve',
+      'https://github.com/octocat/Hello-World') t;
+    perform 1 from public.register_project_worker(v_p_admit, v_worker, 'Races Worker') t;
+    perform 1 from public.register_project_repair_policy(
+      v_p_admit, v_worker, v_case.label, v_commit, v_config) t;
+  end loop;
+end
+$setup$;
+reset role;
+
+-- The engineer who submits the goals needs an editing role, written by the
+-- owner role exactly as the administrative side does it.
+insert into public.workspace_memberships(workspace_id,user_id,role)
+select p.workspace_id, '8a222222-2222-4222-8222-222222222222', 'engineer'
+  from public.projects p
+ where p.name = 'Races Heartbeat'
+on conflict do nothing;
+
+set local role authenticated;
+do $goals$
+declare
+  v_engineer uuid := '8a222222-2222-4222-8222-222222222222';
+  v_worker uuid := '8b111111-1111-4111-8111-111111111111';
+  v_config text := repeat('7a', 32);
+  v_pol record;
+  v_claim record;
+begin
+  perform set_config('request.jwt.claim.sub', v_engineer::text, true);
+  for v_pol in
+    select k.id, k.project_id, k.label from public.project_repair_policies k
+     where k.label in ('Races Heartbeat','Races Claims','Races Registration')
+     order by k.label
+  loop
+    perform 1 from public.submit_repository_repair(
+      v_pol.project_id, v_pol.id, 'Race goal one for ' || v_pol.label) t;
+    -- The two-concurrent-claims case needs two queued goals, so each session
+    -- can take one.
+    if v_pol.label = 'Races Claims' then
+      perform 1 from public.submit_repository_repair(
+        v_pol.project_id, v_pol.id, 'Race goal two for ' || v_pol.label) t;
+    end if;
+  end loop;
+
+  -- The heartbeat case needs an attempt that is already running when the two
+  -- halves start, so session A has a live lease to heartbeat.
+  perform set_config('request.jwt.claim.sub', v_worker::text, true);
+  select * into v_claim from public.claim_repair_work(
+    (select k.id from public.project_repair_policies k where k.label = 'Races Heartbeat'),
+    v_config, 900) t;
+  if v_claim.run_id is null then
+    raise exception 'setup: the heartbeat case has no running attempt';
+  end if;
+end
+$goals$;
+reset role;
+
+do $setup_audit$
+declare n integer;
+begin
+  select count(*) into n from public.project_repair_policies k
+   where k.label in ('Races Heartbeat','Races Claims','Races Registration',
+                     'Races Admit Late','Races Admit Refused','Races Admit Worker',
+                     'Races Admit Worker Refused') and k.enabled;
+  if n <> 7 then raise exception 'setup: % of 7 enrollments exist', n; end if;
+  select count(*) into n from public.work_items w
+   where w.kind = 'repository_repair' and w.goal like 'Race goal%';
+  if n <> 4 then raise exception 'setup: % of 4 race goals were admitted', n; end if;
+  select count(*) into n from public.factory_runs r
+   where r.status = 'running'
+     and r.work_item_id in (select w.id from public.work_items w
+                             where w.goal like 'Race goal one for Races Heartbeat');
+  if n <> 1 then raise exception 'setup: the heartbeat case attempt is not running'; end if;
+end
+$setup_audit$;
+
+commit;
+\echo 'races setup committed; now run session_a and session_b concurrently'
+\endif
+
+\if :{?session_a}
+-- ===========================================================================
+-- SESSION A: the runtime half. In cases 1 to 4 and 6 it holds each lock set
+-- for three seconds so the administrative half has to wait for it; in cases 5
+-- and 7 the roles are reversed and this half is the one that waits, because a
+-- revocation that commits FIRST has to be refused rather than settled
+-- afterwards. If the two halves disagreed about lock order, one of them would
+-- report SQLSTATE 40P01 instead of waiting.
+-- ===========================================================================
+
+-- Case 1: a heartbeat that is mid-transaction while an admin withdraws the
+-- enrollment. A takes policy -> work item -> run and writes last_seen_at.
+begin;
+-- The attempt id and its fencing token are resolved first, as the owner,
+-- because no client role may read private.factory_run_leases - which is the
+-- point of putting it there. A real worker already holds the token its own
+-- claim returned; this file has to look it up because the setup step claimed.
+select set_config('oryveta.races_run', coalesce(
+  (select r.id::text from public.factory_runs r
+    join public.work_items w on w.id = r.work_item_id
+   where w.goal = 'Race goal one for Races Heartbeat' and r.status = 'running'), ''), true);
+select set_config('oryveta.races_token', coalesce(
+  (select l.lease_token::text from private.factory_run_leases l
+   where l.run_id = nullif(current_setting('oryveta.races_run', true), '')::uuid), ''), true);
+set local role authenticated;
+select set_config('request.jwt.claim.sub', '8b111111-1111-4111-8111-111111111111', true);
+do $a_heartbeat$
+declare
+  v_run uuid := nullif(current_setting('oryveta.races_run'), '')::uuid;
+  v_token uuid := nullif(current_setting('oryveta.races_token'), '')::uuid;
+  v_beat record;
+begin
+  if v_run is null or v_token is null then
+    raise exception 'session A: the heartbeat case has no running attempt; re-run the setup';
+  end if;
+  begin
+    select * into v_beat from public.heartbeat_repair_run(
+      p_run_id => v_run, p_lease_token => v_token, p_phase => 'repairing',
+      p_checkpoint => jsonb_build_object('step', 'repairing', 'turns', 1),
+      p_lease_seconds => 900) t;
+  exception when deadlock_detected then
+    raise exception 'session A: the repair heartbeat deadlocked against the policy '
+      'revocation, so the two paths do not agree on lock order';
+  end;
+  if not v_beat.lease_valid then
+    raise exception 'session A: the heartbeat was refused before the revocation (%)',
+      coalesce(v_beat.reason, 'no reason');
+  end if;
+  -- Hold policy, work item and run while session B tries to withdraw the
+  -- enrollment. B must queue behind these locks, not deadlock with them.
+  perform pg_sleep(3);
+end
+$a_heartbeat$;
+commit;
+
+-- Case 2: two claims under one policy. A takes registration -> policy -> one
+-- queued item and keeps them while B claims the other.
+begin;
+set local role authenticated;
+select set_config('request.jwt.claim.sub', '8b111111-1111-4111-8111-111111111111', true);
+do $a_claim$
+declare
+  v_pol uuid; v_claim record;
+begin
+  select k.id into v_pol from public.project_repair_policies k
+   where k.label = 'Races Claims';
+  begin
+    select * into v_claim from public.claim_repair_work(v_pol, repeat('7a', 32), 900) t;
+  exception when deadlock_detected then
+    raise exception 'session A: two concurrent claims under one policy deadlocked';
+  end;
+  if v_claim.run_id is null then
+    raise exception 'session A: the first of two queued goals was not claimed';
+  end if;
+  perform pg_sleep(3);
+end
+$a_claim$;
+commit;
+
+-- Case 3: a claim that is mid-transaction while the worker registration is
+-- revoked. A holds the registration FOR SHARE and the policy FOR UPDATE; B
+-- needs the registration FOR UPDATE and then the policies, in that same order.
+begin;
+set local role authenticated;
+select set_config('request.jwt.claim.sub', '8b111111-1111-4111-8111-111111111111', true);
+do $a_registration$
+declare
+  v_pol uuid; v_claim record;
+begin
+  select k.id into v_pol from public.project_repair_policies k
+   where k.label = 'Races Registration';
+  begin
+    select * into v_claim from public.claim_repair_work(v_pol, repeat('7a', 32), 900) t;
+  exception when deadlock_detected then
+    raise exception 'session A: the repair claim deadlocked against the worker revocation';
+  end;
+  if v_claim.run_id is null then
+    raise exception 'session A: the registration case goal was not claimed';
+  end if;
+  perform pg_sleep(3);
+end
+$a_registration$;
+commit;
+
+-- Case 4: a submission that is mid-transaction while an admin withdraws the
+-- enrollment it was admitted under. A holds the registration and the policy
+-- FOR SHARE and has already inserted the work item; B needs the policy FOR
+-- UPDATE, so it must wait for A and then settle the item A admitted.
+begin;
+set local role authenticated;
+select set_config('request.jwt.claim.sub', '8a222222-2222-4222-8222-222222222222', true);
+do $a_admit_late$
+declare
+  v_pol uuid; v_project uuid; v_item uuid;
+begin
+  select k.id, k.project_id into v_pol, v_project
+    from public.project_repair_policies k where k.label = 'Races Admit Late';
+  begin
+    select t.work_item_id into v_item from public.submit_repository_repair(
+      v_project, v_pol, 'Race goal admitted while the policy was withdrawn') t;
+  exception when deadlock_detected then
+    raise exception 'session A: a repair submission deadlocked against the enrollment '
+      'withdrawal, so the two paths do not agree on lock order';
+  end;
+  if v_item is null then
+    raise exception 'session A: the admission case goal was not admitted';
+  end if;
+  -- Hold the registration, the policy and the new work item while session B
+  -- tries to withdraw the enrollment.
+  perform pg_sleep(3);
+end
+$a_admit_late$;
+commit;
+
+-- Case 5: the reverse commit order. B withdraws the enrollment first and holds
+-- it, so A's submission has to wait on the policy FOR SHARE and then fail
+-- closed. Reading a stale `enabled` here is exactly how a goal used to be
+-- queued under an authority that no longer existed.
+begin;
+set local role authenticated;
+select set_config('request.jwt.claim.sub', '8a222222-2222-4222-8222-222222222222', true);
+do $a_admit_refused$
+declare
+  v_pol uuid; v_project uuid; v_message text;
+  v_waited boolean := false; i integer;
+begin
+  select k.id, k.project_id into v_pol, v_project
+    from public.project_repair_policies k where k.label = 'Races Admit Refused';
+  -- The rendezvous the other way round: this half waits until session B is
+  -- mid-transaction with its withdrawal.
+  --
+  -- It waits on a key that names THIS case, not on a relation-level write
+  -- lock, for two reasons. The administrative half of the previous case can
+  -- still be holding a RowExclusiveLock on this very relation when this case
+  -- starts, which would be a false signal; and a relation lock appears before
+  -- the row is updated, which would let this submission win the policy row and
+  -- silently turn this case into case 4. Session B takes this key with
+  -- pg_advisory_xact_lock only AFTER its withdrawal has locked and updated the
+  -- enrollment row, and holds it to commit, so seeing it proves the share lock
+  -- below must queue behind a committed-later withdrawal.
+  for i in 1..200 loop
+    if exists(select 1 from pg_locks l
+               where l.locktype = 'advisory' and l.classid = 0
+                 and l.objid = 940705 and l.granted and l.pid <> pg_backend_pid()) then
+      v_waited := true;
+      exit;
+    end if;
+    perform pg_sleep(0.1);
+  end loop;
+  if not v_waited then
+    raise exception 'session A: session B never started its withdrawal; start the two '
+      'halves together';
+  end if;
+  begin
+    perform 1 from public.submit_repository_repair(
+      v_project, v_pol, 'Race goal refused by a committed enrollment withdrawal') t;
+  exception
+    when deadlock_detected then
+      raise exception 'session A: a repair submission deadlocked against the enrollment '
+        'withdrawal it waited for';
+    when others then v_message := sqlerrm;
+  end;
+  if v_message <> 'repair policy is disabled' then
+    raise exception 'session A: a goal was admitted under an enrollment that was '
+      'withdrawn while the submission waited for it (%)',
+      coalesce(v_message, 'no error');
+  end if;
+end
+$a_admit_refused$;
+commit;
+
+-- Case 6: the same two commit orders against the worker's registration instead
+-- of the enrollment. A submits and holds; B needs the registration FOR UPDATE.
+begin;
+set local role authenticated;
+select set_config('request.jwt.claim.sub', '8a222222-2222-4222-8222-222222222222', true);
+do $a_admit_worker$
+declare
+  v_pol uuid; v_project uuid; v_item uuid;
+begin
+  select k.id, k.project_id into v_pol, v_project
+    from public.project_repair_policies k where k.label = 'Races Admit Worker';
+  begin
+    select t.work_item_id into v_item from public.submit_repository_repair(
+      v_project, v_pol, 'Race goal admitted while the worker was withdrawn') t;
+  exception when deadlock_detected then
+    raise exception 'session A: a repair submission deadlocked against the worker '
+      'revocation, so the two paths do not agree on lock order';
+  end;
+  if v_item is null then
+    raise exception 'session A: the worker admission case goal was not admitted';
+  end if;
+  perform pg_sleep(3);
+end
+$a_admit_worker$;
+commit;
+
+-- Case 7: B revokes the worker registration first and holds it. A's submission
+-- waits on the registration FOR SHARE and must then be refused: the enrollment
+-- is still enabled, so only the re-derived registration check stands between a
+-- goal and a queue whose single authorized consumer no longer exists.
+begin;
+set local role authenticated;
+select set_config('request.jwt.claim.sub', '8a222222-2222-4222-8222-222222222222', true);
+do $a_admit_worker_refused$
+declare
+  v_pol uuid; v_project uuid; v_message text;
+  v_waited boolean := false; i integer;
+begin
+  select k.id, k.project_id into v_pol, v_project
+    from public.project_repair_policies k where k.label = 'Races Admit Worker Refused';
+  -- The same case-specific key as case 5, for the same two reasons: the
+  -- previous case's registration write may still be held, and a relation lock
+  -- would appear before the row was updated. Session B publishes this one only
+  -- after its revocation has locked and updated the registration row.
+  for i in 1..200 loop
+    if exists(select 1 from pg_locks l
+               where l.locktype = 'advisory' and l.classid = 0
+                 and l.objid = 940707 and l.granted and l.pid <> pg_backend_pid()) then
+      v_waited := true;
+      exit;
+    end if;
+    perform pg_sleep(0.1);
+  end loop;
+  if not v_waited then
+    raise exception 'session A: session B never started its worker revocation; start the '
+      'two halves together';
+  end if;
+  begin
+    perform 1 from public.submit_repository_repair(
+      v_project, v_pol, 'Race goal refused by a committed worker revocation') t;
+  exception
+    when deadlock_detected then
+      raise exception 'session A: a repair submission deadlocked against the worker '
+        'revocation it waited for';
+    when others then v_message := sqlerrm;
+  end;
+  if v_message <> 'the worker identity bound to this repair policy is no longer '
+                  'registered for this project' then
+    raise exception 'session A: a goal was admitted for a worker identity whose '
+      'registration was withdrawn while the submission waited (%)',
+      coalesce(v_message, 'no error');
+  end if;
+end
+$a_admit_worker_refused$;
+commit;
+\echo 'session A finished'
+\endif
+
+\if :{?session_b}
+-- ===========================================================================
+-- SESSION B: the administrative half. In cases 1 to 4 and 6 it waits until
+-- session A is holding its locks and then withdraws something; in cases 5 and
+-- 7 it acts first and holds the withdrawal while session A tries to admit work
+-- under it. Each case asserts that it waited rather than deadlocked, and that
+-- the committed outcome is consistent.
+-- ===========================================================================
+
+-- Case 1: withdraw the enrollment while the heartbeat holds it.
+begin;
+set local role authenticated;
+select set_config('request.jwt.claim.sub', '8a111111-1111-4111-8111-111111111111', true);
+do $b_revoke_policy$
+declare
+  v_pol uuid;
+  v_revoke record;
+  v_waited boolean := false;
+  i integer;
+begin
+  select k.id into v_pol from public.project_repair_policies k
+   where k.label = 'Races Heartbeat';
+  -- Rendezvous: wait until some other backend is mid-transaction with a write
+  -- to public.project_repair_policies, which is exactly what session A's
+  -- heartbeat does when it refreshes last_seen_at. This is why the two halves
+  -- do not need to be started at the same instant.
+  for i in 1..200 loop
+    if exists(select 1 from pg_locks l
+               where l.locktype = 'relation'
+                 and l.relation = 'public.project_repair_policies'::regclass
+                 and l.mode = 'RowExclusiveLock'
+                 and l.granted and l.pid <> pg_backend_pid()) then
+      v_waited := true;
+      exit;
+    end if;
+    perform pg_sleep(0.1);
+  end loop;
+  if not v_waited then
+    raise exception 'session B: session A never started its heartbeat; start the two '
+      'halves together';
+  end if;
+  begin
+    select * into v_revoke from public.revoke_project_repair_policy(v_pol) t;
+  exception when deadlock_detected then
+    raise exception 'session B: withdrawing an enrollment deadlocked against an '
+      'in-flight heartbeat, so the two paths do not agree on lock order';
+  end;
+  if v_revoke.enabled then
+    raise exception 'session B: the enrollment was not withdrawn';
+  end if;
+  -- The heartbeat committed first, so its attempt was running when this
+  -- revocation looked, and exactly one attempt was fenced.
+  if v_revoke.fenced_runs <> 1 then
+    raise exception 'session B: the revocation fenced % attempts instead of the one the '
+      'heartbeat had just extended', v_revoke.fenced_runs;
+  end if;
+end
+$b_revoke_policy$;
+commit;
+
+-- Case 2: the second concurrent claim under the same policy.
+begin;
+set local role authenticated;
+select set_config('request.jwt.claim.sub', '8b111111-1111-4111-8111-111111111111', true);
+do $b_claim$
+declare
+  v_pol uuid; v_claim record; v_waited boolean := false; i integer;
+begin
+  select k.id into v_pol from public.project_repair_policies k
+   where k.label = 'Races Claims';
+  -- Wait until session A's claim is in flight: its own last_seen_at write
+  -- takes the same relation lock.
+  for i in 1..200 loop
+    if exists(select 1 from pg_locks l
+               where l.locktype = 'relation'
+                 and l.relation = 'public.project_repair_policies'::regclass
+                 and l.mode = 'RowExclusiveLock'
+                 and l.granted and l.pid <> pg_backend_pid()) then
+      v_waited := true;
+      exit;
+    end if;
+    perform pg_sleep(0.1);
+  end loop;
+  if not v_waited then
+    raise exception 'session B: session A never started its claim';
+  end if;
+  begin
+    select * into v_claim from public.claim_repair_work(v_pol, repeat('7a', 32), 900) t;
+  exception when deadlock_detected then
+    raise exception 'session B: two concurrent claims under one policy deadlocked, so '
+      'the shared policy row is being locked two different ways';
+  end;
+  -- Two queued goals, two sessions: this one must get the other goal, and
+  -- never the one session A is holding.
+  if v_claim.run_id is null then
+    raise exception 'session B: the second queued goal was not handed out, so one worker '
+      'process can starve another under the same policy';
+  end if;
+  if v_claim.goal <> 'Race goal two for Races Claims'
+     and v_claim.goal <> 'Race goal one for Races Claims' then
+    raise exception 'session B: the claim handed out something that was not a race goal';
+  end if;
+end
+$b_claim$;
+commit;
+
+-- Case 3: revoke the worker registration while a claim is in flight.
+begin;
+set local role authenticated;
+select set_config('request.jwt.claim.sub', '8a111111-1111-4111-8111-111111111111', true);
+do $b_revoke_worker$
+declare
+  v_project uuid;
+  v_worker uuid := '8b111111-1111-4111-8111-111111111111';
+  v_revoke record;
+  v_waited boolean := false;
+  i integer;
+begin
+  select p.id into v_project from public.projects p where p.name = 'Races Registration';
+  for i in 1..200 loop
+    if exists(select 1 from pg_locks l
+               where l.locktype = 'relation'
+                 and l.relation = 'public.project_repair_policies'::regclass
+                 and l.mode = 'RowExclusiveLock'
+                 and l.granted and l.pid <> pg_backend_pid()) then
+      v_waited := true;
+      exit;
+    end if;
+    perform pg_sleep(0.1);
+  end loop;
+  if not v_waited then
+    raise exception 'session B: session A never started its claim';
+  end if;
+  begin
+    select * into v_revoke from public.revoke_project_worker(v_project, v_worker) t;
+  exception when deadlock_detected then
+    raise exception 'session B: revoking a worker registration deadlocked against an '
+      'in-flight claim of that identity';
+  end;
+  if v_revoke.enabled then
+    raise exception 'session B: the registration was not revoked';
+  end if;
+  -- The claim committed first, so the attempt it created is visible here and
+  -- is fenced; a revocation that had slipped between the claim's registration
+  -- check and its insertion would report zero.
+  if v_revoke.fenced_runs <> 1 then
+    raise exception 'session B: the revocation fenced % attempts, so a claim committed an '
+      'attempt the revocation never saw', v_revoke.fenced_runs;
+  end if;
+end
+$b_revoke_worker$;
+commit;
+
+-- Case 4: withdraw the enrollment while a submission under it is in flight.
+begin;
+set local role authenticated;
+select set_config('request.jwt.claim.sub', '8a111111-1111-4111-8111-111111111111', true);
+do $b_revoke_policy_late$
+declare
+  v_pol uuid;
+  v_revoke record;
+  v_waited boolean := false;
+  i integer;
+begin
+  select k.id into v_pol from public.project_repair_policies k
+   where k.label = 'Races Admit Late';
+  -- Rendezvous: session A's insertion into public.work_items takes the relation
+  -- lock below. The two row share locks it also holds are invisible here,
+  -- because a share lock on a row is not a write - the insertion is the signal.
+  for i in 1..200 loop
+    if exists(select 1 from pg_locks l
+               where l.locktype = 'relation'
+                 and l.relation = 'public.work_items'::regclass
+                 and l.mode = 'RowExclusiveLock'
+                 and l.granted and l.pid <> pg_backend_pid()) then
+      v_waited := true;
+      exit;
+    end if;
+    perform pg_sleep(0.1);
+  end loop;
+  if not v_waited then
+    raise exception 'session B: session A never started its submission; start the two '
+      'halves together';
+  end if;
+  begin
+    select * into v_revoke from public.revoke_project_repair_policy(v_pol) t;
+  exception when deadlock_detected then
+    raise exception 'session B: withdrawing an enrollment deadlocked against an in-flight '
+      'submission, so the two paths do not agree on lock order';
+  end;
+  if v_revoke.enabled then
+    raise exception 'session B: the enrollment was not withdrawn';
+  end if;
+  -- Nothing had claimed the goal, so there was no attempt to fence; the audit
+  -- asserts that the goal itself was settled.
+  if v_revoke.fenced_runs <> 0 then
+    raise exception 'session B: the admission case fenced % attempts, but nothing had '
+      'claimed its goal', v_revoke.fenced_runs;
+  end if;
+end
+$b_revoke_policy_late$;
+commit;
+
+-- Case 5: withdraw the enrollment FIRST and hold it, so session A's submission
+-- has something committed to discover when its share lock is finally granted.
+begin;
+set local role authenticated;
+select set_config('request.jwt.claim.sub', '8a111111-1111-4111-8111-111111111111', true);
+do $b_revoke_policy_first$
+declare
+  v_pol uuid;
+  v_revoke record;
+begin
+  select k.id into v_pol from public.project_repair_policies k
+   where k.label = 'Races Admit Refused';
+  -- No rendezvous wait here on purpose: this half acts first, and session A
+  -- waits for it.
+  select * into v_revoke from public.revoke_project_repair_policy(v_pol) t;
+  if v_revoke.enabled then
+    raise exception 'session B: the enrollment was not withdrawn';
+  end if;
+  -- Only now publish the rendezvous key session A polls for. The enrollment
+  -- row is already locked and updated by this transaction at this point, so
+  -- A's submission is guaranteed to queue behind a withdrawal that commits
+  -- first, which is the commit order this case exists to pin down.
+  perform pg_advisory_xact_lock(940705);
+  perform pg_sleep(3);
+end
+$b_revoke_policy_first$;
+commit;
+
+-- Case 6: revoke the worker registration while a submission under one of its
+-- enrollments is in flight.
+begin;
+set local role authenticated;
+select set_config('request.jwt.claim.sub', '8a111111-1111-4111-8111-111111111111', true);
+do $b_revoke_worker_late$
+declare
+  v_project uuid;
+  v_worker uuid := '8b111111-1111-4111-8111-111111111111';
+  v_revoke record;
+  v_waited boolean := false;
+  i integer;
+begin
+  select p.id into v_project from public.projects p where p.name = 'Races Admit Worker';
+  for i in 1..200 loop
+    if exists(select 1 from pg_locks l
+               where l.locktype = 'relation'
+                 and l.relation = 'public.work_items'::regclass
+                 and l.mode = 'RowExclusiveLock'
+                 and l.granted and l.pid <> pg_backend_pid()) then
+      v_waited := true;
+      exit;
+    end if;
+    perform pg_sleep(0.1);
+  end loop;
+  if not v_waited then
+    raise exception 'session B: session A never started its submission';
+  end if;
+  begin
+    select * into v_revoke from public.revoke_project_worker(v_project, v_worker) t;
+  exception when deadlock_detected then
+    raise exception 'session B: revoking a worker registration deadlocked against an '
+      'in-flight submission under one of its enrollments';
+  end;
+  if v_revoke.enabled then
+    raise exception 'session B: the registration was not revoked';
+  end if;
+  if v_revoke.fenced_runs <> 0 then
+    raise exception 'session B: the worker admission case fenced % attempts, but nothing '
+      'had claimed its goal', v_revoke.fenced_runs;
+  end if;
+end
+$b_revoke_worker_late$;
+commit;
+
+-- Case 7: revoke the worker registration FIRST and hold it.
+begin;
+set local role authenticated;
+select set_config('request.jwt.claim.sub', '8a111111-1111-4111-8111-111111111111', true);
+do $b_revoke_worker_first$
+declare
+  v_project uuid;
+  v_worker uuid := '8b111111-1111-4111-8111-111111111111';
+  v_revoke record;
+begin
+  select p.id into v_project from public.projects p
+   where p.name = 'Races Admit Worker Refused';
+  select * into v_revoke from public.revoke_project_worker(v_project, v_worker) t;
+  if v_revoke.enabled then
+    raise exception 'session B: the registration was not revoked';
+  end if;
+  -- Published only once the registration row is locked and updated, as in
+  -- case 5: session A's FOR SHARE must queue behind this transaction and then
+  -- re-evaluate the `enabled` predicate against the committed row.
+  perform pg_advisory_xact_lock(940707);
+  perform pg_sleep(3);
+end
+$b_revoke_worker_first$;
+commit;
+\echo 'session B finished'
+\endif
+
+\if :{?audit}
+-- ===========================================================================
+-- AUDIT: the committed end state of all seven cases. Every one must be fully
+-- applied - no work left running under a withdrawn authority, no work item
+-- claimed twice, nothing left queued that nobody may run, and nothing admitted
+-- under an authority that was already withdrawn.
+-- ===========================================================================
+do $audit$
+declare n integer;
+begin
+  -- Case 1: the withdrawn enrollment settled its work and fenced its attempt.
+  select count(*) into n from public.project_repair_policies k
+   where k.label = 'Races Heartbeat' and not k.enabled and k.revoked_at is not null;
+  if n <> 1 then raise exception 'audit: the heartbeat case enrollment is not withdrawn'; end if;
+  select count(*) into n from public.work_items w
+   where w.goal = 'Race goal one for Races Heartbeat'
+     and w.status = 'failed' and w.error_code = 'policy_revoked';
+  if n <> 1 then
+    raise exception 'audit: the heartbeat case work item was left unsettled by the '
+      'revocation it raced';
+  end if;
+  select count(*) into n from public.factory_runs r
+   join public.work_items w on w.id = r.work_item_id
+   where w.goal = 'Race goal one for Races Heartbeat' and r.status = 'running';
+  if n <> 0 then
+    raise exception 'audit: an attempt is still running under a withdrawn enrollment';
+  end if;
+  -- The heartbeat that won the race is still on record: a fenced attempt keeps
+  -- the progress it had legitimately made.
+  select count(*) into n from public.factory_runs r
+   join public.work_items w on w.id = r.work_item_id
+   where w.goal = 'Race goal one for Races Heartbeat' and r.phase = 'repairing';
+  if n <> 1 then
+    raise exception 'audit: the heartbeat that committed before the revocation lost its '
+      'recorded progress';
+  end if;
+
+  -- Case 2: two goals, two attempts, two distinct work items, two distinct
+  -- lease tokens. Nothing was handed out twice.
+  select count(*) into n from public.factory_runs r
+   join public.work_items w on w.id = r.work_item_id
+   where w.goal like 'Race goal % for Races Claims';
+  if n <> 2 then
+    raise exception 'audit: the two concurrent claims produced % attempts instead of 2', n;
+  end if;
+  select count(distinct r.work_item_id) into n from public.factory_runs r
+   join public.work_items w on w.id = r.work_item_id
+   where w.goal like 'Race goal % for Races Claims';
+  if n <> 2 then
+    raise exception 'audit: two concurrent claims handed out the same work item twice';
+  end if;
+  select count(*) into n from public.work_items w
+   where w.goal like 'Race goal % for Races Claims' and w.attempts <> 1;
+  if n <> 0 then
+    raise exception 'audit: a work item spent more than one attempt on two claims';
+  end if;
+  select count(distinct l.lease_token) into n from private.factory_run_leases l
+   join public.work_items w on w.id = l.work_item_id
+   where w.goal like 'Race goal % for Races Claims';
+  if n <> 2 then
+    raise exception 'audit: the two concurrent attempts do not hold two distinct lease '
+      'tokens';
+  end if;
+
+  -- Case 3: the revoked registration fenced the attempt the claim had just
+  -- committed, and the work it can no longer run is settled rather than queued.
+  select count(*) into n from public.project_workers k
+   join public.projects p on p.id = k.project_id
+   where p.name = 'Races Registration' and k.enabled;
+  if n <> 0 then raise exception 'audit: the registration case worker is still enabled'; end if;
+  select count(*) into n from public.factory_runs r
+   join public.work_items w on w.id = r.work_item_id
+   where w.goal = 'Race goal one for Races Registration'
+     and r.status = 'cancelled' and r.error_code = 'worker_revoked';
+  if n <> 1 then
+    raise exception 'audit: the attempt a revoked worker was holding was not fenced';
+  end if;
+  select count(*) into n from public.work_items w
+   where w.goal = 'Race goal one for Races Registration'
+     and w.status = 'failed' and w.error_code = 'worker_revoked';
+  if n <> 1 then
+    raise exception 'audit: work bound to a revoked worker was left waiting for a worker '
+      'that may never run it again';
+  end if;
+
+  -- And every enrollment whose worker really did authenticate has a last
+  -- contact, which is all last_seen_at ever claims: a credential polled, not
+  -- that capacity exists or that anything is up.
+  select count(*) into n from public.project_repair_policies k
+   where k.label in ('Races Heartbeat','Races Claims','Races Registration')
+     and k.last_seen_at is null;
+  if n <> 0 then
+    raise exception 'audit: % enrollments recorded no worker contact despite an '
+      'authenticated claim or heartbeat', n;
+  end if;
+
+  -- Cases 4 and 6: the withdrawal that committed second settled the goal the
+  -- submission had just admitted. Work nobody may drain is the state this file
+  -- exists to make impossible.
+  select count(*) into n from public.work_items w
+   where w.goal = 'Race goal admitted while the policy was withdrawn'
+     and w.status = 'failed' and w.error_code = 'policy_revoked';
+  if n <> 1 then
+    raise exception 'audit: the goal admitted during an enrollment withdrawal was left '
+      'unsettled by the revocation it raced';
+  end if;
+  select count(*) into n from public.work_items w
+   where w.goal = 'Race goal admitted while the worker was withdrawn'
+     and w.status = 'failed' and w.error_code = 'worker_revoked';
+  if n <> 1 then
+    raise exception 'audit: the goal admitted during a worker revocation was left '
+      'unsettled by the revocation it raced';
+  end if;
+
+  -- Cases 5 and 7: the reverse commit order admitted nothing at all.
+  select count(*) into n from public.work_items w
+   where w.goal like 'Race goal refused%';
+  if n <> 0 then
+    raise exception 'audit: % goals were admitted under an authority that was already '
+      'withdrawn when the submission committed', n;
+  end if;
+  select count(*) into n from public.project_repair_policies k
+   where k.label in ('Races Admit Late','Races Admit Refused') and k.enabled;
+  if n <> 0 then
+    raise exception 'audit: an enrollment of the admission cases is still enabled';
+  end if;
+  select count(*) into n from public.project_workers p
+   join public.projects j on j.id = p.project_id
+   where j.name in ('Races Admit Worker','Races Admit Worker Refused') and p.enabled;
+  if n <> 0 then
+    raise exception 'audit: a worker registration of the admission cases is still enabled';
+  end if;
+
+  -- And the invariant behind all four, stated once over the whole fixture: no
+  -- repair work is queued or running under a withdrawn enrollment, and none is
+  -- queued or running with no enabled registration to consume it.
+  select count(*) into n from public.work_items w
+   join public.project_repair_policies k on k.id = w.repair_policy_id
+   where w.kind = 'repository_repair' and w.status in ('queued','running')
+     and not k.enabled;
+  if n <> 0 then
+    raise exception 'audit: % repair items are live under a withdrawn enrollment', n;
+  end if;
+  select count(*) into n from public.work_items w
+   join public.project_repair_policies k on k.id = w.repair_policy_id
+   where w.kind = 'repository_repair' and w.status in ('queued','running')
+     and not exists(select 1 from public.project_workers p
+                     where p.project_id = k.project_id
+                       and p.worker_user_id = k.worker_user_id and p.enabled);
+  if n <> 0 then
+    raise exception 'audit: % repair items are live with no enabled worker registration '
+      'left to consume them', n;
+  end if;
+end
+$audit$;
+\echo 'races audit passed'
+\endif
+
+\if :{?teardown}
+-- ===========================================================================
+-- TEARDOWN: removes exactly the synthetic fixtures above. Safe to run twice,
+-- and safe to run after a failed session.
+-- ===========================================================================
+begin;
+delete from public.workspaces w where w.slug = 'repair-races'
+   and w.created_by = '8a111111-1111-4111-8111-111111111111';
+delete from auth.users u where u.id in (
+  '8a111111-1111-4111-8111-111111111111',
+  '8a222222-2222-4222-8222-222222222222',
+  '8b111111-1111-4111-8111-111111111111');
+set constraints all immediate;
+do $teardown_audit$
+declare n integer;
+begin
+  select count(*) into n from public.project_repair_policies k
+   where k.label in ('Races Heartbeat','Races Claims','Races Registration',
+                     'Races Admit Late','Races Admit Refused','Races Admit Worker',
+                     'Races Admit Worker Refused');
+  if n <> 0 then raise exception 'teardown: % race enrollments survived', n; end if;
+  select count(*) into n from public.work_items w where w.goal like 'Race goal%';
+  if n <> 0 then raise exception 'teardown: % race work items survived', n; end if;
+end
+$teardown_audit$;
+commit;
+\echo 'races teardown complete'
+\endif

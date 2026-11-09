@@ -87,13 +87,18 @@ RUN_DIRECTORY_PREFIX = "oryveta-run-"
 RUN_MARKER_NAME = ".oryveta-run.json"
 
 # The control plane raises, rather than returns, when a heartbeat's resolved
-# source identity is not the one this attempt or this work item is bound to.
-# These are its two messages; both mean the same thing to a worker.
+# source identity is not the one this attempt, this work item or this repair
+# policy is bound to. These are its messages; all mean the same thing to a
+# worker, and this tuple is also the client's allowlist of protocol messages
+# that survive into an exception, so a new refusal must be listed here to be
+# classifiable at all.
 SOURCE_CONFLICT_REFUSALS = (
     # Per attempt, and raised for a changed ref, commit or digest alike.
     "source identity already recorded for this attempt",
     # Raised when the effective identity is not the work item's pin.
     "source identity conflicts with the work item pin",
+    # Repair only: raised when a reported commit is not the approved policy's.
+    "source identity conflicts with the repair policy",
 )
 
 # The metadata authority refuses results above 256 KB. Keep a margin and cap
@@ -419,7 +424,7 @@ class FactoryRuntimeClient:
 
 
 def minimal_child_environment(work_directory: Path) -> dict[str, str]:
-    """Environment for the analysis child: no worker or production credentials.
+    """Environment for a supervised child: no worker or production credentials.
 
     Only what the interpreter needs to import the engine package and write its
     temporary files. The parent's environment is not inherited.
@@ -469,12 +474,12 @@ def lease_seconds_left(expires_at: str | None) -> float:
     return (moment - datetime.datetime.now(datetime.timezone.utc)).total_seconds()
 
 
-def _signal_analysis_group(child: subprocess.Popen, number: int) -> None:
-    """Signal the whole analysis, which the child leads as its process group.
+def signal_process_group(child: subprocess.Popen, number: int) -> None:
+    """Signal the whole child process group, which the child leads.
 
     The child is started with `start_new_session`, so its PID is its own group
-    ID: signalling that group stops an analysis that forked and can never
-    reach the worker's own group.
+    ID: signalling that group stops work that forked and can never reach the
+    worker's own group.
     """
     try:
         os.killpg(child.pid, number)
@@ -483,7 +488,7 @@ def _signal_analysis_group(child: subprocess.Popen, number: int) -> None:
             child.send_signal(number)
 
 
-def _process_is_gone(pid: int) -> bool:
+def process_is_gone(pid: int) -> bool:
     """True only when signal 0 proves the process no longer exists."""
     try:
         os.kill(pid, 0)
@@ -524,12 +529,32 @@ def sweep_stale_work_roots(root: str | os.PathLike[str]) -> int:
         pid = marker.get("worker_pid")
         if not isinstance(pid, int) or isinstance(pid, bool) or pid <= 1:
             continue
-        if not _process_is_gone(pid):
+        if not process_is_gone(pid):
             continue
         shutil.rmtree(entry, ignore_errors=True)
         if not entry.exists():
             reclaimed += 1
     return reclaimed
+
+
+def enabled_registration(client: FactoryRuntimeClient, project_id: str) -> dict:
+    """The worker's own enabled `project_workers` row, or an actionable failure.
+
+    A worker can read its own registration row, so this needs no elevated
+    privilege and proves scope before any work is claimed. Analysis and repair
+    workers share the grant, so they share this check.
+    """
+    rows = client.select("project_workers", {
+        "project_id": f"eq.{project_id}",
+        "worker_user_id": f"eq.{client.worker_user_id()}",
+        "select": "id,label,enabled",
+    })
+    enabled = [row for row in rows if row.get("enabled")]
+    if not enabled:
+        raise FactoryRuntimeError(
+            "this worker identity has no enabled registration for the requested project; "
+            "a project owner or admin must call register_project_worker")
+    return enabled[0]
 
 
 @dataclass
@@ -552,22 +577,8 @@ class AnalysisRuntimeWorker:
 
     # -- registration -----------------------------------------------------
     def verify_registration(self) -> dict:
-        """Fail fast with an actionable message when the grant is missing.
-
-        A worker can read its own registration row, so this needs no elevated
-        privilege and proves scope before any work is claimed.
-        """
-        rows = self.client.select("project_workers", {
-            "project_id": f"eq.{self.project_id}",
-            "worker_user_id": f"eq.{self.client.worker_user_id()}",
-            "select": "id,label,enabled",
-        })
-        enabled = [row for row in rows if row.get("enabled")]
-        if not enabled:
-            raise FactoryRuntimeError(
-                "this worker identity has no enabled registration for the requested project; "
-                "a project owner or admin must call register_project_worker")
-        return enabled[0]
+        """Fail fast with an actionable message when the grant is missing."""
+        return enabled_registration(self.client, self.project_id)
 
     # -- transitions ------------------------------------------------------
     def claim(self) -> dict | None:
@@ -880,7 +891,7 @@ class AnalysisRuntimeWorker:
     @staticmethod
     def _terminate(child: subprocess.Popen) -> None:
         """Stop the owned process group, even if its original leader exited."""
-        _signal_analysis_group(child, signal.SIGTERM)
+        signal_process_group(child, signal.SIGTERM)
         try:
             child.wait(timeout=TERMINATE_GRACE_SECONDS)
         except subprocess.TimeoutExpired:
@@ -888,7 +899,7 @@ class AnalysisRuntimeWorker:
         finally:
             # Leader exit is not proof that its helpers exited. Kill remaining
             # group members without relying on platform-specific signal-0 probes.
-            _signal_analysis_group(child, signal.SIGKILL)
+            signal_process_group(child, signal.SIGKILL)
             child.wait()
 
     def _report_failure(self, claim: dict, code: str) -> None:

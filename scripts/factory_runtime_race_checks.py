@@ -84,6 +84,7 @@ import re
 import shutil
 import subprocess
 import sys
+import tempfile
 import threading
 import time
 from urllib.parse import urlsplit
@@ -93,14 +94,15 @@ ROOT = Path(__file__).resolve().parents[1]
 
 # Explicit order, never a glob: durable_factory_runtime.sql builds on the
 # project membership helpers, and an alphabetical sweep would load it first.
-# retained_attribution_and_lease_clock.sql comes last because it re-owns
-# constraints and functions the three files before it create.
+# Apply the lease-clock repair before the controlled-repair extension; neither
+# may be loaded ahead of the identity/project and original runtime schema.
 SQL_FILES = (
     "supabase/schema.sql",
     "supabase/migrations/private_chats_and_explicit_sharing.sql",
     "supabase/migrations/projects_and_project_membership.sql",
     "supabase/migrations/durable_factory_runtime.sql",
     "supabase/migrations/retained_attribution_and_lease_clock.sql",
+    "supabase/migrations/controlled_repair_runtime.sql",
 )
 
 INSTANCE = "00000000-0000-0000-0000-000000000000"
@@ -1406,6 +1408,41 @@ def database_url(payload: object) -> str:
     return loopback(url)
 
 
+def exercise_repair_races(binary: str, database: str) -> None:
+    path = ROOT / "supabase/tests/controlled_repair_races.psql"
+
+    def command(mode):
+        return [binary, "--no-psqlrc", "--dbname", database, "--set", "ON_ERROR_STOP=1",
+                "--set", f"{mode}=1", "--file", str(path)]
+
+    def run(mode):
+        result = subprocess.run(command(mode), capture_output=True, text=True, timeout=90)
+        if result.returncode:
+            raise RuntimeError(f"Repair races {mode} failed:\n{result.stderr}")
+
+    processes = []
+    with contextlib.ExitStack() as resources:
+        try:
+            run("setup")
+            logs = [resources.enter_context(tempfile.TemporaryFile(mode="w+")) for _ in range(2)]
+            for mode, log in zip(("session_a", "session_b"), logs):
+                processes.append(subprocess.Popen(command(mode), stdout=log, stderr=subprocess.STDOUT))
+            for process in processes:
+                process.wait(timeout=90)
+            for process, log in zip(processes, logs):
+                if process.returncode:
+                    log.seek(0)
+                    raise RuntimeError(f"Repair race session failed:\n{log.read()}")
+            run("audit")
+            print("PASS controlled repair concurrent authorization and fencing", flush=True)
+        finally:
+            for process in processes:
+                if process.poll() is None:
+                    process.kill()
+                process.wait(timeout=10)
+            run("teardown")
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--connections", type=Path,
@@ -1413,8 +1450,7 @@ def main() -> None:
                              "`supabase start --output-format json` output; stdin is read "
                              "when this is omitted")
     parser.add_argument("--skip-sql", action="store_true",
-                        help="Do not re-apply the four schema files, for a stack that is "
-                             "already at the stage-2 migration")
+                        help="Use an isolated stack with all current migrations already applied")
     arguments = parser.parse_args()
     text = (arguments.connections.read_text(encoding="utf-8") if arguments.connections
             else sys.stdin.read())
@@ -1423,6 +1459,7 @@ def main() -> None:
     if not arguments.skip_sql:
         apply_sql(binary, database)
     exercise(binary, database)
+    exercise_repair_races(binary, database)
 
 
 if __name__ == "__main__":

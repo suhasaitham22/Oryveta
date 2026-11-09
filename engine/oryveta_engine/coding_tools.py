@@ -176,13 +176,19 @@ def _quoted_patch_path(prefix: str, path: str) -> str:
     return '"' + "".join(escaped) + '"'
 
 
+def _patch_lines(text: str) -> list[str]:
+    """Git counts LF only; CR and Unicode separators remain file content."""
+    lines = text.split("\n")
+    return [line + "\n" for line in lines[:-1]] + ([lines[-1]] if lines[-1] else [])
+
+
 def source_patch(base: Path, tools: SourceTools) -> str:
     """Git-applicable text diff, including absent final newlines and quoted paths."""
     output = []
     for path in sorted(tools.write_paths):
         before = (base / path).read_bytes().decode("utf-8")
         _, after = tools._read(path)
-        for line in difflib.unified_diff(before.splitlines(keepends=True), after.splitlines(keepends=True),
+        for line in difflib.unified_diff(_patch_lines(before), _patch_lines(after),
                                          fromfile=_quoted_patch_path("a", path),
                                          tofile=_quoted_patch_path("b", path)):
             output.append(line if line.endswith("\n") else line + "\n\\ No newline at end of file\n")

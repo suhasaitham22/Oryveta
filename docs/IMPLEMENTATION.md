@@ -1,6 +1,6 @@
 # Functional MVP implementation — code map and verified boundaries
 
-Status: **The React/Supabase collaboration and durable-analysis control plane are deployed.** Production analysis was verified with a one-off local worker; always-on worker hosting remains pending. The separate FastAPI/SQLite engine is not deployed to Vercel and keeps its own local identity. The operator-run local repair CLI additionally performs model-driven edits with controller-owned verification, and model-free re-verification of a supplied candidate — from an operator's shell only, never from an endpoint. This page distinguishes deterministic starters and read-only analysis from autonomous software engineering. Dated evidence lives in [STATUS.md](STATUS.md); this page is the code map and the operator contract.
+Status: **The React/Supabase collaboration and durable-analysis control plane are deployed.** Production analysis was verified with a one-off local worker; always-on worker hosting remains pending. The separate FastAPI/SQLite engine is not deployed to Vercel and keeps its own local identity. The operator-run local repair CLI additionally performs model-driven edits with controller-owned verification, and model-free re-verification of a supplied candidate — from an operator's shell only, never from an endpoint. A **controlled durable repair** runtime extends the same control plane with a second task kind and a policy-scoped worker, so an authorized project member can queue a bounded goal that an operator's own supervised host serves; that is durable admission, not hosted execution, and no cloud worker is provisioned for it. This page distinguishes deterministic starters and read-only analysis from autonomous software engineering. Dated evidence lives in [STATUS.md](STATUS.md); this page is the code map and the operator contract.
 
 ## Local architecture
 
@@ -18,7 +18,9 @@ Status: **The React/Supabase collaboration and durable-analysis control plane ar
 | `engine/oryveta_engine/factory_runtime.py` | Project-scoped durable analysis worker: Auth session refresh, PostgREST RPC transitions, fenced leases and a supervised analysis child |
 | `engine/oryveta_engine/factory_service.py` | Unattended service entry point: one-time secret bootstrap, exclusive session lock, persistent rotated credentials, mounted-volume privilege drop and SIGTERM handling |
 | `engine/oryveta_engine/analysis_child.py` | Child-process entry point that runs `analyze_repository` over a prepared snapshot and writes the JSON result atomically |
-| `engine/oryveta_engine/coding_{config,contract,model,tools,sandbox,runtime}.py` | Separate operator-run repair CLI: versioned operator specification, pinned local tool model, scoped edits, bounded Docker check execution, review-only evidence, candidate ZIP export and model-free candidate re-verification |
+| `engine/oryveta_engine/coding_{config,contract,model,tools,sandbox,runtime}.py` | Shared repair engine used by both repair paths: versioned operator specification, pinned local tool model, scoped edits, bounded Docker check execution, review-only evidence, candidate ZIP export and model-free candidate re-verification |
+| `engine/oryveta_engine/coding_worker.py` | Policy-scoped durable repair worker: frozen operator configuration, local capacity probe, pinned-commit fetch, supervised credential-free child, fenced heartbeats and one bounded patch result |
+| `engine/oryveta_engine/coding_child.py` | Child-process entry point that runs `coding_runtime.repair` over prepared private inputs with its own deadline and parent-loss watcher, and writes a bounded outcome report |
 | `apps/web/` | Legacy standalone Soft Modern local UI served at `/`; hosted React Studio builds to `apps/web/studio/dist`, while the self-hosted React Studio uses the separate `apps/web/studio/dist-local` build at `/studio/`. Extensionless `/studio/*` page routes receive the app shell; dotted assets are served only through an explicit per-file allowlist, and reserved API-like paths are not. Missing local builds return `503` without replacing the legacy path |
 | `preview/` | Archived standalone static prototype, retained for history; it must never be Vercel's project root and is not published on any environment |
 | `apps/web/vercel.json` | Hosted build settings (`cd studio` install/build, output `studio/dist`), the SPA fallback rewrite that excludes assets and dotted paths, and the restrictive security headers including the `connect-src` policy |
@@ -27,10 +29,11 @@ Status: **The React/Supabase collaboration and durable-analysis control plane ar
 | `supabase/schema.sql` | Owner-initiated workspaces, membership trigger and per-row authorization policies |
 | `supabase/migrations/durable_factory_runtime.sql` | Work items, fenced runs, typed run events, per-project worker registrations and the unexposed lease table |
 | `supabase/migrations/retained_attribution_and_lease_clock.sql` | Forward repair for retained actor deletion and lease deadlines/expiry after lock waits; apply after the durable-runtime migration |
+| `supabase/migrations/controlled_repair_runtime.sql` | Repair policies, the `repository_repair` task kind on the same queue, bounded checkpoint/result validation, the per-kind run contract and the repair RPCs; apply last, and it is repeatable |
 | `tests/` | API, ownership, CSRF, OAuth state, archive safety, worker and scaffold tests |
 | `Dockerfile`, `compose.yaml` | Single-host API and worker containers with local-only port binding |
 
-The hosted collaboration slice uses `apps/web/studio/src/lib/identity.js`, `projects.js`, `pages/Projects.jsx` and the existing private-chat client. `supabase/migrations/projects_and_project_membership.sql` adds project RLS/RPCs without merging local engine identities. `scripts/auth_ui_smoke.py` exercises actual local Supabase Auth/PostgREST/PostgreSQL/Mailpit and a production-built Studio with headless Chromium; setup and deployment prerequisites are in [IDENTITY-WORKSPACES.md](IDENTITY-WORKSPACES.md).
+The hosted collaboration slice uses `apps/web/studio/src/lib/identity.js`, `projects.js`, `pages/Projects.jsx` and the existing private-chat client. `supabase/migrations/projects_and_project_membership.sql` adds project RLS/RPCs without merging local engine identities. The controlled repair panel is `apps/web/studio/src/components/ProjectRepairs.jsx` over `src/lib/repairRuns.js`, kept separate from the read-only repository-analysis panel, which now filters its work list to `kind = 'repository_analysis'` so repair work is never mislabelled. `scripts/auth_ui_smoke.py` exercises actual local Supabase Auth/PostgREST/PostgreSQL/Mailpit and a production-built Studio with headless Chromium; setup and deployment prerequisites are in [IDENTITY-WORKSPACES.md](IDENTITY-WORKSPACES.md).
 
 ## Run and test
 
@@ -101,9 +104,65 @@ Persisted output is bounded on both sides: the schema allows 256 KB and 400 find
 
 For container/hosted startup without manually staging the first token file, use `python -m oryveta_engine.factory_service`. It uses the same flags and worker, with `/data/worker/credentials.json` as the default credential path and a temporary analysis directory by default. Its first-start secret, persistent volume, single-session lock and bounded supervisor setup are documented in [OPERATIONS.md](OPERATIONS.md#unattended-service-startup). It adds no model inference, repository grants or paid services.
 
+## Controlled durable repair worker (operator-provisioned)
+
+`engine/oryveta_engine/coding_worker.py` is the repair counterpart of the analysis worker. It claims `repository_repair` work items for exactly one approved repair policy and performs one real task per attempt: fetch the policy's pinned public GitHub commit, run the existing `coding_runtime.repair` loop in a supervised credential-free child, and publish one bounded patch result validated against the private evidence the child actually wrote. Operational procedure, trust boundaries and limits are in [OPERATIONS.md](OPERATIONS.md#controlled-durable-repair-operations); the RPCs and payload bounds are in [API.md](API.md#hosted-controlled-repair).
+
+Apply the five analysis prerequisites and then `supabase/migrations/controlled_repair_runtime.sql`. The analysis service is untouched by this module existing: an analysis worker gains no code-execution authority, and nothing about `factory_runtime` or `factory_service` changes.
+
+The credential file is the same JSON object in the same protected regular file as the analysis worker, with the same rules — bare-origin `supabase_url`, `publishable_key` (or `anon_key`), optional `project_id`, `refresh_token`, `chmod 600`, no symlink, no service-role key ever. Only the environment variable differs: `ORYVETA_REPAIR_CREDENTIALS`. Use a dedicated Auth identity and a dedicated credential **directory**, because the process holds that directory's session lock for its whole life.
+
+```bash
+export ORYVETA_REPAIR_CREDENTIALS=/etc/oryveta/repair-worker-credentials.json
+python -m oryveta_engine.coding_worker \
+  --policy <repair policy uuid> \
+  --config /etc/oryveta/repair-configuration.json \
+  --source-url https://github.com/owner/repo \
+  --source-commit <40 lowercase hex> \
+  --evidence-root /var/lib/oryveta/repair-evidence \
+  --work-root /var/lib/oryveta/repair-work
+```
+
+| Flag | Required | Meaning |
+| --- | --- | --- |
+| `--credentials` | yes | Protected dedicated worker credential file; defaults to `$ORYVETA_REPAIR_CREDENTIALS` and is required if neither is set |
+| `--project` | no | Project UUID to serve; defaults to the credential file's `project_id`, and is required when the file has none |
+| `--policy` | yes | The approved `project_repair_policies` id this worker serves |
+| `--config` | yes | Operator-owned JSON repair specification, read once and frozen at startup |
+| `--source-url` | yes | The approved `https://github.com/owner/repo` source URL |
+| `--source-commit` | yes | The approved 40-character lowercase commit SHA |
+| `--evidence-root` | yes | Private directory that retains full per-run evidence; created or adopted as `0700` and owned by this account |
+| `--work-root` | no | Private parent for disposable per-run trees, swept at startup for the trees of dead attempts. It must be visible to the local Docker daemon. Omitted, a temporary root is created and removed with the process, so no later sweep is possible |
+| `--docker-cli` | no | Trusted Docker executable; resolved from `PATH` when omitted |
+| `--docker-config` | no | Operator Docker configuration directory; only the approved named context's local socket metadata is exposed to the child. Defaults to `$DOCKER_CONFIG` |
+| `--lease-seconds` | no | Lease length, 15–900 seconds, default 300 |
+| `--poll-seconds` | no | Idle delay between claim attempts in continuous mode, default 5 |
+| `--once` | no | Claim and complete at most one work item, then exit |
+| `--max-runs` | no | Stop after this many completed claims in continuous mode |
+
+There is deliberately **no** `--max-run-seconds`. The child's bound is the frozen configuration's `limits.wall_seconds` plus a fixed 180-second allowance for fetching, snapshotting, candidate export and result validation, and the child carries its own bound 60 seconds beyond the worker's so a hard-killed worker still leaves a child that stops by itself. There is also no flag that selects a model, an image, a command, a budget or a file grant: those exist only in the frozen configuration.
+
+`configuration_sha256` is the SHA-256 of the **canonical resolved specification**, not of the file's bytes, so derive it with `load_spec(path).digest` rather than `sha256sum` — see [OPERATIONS.md](OPERATIONS.md#operator-reviewed-configuration-and-its-digest). The worker reads the configuration once, parses those exact bytes, prints the digest it froze, and copies those same bytes into every private run directory, so a mid-attempt edit cannot become the authority for a run already under way.
+
+Startup verifies, in order, the enabled project-worker registration and the policy — which must be enabled, must designate this identity, and whose `source_url`, `source_commit` and `configuration_sha256` must equal what the process was started with, with the frozen owner/repo re-parsed by the real importer parser and required to agree — then sweeps stale run directories, then observes local capacity. The capacity probe inspects the Docker context, the daemon and the immutable image and confirms the pinned model is installed; it starts no container, pulls nothing and spends no inference tokens. Capacity and authority are both re-observed at least every 120 seconds before a claim. Nothing falls back: one local model, one local runner, one frozen configuration.
+
+The policy's identity check compares the worker's own Auth id against the policy's **live** `worker_user_id`. That column is nullable and is cleared when the bound account is deleted, so a withdrawn enrollment fails this comparison and the worker stops rather than polling a control plane that would refuse it; the frozen `worker_identity` column is evidence of what was approved and is never used to authorize anything.
+
+Every claim is re-checked before it is served. A claimed item whose `kind`, `project_id`, `repair_policy_id`, `configuration_sha256`, `source_url` or `pinned_source_commit` is not this policy's is a mismatch and is refused, as is an item carrying no bounded goal. The approved commit is then the only thing fetched — there is no default-branch fallback — and the archive's own commit, the fetched slug and any already-pinned reference must all agree.
+
+The child is credential-free. Its argument vector names the configuration copy, source archive, goal file, private evidence/run directories, result path, deadline, worker PID and resolved Docker executable. Its minimal environment adds only that executable directory to `PATH`, a disposable `HOME` and sanitized `DOCKER_CONFIG`: no Supabase credentials, lease token, project/policy identity, `DOCKER_HOST`, proxy variables or inherited parent environment. The worker reads only the selected context's canonical symlink-free `meta.json` (at most 1 MiB), validates its name and local Unix-socket endpoint, and writes those two fields into a fresh private configuration. It copies no arbitrary metadata, other contexts, TLS keys or registry credentials. The parent keeps heartbeating through local inference and independent checks, reporting bounded numeric progress from the private receipt.
+
+Phases reported to the control plane are `claimed`, `fetching_source`, `repairing`, `verifying`, `recording_result` and `done`; the derived checkpoint steps are `fetching_source`, `snapshot_ready`, `repairing`, `verifying` and `recording_result`. Both sets are closed, and the model-loop detail stays in the private receipt. Local failure codes are narrowed to a closed forwarded set before they are persisted, and anything outside it becomes `repair_failed`, so a new upstream code can never widen what a project member is shown.
+
+Private evidence per attempt lives at `<evidence-root>/<work_item_id>/run-<run_id>-attempt-<n>-<random>` and the worker refuses a directory that already exists. It holds the resolved `configuration.json`, the fetched `source.zip`, `receipt.json`, `events.jsonl`, `baseline.json`, `verification.json`, `candidate.zip`, `unverified.patch`/`verified.patch` and an operator-only `worker-run.json` naming the work item, run and attempt. The disposable work tree — snapshot, config copy, goal file, `child-result.json` and `child-stderr.log` — is removed when the attempt ends. Retention of the evidence root is the operator's deliberate decision; nothing in it expires, and no endpoint serves it.
+
+Only a `needs_review` outcome that both the private receipt and the `verified.patch` file support is published, with the patch hash recomputed in the worker and again in the database. The published document carries exactly `kind`, `status`, `verification`, `configuration_sha256`, `source_commit`, `source_tree_sha256`, `candidate_tree_sha256`, `patch_sha256`, `patch`, `checks_passed`, `turns`, `tool_calls`, `tokens_observed`, `model_name` and `model_digest`. An over-limit patch is refused — never truncated, and never replaced by a metadata-only "completion". No stdout, no private acceptance values, no host paths, no prompts and no model trajectory reach the control plane.
+
+Resume semantics match the analysis worker's and are deliberately narrow: **a crashed repair is recomputed, not resumed.** Each retry re-fetches the same pinned commit and recomputes from scratch; a model trajectory is never replayed and a browser grant is never reused. Cancellation, policy or worker or creator revocation, a stolen or expired lease, SIGTERM and the loss of the worker process all stop the child's whole process group and prevent publication, even with a verified candidate in hand. `scripts/coding_worker_smoke.py` is the parent-owned integration harness for this path; its retained private runs stay under the operator evidence root, and a scripted model fixture, when used, is labelled as such and is not a model-quality result.
+
 ## Local verified repair CLI
 
-This is a separate operator-run command, not a web endpoint, Supabase worker mode or unattended service. It has two modes in one module:
+This is a separate operator-run command: not a web endpoint, not a Supabase worker mode and not an unattended service. It is also distinct from the controlled durable repair worker above, which supervises this module's repair loop but adds a queue, a lease, a policy and a bounded published result; this command remains supported on its own, and it is the only way to run re-verification. It has two modes in one module:
 
 - **Repair** (default): accepts a source ZIP, lets a pinned local model edit only explicitly allowed existing files in a disposable copy, independently executes the operator's checks, and returns a patch plus a candidate archive for review.
 - **Re-verification** (`--candidate-zip`): accepts the same source ZIP plus a candidate ZIP and re-derives the verdict with **no model contact at all**.
@@ -242,9 +301,9 @@ The public site separately includes a sanitized **synthetic** repair example in 
 
 ## Known production blockers
 
-1. The Vercel UI uses Supabase for collaboration and durable analysis. It is not connected to the separate FastAPI/SQLite engine, and no always-on cloud worker is configured.
+1. The Vercel UI uses Supabase for collaboration, durable analysis and controlled durable repair. It is not connected to the separate FastAPI/SQLite engine, and no always-on cloud worker is configured for either task kind.
 2. SQLite and file workspaces are single-host and not adequate as-is for multi-tenant consultancy deployment.
-3. Web/API source imports remain read-only snapshots. The separate local repair CLI — including its candidate export and model-free re-verification — is not integrated into those imports, the hosted Evolve flow, any project, any endpoint or any worker. Connecting it would require a durable work contract, per-tenant isolation and an authorization model it does not have.
+3. Web/API source imports remain read-only snapshots, and the one-shot repair CLI — including its candidate export and model-free re-verification — is still not integrated into those imports, the hosted Evolve flow, any endpoint or any worker. The controlled durable repair path is the one connection that now exists, and only on its own narrow terms: a project-scoped submission against an operator-enrolled policy, served by an operator-provisioned host. It supplies the durable work contract and the authorization model that were missing; it does **not** supply per-tenant isolation, hosted compute, private-repository access or model-free re-verification, so the general hosted Evolve fix remains unavailable.
 4. The worker does not run in a hardened per-tenant container or microVM and has no managed always-on hosting.
 5. Production GitHub OAuth, project/private-session schema and controlled multi-user browser authorization are verified. General external email delivery, enterprise identity governance and recovery remain separate requirements.
 6. Repository access still requires a separate GitHub App. Production workers also require explicit host/credential provisioning, rate limits, secret handling, audit and backup/restore. The production security advisor still reports the intentional authenticated-only `SECURITY DEFINER` RPC pattern and disabled leaked-password protection (Supabase Pro or above, so unavailable under the no-paid-service requirement); those findings are accepted and documented, and the advisor output is not claimed to be clean.

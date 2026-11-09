@@ -17,9 +17,12 @@ function data(result) {
   throw error;
 }
 
-export async function listAnalysisWork(projectId, signal) {
+/* Analyses only: the same work_items table also holds controlled repair rows, which have
+   their own panel and must never be listed or labelled as an analysis. */
+export async function listAnalysisWork(projectId, signal, kind = "repository_analysis") {
   return data(await supabase.from("work_items").select(WORK_FIELDS)
-    .eq("project_id", projectId).order("created_at", { ascending: false })
+    .eq("project_id", projectId).eq("kind", kind)
+    .order("created_at", { ascending: false })
     .limit(10).abortSignal(signal)) || [];
 }
 

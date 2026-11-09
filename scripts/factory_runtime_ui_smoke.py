@@ -4,6 +4,7 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import re
 from pathlib import Path
 import sys
 import tempfile
@@ -14,6 +15,43 @@ from playwright.sync_api import expect, sync_playwright
 
 import auth_ui_smoke as ui
 import factory_runtime_smoke as runtime
+
+
+def prove_repair_policy_read_failure(page, connection):
+    """A failed observation must not be presented as missing repair authority.
+
+    Auth and successful reads use the real local stack. Only the policy request
+    is aborted to exercise a transport failure; no response is fabricated.
+    """
+    panel = page.get_by_role("region", name="Controlled repair", exact=True)
+    absent = panel.get_by_text(re.compile("^No repair policy is enrolled yet"))
+    prerequisite = panel.get_by_text(re.compile("^An enabled repair policy is required"))
+    empty_work = panel.get_by_text(re.compile("^No repairs have been queued"))
+    expect(absent).to_be_visible(timeout=20000)
+    expect(prerequisite).to_be_visible()
+    policy_url = runtime.loopback(connection["API_URL"]) + "/rest/v1/project_repair_policies*"
+
+    def disconnect(route):
+        route.abort("connectionfailed")
+
+    page.route(policy_url, disconnect)
+    try:
+        panel.get_by_role("button", name="Refresh repairs", exact=True).click()
+        expect(panel.get_by_role("alert")).to_be_visible(timeout=20000)
+        expect(absent).to_have_count(0)
+        expect(prerequisite).to_have_count(0)
+        expect(empty_work).to_have_count(0)
+        expect(panel.get_by_role(
+            "button", name="Queue repair under this policy", exact=True)).to_be_disabled()
+    finally:
+        page.unroute(policy_url, disconnect)
+    panel.get_by_role("button", name="Refresh repairs", exact=True).click()
+    expect(absent).to_be_visible(timeout=20000)
+    expect(prerequisite).to_be_visible()
+    expect(empty_work).to_be_visible()
+    expect(panel.get_by_role("alert")).to_have_count(0)
+    print("PASS: failed policy observation does not assert missing authority; "
+          "a successful empty read restores setup guidance.")
 
 
 def exercise(connection, repository, evidence):
@@ -49,6 +87,7 @@ def exercise(connection, repository, evidence):
                         storage_key = f"sb-{urlsplit(connection['API_URL']).hostname.split('.')[0]}-auth-token"
                         page.evaluate("state => localStorage.setItem(state.key, JSON.stringify(state.session))", {"key":storage_key,"session":session})
                         ui.open_project(page, project["name"])
+                        prove_repair_policy_read_failure(page, connection)
                         panel = page.get_by_role("region", name="Repository analysis", exact=True)
                         with page.expect_response(lambda response: urlsplit(response.url).path == "/rest/v1/rpc/submit_repository_analysis") as pending:
                             panel.get_by_role("button", name="Analyze public repository", exact=True).click()

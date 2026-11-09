@@ -32,6 +32,14 @@ The operator-run repair/reverification CLI has no account, session, role or gran
 - The container policy (no network, non-root, dropped capabilities, no-new-privileges, read-only root/source, bounded tmpfs/memory/CPU/PIDs/output, no host credentials, no Docker socket) is local defense in depth for *operator-approved* source and *trusted* images. Docker shares a kernel and the host administrator remains trusted; this is not a multi-tenant boundary and must not be used to run code you do not already trust enough to read.
 - A `needs_review` status means only that the operator's declared contracts held. It is not approval, not permission to publish and not a correctness claim.
 
+### Controlled durable repair authority
+
+The opt-in `coding_worker` uses a **dedicated ordinary Supabase Auth session**, an enabled project-worker registration and an immutable repair policy binding the project, public GitHub URL, approved commit and operator configuration digest. An owner/admin enrolls the policy; an engineer or higher may submit an explicitly shared goal. Neither sign-in nor existing analysis-worker access automatically authorizes execution. The reviewed commands, expected values, file grants and budgets remain on the trusted operator's host.
+
+PostgreSQL fences admission and results on policy/worker/creator authority and the current lease. Cancellation or authority loss stops publication immediately at the control plane; the worker stops its child when it observes the fence within its heartbeat bound. The credential-free child receives neither the worker session nor the lease token, and code containers receive no Docker socket or host credentials. A trusted registered worker can still fabricate its own results: strict typed/hash validation is **not remote attestation**.
+
+Only the bounded patch and receipt metadata are shared with project readers; full source/candidate archives, prompts and acceptance values remain private operator evidence. Account deletion retains frozen attribution rather than granting authority to a deleted identity. Operators must agree retention/deletion with participants. This source integration does not provision a host, authorize arbitrary customer source or satisfy production multi-tenant/availability gates.
+
 ## Sandbox threats
 
 Repository instructions, Markdown docs and package outputs are untrusted and can contain prompt injection. Assume generated code may be malicious. Use restricted isolated executions, CPU/memory/time limits, network deny-by-default, no ambient credentials, path normalization, ZIP size limits, SSRF protection, symlink/archive validation and dependency review. Note that imported source can read whatever files its own archive contains, even when the model's read allowlist is narrower — the allowlist bounds the *model*, not the code the checks execute.
