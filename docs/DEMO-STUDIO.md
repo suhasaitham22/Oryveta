@@ -21,6 +21,8 @@ Demo Studio is opened inside Start New or Evolve and receives that journey's sto
 
 The local-run panel may show real coarse worker states and recorded event timelines from the self-hosted API, including cancellation and elapsed timestamps. It must not invent agent steps, tool counts, percentage, ETA or private reasoning. Hosted mode instead shows an explicitly illustrative sequence and states that cloud execution is unavailable.
 
+The `controlled-repair` composition explains the source candidate's approved policy, browser-independent operator worker and recorded review candidate. Its [captioned render](media/controlled-repair-storyboard.mp4) deliberately distinguishes a failed policy read from missing authority, worker contact from hosted availability, and passed checks from approval/publication. It contains no private source, credentials or claim of a production repair.
+
 ## Agent integration
 The offline agent's evidence gate (`oryveta_engine.learning`) remains fail-closed. Use the same task IDs and outcome receipts to create a demo script after verification; never promote unreviewed candidate behavior. Feed approved receipts into story captions and version each demo with code/feature revision.
 
