@@ -14,6 +14,16 @@
 
 The goal is verifiable maintenance changes for small teams first, then the broader Start New/Evolve factory. Community software is $0; hosted preview capacity and proposed Team pricing remain governed by [PRICING.md](PRICING.md). Consented real-repository outcomes, repeat use, review effort and willingness to pay—not additional website polish—are the next qualification evidence.
 
+## Workspace and legacy lifecycle ordering — source candidate, 2026-11-09
+
+Outcome contract: a delayed list/detail/error or an acknowledgement from an abandoned workspace instance must not replace newer navigation, selection or unsaved input. A successful mutation consumes only the draft it submitted. Current-request failures must remain visible.
+
+- Workspace mount and post-mutation reads share a generation and liveness guard, including failures; intentional new-workspace selection survives refresh. Abandoned save/create callbacks cannot rewrite shared selection. Only the submitted settings draft is cleared.
+- Legacy navigation commits list/detail data, rendering and errors only for its current request generation, preserving the newer page and draft when an old response arrives.
+- Real loopback API/Auth/browser reproductions failed before these fixes. The integrated source passed 12 collaboration cases and a separate 13-check legacy API smoke; permanent regressions are in `collaboration_race_smoke.py` and `ui_smoke.py`. The legacy static-server regression uses explicit API fixtures; it is not the real-API proof.
+
+This main-compatible change is separate from controlled repair: no policy/schema/worker change, state-machine dependency, auth/storage migration, deployment or GitHub publication capability is added to the app. Existing storyboard journeys remain accurate; these are lifecycle corrections, not a new advertised feature. Exact PR-head verification is recorded on its GitHub checks.
+
 ## Candidate re-verification and documentation alignment — 2026-11-04
 
 The local CLI now exports a changed candidate as private `candidate.zip` and accepts `--candidate-zip` for a new model-free verification run. It compares normalized inventories and file bytes against the original source and write allowlist before candidate execution, reproduces the defect and checks preservation on the baseline, then runs every declared final case in fresh bounded containers. It does not trust an old success claim or modify the source archive. [Commands, limits and receipt semantics](IMPLEMENTATION.md#candidate-export-and-model-free-re-verification).

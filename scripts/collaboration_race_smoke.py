@@ -17,12 +17,18 @@ isolated local Supabase stack and a production Studio build with real Auth:
   * chat_creation_draft  creation must preserve a newer unsaved conversation title
   * chat_creation_after_navigation an old page must not clear a new page's title
   * invitation_draft    an acknowledgement must preserve the next unsent recipient
+  * workspace_refresh_order a late workspace list must not hide a workspace that
+                         was just created
+  * workspace_save_after_leaving a settings save that outlives its page instance
+                         must not cancel the newer new-workspace selection
+  * workspace_initial_error a failed old mount read must not override a newer save
+  * workspace_create_after_leaving a creation acknowledged after navigation must
+                         not replace the newer selection or draft
 
-Nothing is mocked: every request reaches the local PostgREST/Auth stack and
-every assertion reads the resulting UI or the database. The only interference is
-an in-page `fetch` wrapper that issues the real request immediately and defers
-delivery of its real response, which is how an out-of-order response is produced
-deterministically. No response body, status or success is invented.
+Successful responses and authentication come from the real local stack; no
+response body, status or success is invented. An in-page `fetch` wrapper delays
+delivery of real responses to produce deterministic reordering. Transport-failure
+coverage aborts an old read and delays delivery of its genuine rejection.
 
 Pass JSON from `supabase status --output-format json` (flat, or with the values
 under "env") on stdin or with --connections. Only loopback services are
@@ -110,7 +116,14 @@ HOLD_HARNESS = """
           rule.resolve = () => { rule.state = "delivered"; resolve(response); };
         });
       },
-      (error) => { rule.state = "failed"; throw error; },
+      (error) => {
+        if (!rule.holdError) { rule.state = "failed"; throw error; }
+        rule.state = "held";
+        if (rule.released) { rule.state = "delivered"; throw error; }
+        return new Promise((resolve, reject) => {
+          rule.resolve = () => { rule.state = "delivered"; reject(error); };
+        });
+      },
     );
   };
 })();
@@ -232,6 +245,60 @@ def open_chats(page) -> None:
 def open_projects(page) -> None:
     sidebar_link(page, "Projects").click()
     expect(page.get_by_role("heading", name="Your projects", level=1)).to_be_visible(timeout=15000)
+
+
+def open_workspace_settings(page) -> None:
+    sidebar_link(page, "Workspaces").click()
+    expect(page.get_by_role("heading", name="Your space, your standards.", level=1)).to_be_visible(
+        timeout=15000)
+
+
+def site_link(page, label: str):
+    return page.get_by_role("navigation", name="Primary navigation").get_by_role(
+        "link", name=label, exact=True)
+
+
+def leave_workspace_route(page) -> None:
+    """Leave the workspace route, unmounting its page instance.
+
+    The document stays alive, so the registered holds and the shared workspace list,
+    selection and settings drafts above the route survive the departure.
+    """
+    site_link(page, "Home").click()
+    expect(page.locator("aside.workspace-sidebar")).to_have_count(0, timeout=15000)
+
+
+def enter_workspace_route(page) -> None:
+    """Mount a new workspace page instance through in-application navigation."""
+    site_link(page, "Workspace").click()
+    expect(sidebar_link(page, "Workspaces")).to_be_visible(timeout=15000)
+
+
+def count_mount_reads(page) -> int:
+    """Enter the workspace route and count the workspace list reads one mount performs.
+
+    A production build performs one read per mount; a development build mounts effects
+    twice under StrictMode, where only the second read belongs to the live page
+    instance. Measuring the real request count keeps the ordering cases exact on either
+    build instead of assuming one.
+    """
+    seen: list[str] = []
+
+    def record(request) -> None:
+        if request.method == "GET" and urlsplit(request.url).path == "/rest/v1/workspaces":
+            seen.append(request.url)
+
+    page.on("request", record)
+    try:
+        enter_workspace_route(page)
+        page.wait_for_timeout(SETTLE_MS)
+    finally:
+        page.remove_listener("request", record)
+    return len(seen)
+
+
+def space_choice(page, name: str):
+    return page.locator(".choice-column").get_by_role("button", name=re.compile(re.escape(name)))
 
 
 def conversation_button(page, title: str):
@@ -604,6 +671,205 @@ def prove_chat_history_window(page, fixtures, owner) -> None:
           f"only once some were omitted, and stayed silent in a short conversation", flush=True)
 
 
+def prove_workspace_refresh_order(page, fixtures, owner) -> None:
+    """A workspace list from before a creation must not replace the list after it.
+
+    A new workspace page instance is mounted with its workspace list withheld, a
+    workspace is created (its insert and the list that follows it both complete),
+    and only then is the stale list delivered.
+    """
+    case = "workspace_refresh_order"
+    name = fixtures["created_name"]
+    existing = fixtures["workspace"]
+    open_workspace_settings(page)
+    expect(space_choice(page, existing["name"])).to_have_count(1, timeout=15000)
+    leave_workspace_route(page)
+    reads = count_mount_reads(page)
+    if not reads:
+        raise AssertionError(f"{case}: mounting the workspace route read no workspace list, so "
+                             "this case no longer orders anything")
+    leave_workspace_route(page)
+    # Every read the mount performs is withheld, so the list that follows the creation is
+    # the only one the page may commit while the initial reads are still in flight.
+    labels = [f"initial-workspaces-{index + 1}" for index in range(reads)]
+    for label in labels:
+        hold(page, label, "/rest/v1/workspaces", "GET")
+    enter_workspace_route(page)
+    for label in labels:
+        wait_held(page, label, case)
+    open_workspace_settings(page)
+    page.get_by_role("button", name="New workspace", exact=True).click()
+    page.get_by_label("Workspace name", exact=True).fill(name)
+    page.get_by_role("button", name="Create workspace", exact=True).click()
+    expect(page.get_by_role("status")).to_contain_text("Your private workspace is ready",
+                                                       timeout=30000)
+    rows = ui.ok(owner.get("/rest/v1/workspaces",
+                           params={"name": f"eq.{name}", "select": "id,name,slug"}))
+    if len(rows) != 1:
+        raise AssertionError(f"{case}: the workspace was not created exactly once: {rows}")
+    created = rows[0]
+    fixtures["created_workspace"] = created
+    expect(space_choice(page, name)).to_have_count(1, timeout=15000)
+    for label in labels:
+        release(page, label, case)
+    if space_choice(page, name).count() != 1:
+        raise AssertionError(
+            f"{case}: the workspace list captured before the creation was applied after it, so "
+            f"{name} disappeared from the list although the page reports it was created and the "
+            f"backend persisted {created['id']}. Only the newest list may be committed.")
+    if space_choice(page, name).get_attribute("aria-pressed") != "true":
+        raise AssertionError(
+            f"{case}: the stale list dropped the selection of the workspace that was just "
+            f"created, so {name} is no longer the active workspace")
+    shown = page.get_by_label("Workspace name", exact=True).input_value()
+    if shown != name:
+        raise AssertionError(
+            f"{case}: the settings form moved to {shown!r} after the stale list arrived, so the "
+            f"owner edits a workspace they did not select")
+    readable = ui.ok(owner.get("/rest/v1/workspaces", params={"select": "id"}))
+    listed = page.locator(".choice-column button.space-choice").count()
+    if listed != len(readable):
+        raise AssertionError(f"{case}: the page lists {listed} workspaces while the owner can "
+                             f"read {len(readable)}")
+    no_alert(page, case)
+    page.get_by_role("button", name="New workspace", exact=True).click()
+    expect(page.get_by_label("Workspace name", exact=True)).to_have_value("")
+    print(f"{case}: the workspace list fetched before the creation was discarded on arrival; "
+          f"{name} stayed listed, selected and editable", flush=True)
+
+
+def prove_workspace_save_after_leaving(page, fixtures, owner) -> None:
+    """A settings save that outlives its page must not cancel a newer selection.
+
+    The save response is withheld, the workspace route is left and entered again
+    (a new page instance with no pending save of its own), that instance is put on
+    the deliberate new-workspace form, and only then is the old save acknowledged.
+    """
+    case = "workspace_save_after_leaving"
+    space = fixtures["workspace"]
+    saved = f"Saved description {fixtures['suffix']} from the page that was left."
+    typed = f"Next workspace {fixtures['suffix']}"
+
+    # Response delivery, not a particular follow-up read, orders the acknowledgement.
+
+    open_workspace_settings(page)
+    space_choice(page, space["name"]).click()
+    # This label contains its textarea, so the label text grows with the value React
+    # commits into it; matching the label loosely keeps the field addressable either way.
+    description = page.get_by_label("What are you building?")
+    expect(description).to_be_visible(timeout=15000)
+    description.fill(saved)
+    hold(page, "workspace-save", "/rest/v1/workspaces", "PATCH")
+    page.get_by_role("button", name="Save settings", exact=True).click()
+    wait_held(page, "workspace-save", case)
+    leave_workspace_route(page)
+    enter_workspace_route(page)
+    open_workspace_settings(page)
+    page.get_by_role("button", name="New workspace", exact=True).click()
+    expect(page.get_by_role("heading", name="Your first workspace", level=2)).to_be_visible(
+        timeout=15000)
+    field = page.get_by_label("Workspace name", exact=True)
+    field.fill(typed)
+    status = release(page, "workspace-save", case)
+    stored = ui.row(ui.ok(owner.get("/rest/v1/workspaces", params={
+        "id": f"eq.{space['id']}", "select": "name,description"})))
+    if stored["description"] != saved:
+        raise AssertionError(f"{case}: the withheld save (HTTP {status}) did not persist its own "
+                             f"description; the backend holds {stored['description']!r}")
+    if stored["name"] != space["name"]:
+        raise AssertionError(f"{case}: the save renamed the workspace to {stored['name']!r}")
+    if not page.get_by_role("heading", name="Your first workspace", level=2).count():
+        raise AssertionError(
+            f"{case}: the save acknowledgement from the page instance that was left behind "
+            f"replaced the deliberate new-workspace form with {space['name']}'s settings. A "
+            "completion must not write to a selection it no longer owns.")
+    shown = field.input_value()
+    if shown != typed:
+        raise AssertionError(
+            f"{case}: the name typed on the new-workspace form was replaced by {shown!r} when "
+            f"the old save was acknowledged, so the owner's next workspace name is lost")
+    no_alert(page, case)
+    print(f"{case}: the settings save acknowledged after the workspace route was left and "
+          f"entered again persisted only its own description and left the newer "
+          f"new-workspace selection and name untouched", flush=True)
+
+
+def prove_workspace_initial_error(page, fixtures, owner) -> None:
+    """A genuine transport failure belongs to the read that encountered it."""
+    case = "workspace_initial_error"
+    space = fixtures["workspace"]
+    open_workspace_settings(page)
+    expect(space_choice(page, space["name"])).to_have_count(1, timeout=15000)
+    leave_workspace_route(page)
+    reads = count_mount_reads(page)
+    leave_workspace_route(page)
+    assert reads, "The initial read was not observed"
+    labels = [f"initial-error-{index}" for index in range(reads)]
+    for label in labels:
+        page.evaluate("rule => window.__holds.add(rule)", {
+            "label": label, "path": "/rest/v1/workspaces", "holdError": True})
+    workspace_url = str(owner.base_url).rstrip("/") + "/rest/v1/workspaces*"
+
+    def disconnect(route):
+        route.abort("connectionfailed")
+
+    page.route(workspace_url, disconnect)
+    try:
+        enter_workspace_route(page)
+        for label in labels:
+            wait_held(page, label, case)
+        page.unroute(workspace_url, disconnect)
+        open_workspace_settings(page)
+        space_choice(page, space["name"]).click()
+        saved = f"Newer acknowledged save {fixtures['suffix']}"
+        page.get_by_label("What are you building?").fill(saved)
+        with page.expect_response(lambda response: response.request.method == "GET"
+                                  and urlsplit(response.url).path == "/rest/v1/workspaces"):
+            page.get_by_role("button", name="Save settings", exact=True).click()
+        expect(page.get_by_role("status")).to_contain_text("Workspace settings saved")
+        for label in labels:
+            release(page, label, case)
+        no_alert(page, case)
+        expect(page.get_by_label("What are you building?")).to_have_value(saved)
+        stored = ui.row(ui.ok(owner.get("/rest/v1/workspaces", params={
+            "id": f"eq.{space['id']}", "select": "description"})))
+        assert stored["description"] == saved
+    finally:
+        page.unroute(workspace_url, disconnect)
+        for label in labels:
+            page.evaluate("label => window.__holds.release(label)", label)
+    print(f"{case}: failed superseded read did not replace current save feedback", flush=True)
+
+
+def prove_workspace_create_after_leaving(page, fixtures, owner) -> None:
+    """A completed create cannot select a record in an abandoned page instance."""
+    case = "workspace_create_after_leaving"
+    name = f"Abandoned create {fixtures['suffix']}"
+    typed = f"Newer creation draft {fixtures['suffix']}"
+    open_workspace_settings(page)
+    expect(space_choice(page, fixtures["workspace"]["name"])).to_have_count(1, timeout=15000)
+    page.get_by_role("button", name="New workspace", exact=True).click()
+    page.get_by_label("Workspace name", exact=True).fill(name)
+    hold(page, case, "/rest/v1/workspaces", "POST")
+    page.get_by_role("button", name="Create workspace", exact=True).click()
+    wait_held(page, case, case)
+    rows = ui.ok(owner.get("/rest/v1/workspaces", params={
+        "name": f"eq.{name}", "select": "id,name"}))
+    assert len(rows) == 1, "The held creation did not persist exactly once"
+    fixtures["abandoned_workspace"] = rows[0]
+    leave_workspace_route(page)
+    enter_workspace_route(page)
+    open_workspace_settings(page)
+    expect(space_choice(page, fixtures["workspace"]["name"])).to_have_count(1, timeout=15000)
+    expect(page.get_by_role("heading", name="Your first workspace", level=2)).to_be_visible()
+    page.get_by_label("Workspace name", exact=True).fill(typed)
+    release(page, case, case)
+    expect(page.get_by_role("heading", name="Your first workspace", level=2)).to_be_visible()
+    expect(page.get_by_label("Workspace name", exact=True)).to_have_value(typed)
+    no_alert(page, case)
+    print(f"{case}: persisted creation did not replace the newer selection or draft", flush=True)
+
+
 CASES = {
     "stale_chat_details": prove_stale_chat_details,
     "chat_refresh_order": prove_chat_refresh_order,
@@ -613,6 +879,10 @@ CASES = {
     "chat_creation_draft": prove_chat_creation_draft,
     "chat_creation_after_navigation": prove_chat_creation_after_navigation,
     "invitation_draft": prove_invitation_draft,
+    "workspace_refresh_order": prove_workspace_refresh_order,
+    "workspace_save_after_leaving": prove_workspace_save_after_leaving,
+    "workspace_initial_error": prove_workspace_initial_error,
+    "workspace_create_after_leaving": prove_workspace_create_after_leaving,
 }
 
 
@@ -654,6 +924,7 @@ def build_fixtures(connection: dict, owner: httpx.Client, owner_id: str, suffix:
         "alpha": chats["alpha"], "bravo": chats["bravo"], "delta": chats["delta"],
         "echo": chats["echo"], "alpha_message": alpha_message, "recipient": recipient,
         "charlie_title": f"Charlie {suffix}", "charlie": None,
+        "created_name": f"Created workspace {suffix}", "created_workspace": None,
         "echo_messages": MESSAGE_WINDOW,
     }
 
@@ -678,8 +949,10 @@ def remove_fixtures(connection: dict, fixtures: dict, user_ids: list[str]) -> No
         requests = [("/rest/v1/chats", {"id": f"in.({','.join(chats)})"})] if chats else []
         if fixtures.get("project"):
             requests.append(("/rest/v1/projects", {"id": f"eq.{fixtures['project']['id']}"}))
-        if fixtures.get("workspace"):
-            requests.append(("/rest/v1/workspaces", {"id": f"eq.{fixtures['workspace']['id']}"}))
+        workspaces = [fixtures[name]["id"] for name in (
+            "workspace", "created_workspace", "abandoned_workspace") if fixtures.get(name)]
+        if workspaces:
+            requests.append(("/rest/v1/workspaces", {"id": f"in.({','.join(workspaces)})"}))
         for path, params in requests:
             response = admin.delete(path, params=params)
             if response.is_error:
@@ -690,7 +963,7 @@ def remove_fixtures(connection: dict, fixtures: dict, user_ids: list[str]) -> No
                 failures.append(f"DELETE Auth user {user_id}: HTTP {response.status_code}")
     if failures:
         raise RuntimeError("Fixture cleanup failed: " + "; ".join(failures))
-    print("Cleanup: fixture conversations, project, workspace and temporary identities removed",
+    print("Cleanup: fixture conversations, project, workspaces and temporary identities removed",
           flush=True)
 
 

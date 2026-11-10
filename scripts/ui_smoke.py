@@ -1,14 +1,17 @@
 """Browser smoke for Oryveta's preserved legacy local UI.
 
-Tests guest sign-in, explicit preview access, mobile navigation and an
-authenticated workspace lifecycle with a deterministic mocked Auth adapter.
+Tests guest sign-in, explicit preview access, mobile navigation, an
+authenticated workspace lifecycle with a deterministic mocked Auth adapter and
+navigation ordering when a superseded response arrives late.
 No real OAuth secrets or external identity calls run in CI.
 """
 from __future__ import annotations
 
+import json
 import threading
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
+from urllib.parse import urlsplit
 
 from playwright.sync_api import sync_playwright
 
@@ -56,6 +59,156 @@ FAKE_AUTH = """
  };
 })();
 """
+
+
+# The legacy shell's local mode talks to the self-hosted API. These deterministic payloads stand
+# in for it exactly like FAKE_AUTH stands in for the hosted adapter: no server process, no
+# credentials and no network. "p-gone" is listed but has no detail payload, which is what the
+# real API returns for a project removed by another session.
+LOCAL_API = {
+    "/api/config": {"name": "Oryveta", "github_auth_enabled": False, "local_demo_enabled": True},
+    "/api/me": {
+        "id": "local-demo-user",
+        "display_name": "Local Builder",
+        "email": "builder@example.com",
+        "csrf_token": "smoke-csrf-token",
+    },
+    "/api/projects": [
+        {"id": "p-alpha", "name": "Alpha Service", "brief": "First project", "origin": "create",
+         "status": "ready"},
+        {"id": "p-beta", "name": "Beta Snapshot", "brief": "Second project", "origin": "import",
+         "status": "ready"},
+        {"id": "p-gone", "name": "Removed Elsewhere", "brief": "Deleted by another session",
+         "origin": "create", "status": "ready"},
+    ],
+    "/api/overview": {"projects": 3, "active_jobs": 0, "verified_runs": 0},
+    "/api/activity": [],
+    "/api/ai/status": {"status": "disabled", "model": None},
+    "/api/ai/budget": {"remaining_tokens": 20000},
+    "/api/projects/p-alpha": {"id": "p-alpha", "name": "Alpha Service", "brief": "First project",
+                              "origin": "create", "status": "ready", "files": [], "analysis": None},
+    "/api/projects/p-beta": {"id": "p-beta", "name": "Beta Snapshot", "brief": "Second project",
+                             "origin": "import", "status": "ready", "files": [], "analysis": None},
+}
+
+# Holds a chosen API response back inside the browser so a superseded navigation resolves after
+# the user has already opened a newer page. `before` delays the request instead of the response,
+# which is how a late failure is produced.
+DELAYED_FETCH = """
+'use strict';
+window.__delayedApi={pattern:null,ms:0,before:false};
+(() => {
+ const realFetch=window.fetch;
+ const pause=(ms)=>new Promise((resolve)=>setTimeout(resolve,ms));
+ window.fetch=async(...args)=>{
+  const target=String(args[0]&&args[0].url?args[0].url:args[0]);
+  const plan=window.__delayedApi;
+  const match=!!plan.pattern&&target.includes(plan.pattern);
+  if(match&&plan.before)await pause(plan.ms);
+  const response=await realFetch(...args);
+  if(match&&!plan.before)await pause(plan.ms);
+  return response;
+ };
+})();
+"""
+
+
+def serve_local_api(route):
+    path = urlsplit(route.request.url).path
+    if path in LOCAL_API:
+        route.fulfill(status=200, content_type="application/json",
+                      body=json.dumps(LOCAL_API[path]))
+        return
+    route.fulfill(status=404, content_type="application/json",
+                  body=json.dumps({"detail": "Project not found"}))
+
+
+def hold(page, pattern: str, ms: int = 1200, before: bool = False):
+    page.evaluate("plan => { window.__delayedApi = plan; }",
+                  {"pattern": pattern, "ms": ms, "before": before})
+
+
+def toast_text(page) -> str:
+    return page.evaluate(
+        "() => { const box = document.querySelector('#toast');"
+        " return box.classList.contains('hidden') ? '' : box.textContent; }"
+    )
+
+
+def breadcrumb(page) -> str:
+    return page.locator("#breadcrumb-current").inner_text()
+
+
+def navigation_order(browser, origin: str) -> None:
+    """Only the newest navigation may own shared state, the rendered page and its errors."""
+    page = browser.new_page(viewport={"width": 1440, "height": 900})
+    errors: list[str] = []
+    page.on("pageerror", lambda err: errors.append(str(err)))
+    page.add_init_script(DELAYED_FETCH)
+    page.route("**/api/**", serve_local_api)
+    page.goto(origin, wait_until="networkidle", timeout=30000)
+    assert page.locator("#app").is_visible()
+    assert breadcrumb(page) == "Overview"
+
+    # A superseded list navigation must not replace a newer page or the draft typed into it.
+    hold(page, "/api/projects")
+    page.locator('#nav [data-page="projects"]').click()
+    page.wait_for_timeout(100)
+    page.locator('#nav [data-page="new"]').click()
+    page.locator("#project-name").fill("Draft on the newer page")
+    page.wait_for_timeout(1600)
+    assert breadcrumb(page) == "Start New", breadcrumb(page)
+    assert page.locator("#new-form").count() == 1
+    assert page.locator("#project-name").input_value() == "Draft on the newer page"
+    assert page.evaluate(
+        "() => document.querySelector('#nav .nav-link.active')?.dataset.page"
+    ) == "new"
+
+    # A superseded detail navigation must not take over the project heading of a newer one.
+    hold(page, "", 0)
+    page.locator('#nav [data-page="projects"]').click()
+    page.wait_for_selector('[data-project="p-alpha"]', timeout=15000)
+    hold(page, "/api/projects/p-alpha")
+    page.locator('[data-project="p-alpha"]').click()
+    page.wait_for_timeout(100)
+    page.locator('[data-project="p-beta"]').click()
+    page.wait_for_timeout(1600)
+    assert page.locator("#page h1").first.inner_text() == "Beta Snapshot", (
+        page.locator("#page h1").first.inner_text()
+    )
+
+    # A superseded navigation that fails must not report its error on the newer page.
+    hold(page, "", 0)
+    page.locator('#nav [data-page="projects"]').click()
+    page.wait_for_selector('[data-project="p-gone"]', timeout=15000)
+    hold(page, "/api/projects/p-gone", before=True)
+    page.locator('[data-project="p-gone"]').click()
+    page.locator('#nav [data-page="new"]').click()
+    page.locator("#project-name").fill("Draft kept after a failed older page")
+    page.wait_for_timeout(1600)
+    assert toast_text(page) == "", toast_text(page)
+    assert breadcrumb(page) == "Start New"
+    assert page.locator("#project-name").input_value() == "Draft kept after a failed older page"
+
+    # Current navigations are untouched: they render, and their own failures still surface.
+    hold(page, "", 0)
+    page.locator('#nav [data-page="projects"]').click()
+    page.wait_for_selector('[data-project="p-alpha"]', timeout=15000)
+    assert breadcrumb(page) == "Projects"
+    page.locator('[data-project="p-alpha"]').click()
+    page.wait_for_selector("[data-run-scan]", timeout=15000)
+    assert page.locator("#page h1").first.inner_text() == "Alpha Service"
+    page.locator('#nav [data-page="projects"]').click()
+    page.wait_for_selector('[data-project="p-gone"]', timeout=15000)
+    page.locator('[data-project="p-gone"]').click()
+    page.wait_for_timeout(500)
+    assert toast_text(page) == "Project not found", toast_text(page)
+    page.locator('#nav [data-page="activity"]').click()
+    page.wait_for_timeout(300)
+    assert breadcrumb(page) == "Activity"
+    assert not errors, errors
+    print("PASS navigation order: newest page owns state, draft and errors")
+    page.close()
 
 
 def run() -> None:
@@ -157,6 +310,8 @@ def run() -> None:
             assert not errors, errors
             print("PASS mocked auth: first-workspace onboarding, owner update, account chrome")
             page.close()
+
+            navigation_order(browser, f"http://127.0.0.1:{server.server_port}/")
             browser.close()
     finally:
         server.shutdown()
