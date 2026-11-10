@@ -51,7 +51,7 @@ Covered today: the hosted workspace (sign-in, saved briefs, projects with explic
 
 Proposed contents, each of which must be built first:
 
-- Shared agent-run history across the workspace (runs, receipts, patches, check outcomes) instead of private per-operator directories.
+- Workspace-wide agent-run history (runs, receipts, patches, check outcomes), beyond the project-scoped bounded history in the controlled-repair source candidate. Existing project history is not paywalled.
 - A review workflow over candidate patches: assignment, accept/reject with reason, and the exact verified source revision.
 - Budget administration: per-workspace limits, visible usage, and owner-set stop-rules.
 
@@ -59,7 +59,7 @@ Still **bring-your-own-compute**: $49 would cover the control plane, not inferen
 
 Call to action on the public page: **try a free workspace** (both plan cards link to `/workspace`). Not "subscribe", not a waitlist confirmation, not a contact-form success state — none of those backends exist, and no checkout appears anywhere in the UI.
 
-Public surface: a dedicated `/pricing` page renders both plan cards from one shared source (`apps/web/studio/src/lib/plans.js`), so the published price cannot drift between surfaces. It links to the Home `#local-example` section for the example-asset downloads and does not repeat that run's metrics. Presentation details are in [DESIGN-SYSTEM.md](DESIGN-SYSTEM.md). That page exists in an **open review candidate**: it is not merged to `main` and is not served by production today, so describing it here is a description of source under review, not of a live pricing page.
+Public surface: a dedicated `/pricing` page renders both plan cards from one shared source (`apps/web/studio/src/lib/plans.js`), so the published price cannot drift between surfaces. It links to the Home `#local-example` section for the example-asset downloads and does not repeat that run's metrics. Presentation details are in [DESIGN-SYSTEM.md](DESIGN-SYSTEM.md). PR #48 merged this source; production deployment remains a separate claim recorded in [STATUS.md](STATUS.md).
 
 ### Availability matrix
 
@@ -71,7 +71,8 @@ Public surface: a dedicated `/pricing` page renders both plan cards from one sha
 | Local verified repair CLI (own compute) | Available, Apache-2.0 | Same, unchanged |
 | Hosted capacity | Shared free-tier allowances; quotas and pausing apply; no availability commitment | Would require compliant commercial hosting first |
 | Hosted inference / included compute | None | None |
-| Shared run history, review workflow, budget admin | Not built | Not built — the reason the plan is not sellable |
+| Project-scoped controlled repair history/downloads | Implemented in this source candidate; requires migration and an operator worker | Same; not paywalled |
+| Workspace-wide history, review assignment/decisions, budget admin | Not built | Not built — the reason the plan is not sellable |
 | Billing, metering, quota enforcement | None | None |
 
 ## What must be true before commercial use or charging
@@ -84,6 +85,21 @@ These are preconditions, not features of a plan.
 4. **Hard limits, not silent overage.** Limits stop a run; they never escalate budgets, widen permissions or fall back to a paid provider automatically. This preserves the existing no-paid-fallback contract in [ROADMAP.md](ROADMAP.md) and [MODEL-GATEWAY.md](MODEL-GATEWAY.md).
 5. **Compliant hosting entitlement, required before commercial use — not merely before the first payment.** Vercel Hobby is non-commercial personal use only ([ROADMAP.md](ROADMAP.md#free-architecture-and-scaling)). A free pilot is not automatically non-commercial, so a commercial launch of any kind requires an approved commercial plan or a compliant alternative host **before** launch, not after the first invoice. Entitlement for any such plan is **unverified and not in evidence** here, and no account or plan has been changed by this work: what is delivered is a source and preview candidate, not a commercial production rollout.
 6. **A real refund/cancellation and tax posture**, plus a reviewed data-processing description. Not drafted.
+
+## Controlled design-partner release decision
+
+**Source candidate, not an opened commercial or always-on service.** The selected scope is operator-approved public repositories, dedicated worker identities and explicitly submitted goals. No arbitrary self-service code execution, private repository grant, automatic PR/deploy, billing or incremental spend is enabled.
+
+| Gate | Required before onboarding a partner | Current boundary |
+| --- | --- | --- |
+| Executable evidence | Browser-to-queue-to-worker checks, cancellation, lost-parent recovery, authorization and patch download | Use the dated results in [STATUS.md](STATUS.md); synthetic local checks are not partner outcomes |
+| Production control plane | Reviewed forward migration, deployment, actual provider/RLS checks and rollback procedure | Not performed by this source change |
+| Worker host | Approved account/host, private persistent state, local Docker/Ollama, supervisor, cold-start/cancellation/reboot checks and measured capacity on that machine | No cloud worker provisioned; a local macOS/VM result is not proof on a free cloud VM |
+| Hosting entitlement | A plan/host that permits the intended commercial use, even if the pilot is free | Vercel Hobby is personal/non-commercial; current commercial entitlement remains unverified |
+| Partner consent and support | Named consenting repository owner, frozen revision/configuration, shared-goal/patch audience, evidence retention/deletion agreement and a named incident contact | Requires founder/operator agreement with each partner; no customer consent is inferred |
+| Identity and recovery | Use an actually verified sign-in path; demonstrate worker re-provisioning with current credentials and a private evidence backup/restore | Production GitHub login has dated evidence; local Mailpit is not external email delivery, and no cloud restore or uptime guarantee is established |
+
+Free-tier capacity, pausing and reclamation remain operational limits, not bugs to bypass with artificial traffic. Follow [OPERATIONS.md](OPERATIONS.md) for the conditional host choice and recovery boundaries. If a gate fails, keep execution closed rather than quietly enabling a paid fallback or presenting a queued goal as running. Founder account creation, payment-card/plan decisions, partner consent and final launch authorization cannot be supplied by code or a local test.
 
 ## Hypothetical unit economics
 
@@ -168,8 +184,8 @@ Format follows [How to Apply](https://www.ycombinator.com/howtoapply): clear and
 - Only one synthetic repair has been verified end to end; real repositories are not yet qualified.
 - A local 8B model on an operator's hardware may not reach useful quality or throughput on real defects. That is a measurement we have not taken, and it may fail.
 - Local Docker is defense in depth, not multi-tenant isolation. Hosted execution of untrusted customer source needs a stronger boundary.
-- There is no always-on worker, so no availability claim is possible.
-- The hosted web product and the local repair CLI are **separate** today; connecting them is work, not a configuration flag.
+- No always-on cloud worker has been provisioned or demonstrated, so no availability claim is possible.
+- The source candidate connects approved repair goals to an operator-provisioned worker. Production migration, compliant hosting, dedicated worker enrollment and target-host verification remain deployment gates; the one-shot CLI remains separate.
 - Review effort could move rather than shrink. G3 exists to detect that.
 - Free hosted preview is a subsidy with no agreed term; capacity, retention and terms are open questions, not settled commitments.
 
@@ -184,7 +200,7 @@ Format follows [How to Apply](https://www.ycombinator.com/howtoapply): clear and
 | It reduces review effort | None | G3 |
 | Teams would pay $49 per workspace | None | G4 |
 | Unit economics work | Hypothetical arithmetic above only | Measured cost per accepted change (G5) |
-| Hosted collaboration works | Production GitHub OAuth, Supabase RLS roles/invitations/private sessions and all 8 collaboration ordering cases; 24 public route/viewport checks in the 2026-11-04 candidate, and 48 from the earlier 2026-10-29 UI verification ([STATUS.md](STATUS.md)) | Nothing hosted runs agents; that is separate work |
+| Hosted collaboration works | Production GitHub OAuth, Supabase RLS roles/invitations/private sessions and all 8 collaboration ordering cases; 24 public route/viewport checks in the 2026-11-04 candidate, and 48 from the earlier 2026-10-29 UI verification ([STATUS.md](STATUS.md)) | Controlled repair source integration is separate from a production rollout or an always-on cloud worker |
 
 Each metric above keeps its recorded scope: the 604-test/87.13% gate is the 2026-11-04 Python baseline; the 24 route/viewport checks cover the 2026-11-04 candidate's six routes at four widths; and the 48 route/viewport checks belong to the separate 2026-10-29 UI verification. Each stays attached to its own date and surfaces, and none is restated as covering the others.
 
@@ -193,6 +209,23 @@ Each metric above keeps its recorded scope: the 604-test/87.13% gate is the 2026
 **Where founder and traction facts belong:** founder experience, biography, prior achievements and any real traction are supplied and verified by the founder in the YC submission itself. They are out of scope for this repository, which holds only what the code and recorded runs support. Nothing of that kind may be fabricated here or invented to fill a gap. Likewise, market sizing, growth rates, customer names, testimonials, logos and benchmark rankings are not published without evidence.
 
 **Website polish is not product-market fit and not an admission signal.** A credible public page only makes real evidence legible; it does not substitute for G1–G5, and no design work implies any YC relationship. **No YC name, logo, batch reference or affiliation appears anywhere in the public UI**, and none is implied by this document.
+
+### Founder completion and submission
+
+**Prepared material is not a submitted application.** Use the product description, insight, obstacles, pricing proposal and dated proof above as draft answers; founder review is required before copying them into the application. Suggested short description: **“Verified code repairs on your own compute.”** Technology: React/Vite, Supabase Auth/PostgreSQL, Python, local Ollama tool-calling models and Docker checks. The initial customer cohort is a hypothesis, not a customer list.
+
+The [official application page](https://www.ycombinator.com/apply), checked 2026-11-08, accepts **late Winter 2027 applications** after the November 2, 8pm PT on-time deadline; it does not promise a response date for late applicants. The batch is January–March in San Francisco. Confirm the current batch and requirements in the application account before submission; this is timing information, not an affiliation or an application-status claim.
+
+Only the founder can supply and confirm these missing facts:
+
+- Every founder's identity, role, relevant achievement, employment/time commitment and history together; who actually wrote the code and any contractors or outside contributions.
+- Incorporation, ownership/equity, existing investment, fundraising, location and ability to attend. Unknown funding is **not** entered as zero.
+- Actual users, customers, revenue, growth, interviews and any prior applications. Repository absence is not proof that these values are zero.
+- A working contact address, an application account, a chosen batch and final consent to submit the representations.
+
+The [founder video](https://www.ycombinator.com/video) is one minute of the founders talking, all founders included, using spontaneous bullet points rather than a recited script. The existing captioned product storyboards do **not** satisfy it. Keep a separate product demo: show the approved source/configuration, submission, independently recorded checks and downloadable candidate; identify synthetic fixtures and the operator's machine explicitly. Do not expose credentials, private expected values, or claim an always-on cloud service from a local recording.
+
+Before submission, verify every answer against the current dated evidence, open each supplied demo/link from a signed-out browser, and let the founder review the complete form and attestations. No account creation, founder video, application entry or submission is performed by this repository change.
 
 ## Pricing context (not a comparison claim)
 

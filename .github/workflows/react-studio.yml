@@ -70,7 +70,7 @@ jobs:
   auth-integration:
     name: Real Supabase auth, RLS and browser collaboration
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 30
     env:
       SUPABASE_EXPERIMENTAL_STACK: '1'
       PLAYWRIGHT_SKIP_BROWSER_GC: '1'
@@ -106,6 +106,26 @@ jobs:
         run: python scripts/factory_runtime_smoke.py --connections "$RUNNER_TEMP/auth-connections.json" --skip-sql
       - name: Exercise browser-to-worker analysis
         run: python scripts/factory_runtime_ui_smoke.py --skip-sql --evidence "$RUNNER_TEMP/auth-evidence" < "$RUNNER_TEMP/auth-connections.json"
+      - name: Exercise controlled repair with real Docker and scripted proposals
+        env:
+          PYTHONPATH: engine:apps/api
+        run: |
+          docker pull python:3.12-slim
+          image="$(docker image inspect python:3.12-slim --format '{{.Id}}')"
+          python scripts/coding_worker_smoke.py \
+            --connections "$RUNNER_TEMP/auth-connections.json" --skip-sql \
+            --image "$image" --scripted-model \
+            --evidence "$RUNNER_TEMP/repair-evidence"
+      - name: Preserve synthetic repair browser evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: repair-browser-evidence
+          path: |
+            ${{ runner.temp }}/repair-evidence/*.png
+            ${{ runner.temp }}/repair-evidence/repair-worker-report.json
+          if-no-files-found: ignore
+          retention-days: 7
       - name: Preserve synthetic browser evidence
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02

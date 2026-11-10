@@ -248,5 +248,32 @@
         "receipt": "Declared checks are not general correctness or remote attestation. Nothing is merged, deployed or charged. This captioned storyboard is not live execution footage."
       }
     ]
+  },
+  {
+    "id": "controlled-repair",
+    "title": "Queue a bounded repair, review the exact candidate",
+    "description": "Enroll an approved policy → let the operator's worker attempt the goal → review recorded evidence",
+    "version": 1,
+    "state": "storyboard",
+    "scenes": [
+      {
+        "eyebrow": "01 / FREEZE THE AUTHORITY",
+        "headline": "Approve a policy, not unlimited access.",
+        "body": "An owner or admin enrolls an already-registered worker, one public source commit and the digest of an operator-reviewed configuration. An authorized project member submits one bounded goal under that policy.",
+        "receipt": "The configuration and credentials stay on the operator's host. Missing setup or a failed policy read is not permission to queue work. This is source-candidate functionality, not a production rollout."
+      },
+      {
+        "eyebrow": "02 / ATTEMPT BOUNDED WORK",
+        "headline": "The worker runs independently of the tab.",
+        "body": "The operator-hosted worker claims a durable lease and supervises a credential-free repair child. The source, checks, tools and budgets stay pinned. Cancellation, revoked authority or a lost lease fences late results.",
+        "receipt": "The browser reports recorded phases and counters, never simulated progress. Retries recompute against the frozen inputs. Oryveta does not provision hosted compute or promise an always-on worker."
+      },
+      {
+        "eyebrow": "03 / REVIEW THE RECORDED CHANGE",
+        "headline": "Passed checks still require your review.",
+        "body": "Inspect the bounded candidate patch, source and configuration identities, and the declared-check result. Private receipts remain on the operator host; the project result is only ready for review.",
+        "receipt": "Nothing is applied, committed, merged or deployed automatically. Declared checks are not general correctness or tenant-isolation proof. This captioned storyboard is not footage of an agent run."
+      }
+    ]
   }
 ]

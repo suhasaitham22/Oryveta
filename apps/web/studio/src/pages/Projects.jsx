@@ -17,9 +17,11 @@ import { Textarea } from "@/components/ui/textarea";
 import * as projectsApi from "@/lib/projects.js";
 import { useWorkspaceState } from "@/lib/WorkspaceState.jsx";
 import ProjectAnalysis from "@/components/ProjectAnalysis.jsx";
+import ProjectRepairs from "@/components/ProjectRepairs.jsx";
 
-/* PostgreSQL authorizes project metadata, membership and bounded analysis.
-   UI role checks only shape controls; an analysis never executes repository code. */
+/* PostgreSQL authorizes project metadata, membership, bounded analysis and controlled
+   repair. UI role checks only shape controls; an analysis never executes repository code,
+   and this page never runs a repair — a provisioned worker does, on its own host. */
 const roleLabels = {
   owner: "Owner",
   admin: "Admin",
@@ -508,6 +510,7 @@ export default function Projects({ user, preview, onExit }) {
             )}
           </form>
           {active && <ProjectAnalysis key={active.id} project={active} role={role} />}
+          {active && <ProjectRepairs key={active.id} project={active} role={role} />}
           {active && (
             <section
               className="surface-panel"
