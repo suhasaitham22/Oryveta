@@ -1,11 +1,12 @@
-"""Container-friendly startup for the existing project-scoped analysis worker.
+"""Supervised startup for project-scoped analysis or reviewed Evolve workers.
 
-Only the credential directory is persistent. A bootstrap secret initializes a
-missing credential once; it must never replace a rotated or rejected session.
-This does not provision identities, grant project access, or execute client code.
+A bootstrap secret initializes a missing credential once; it must never replace
+a rotated or rejected session. Evolve additionally requires an operator-owned
+configuration and persistent private work root. No identity or grant is created.
 """
 from __future__ import annotations
 
+import argparse
 import contextlib
 import fcntl
 import os
@@ -99,17 +100,28 @@ def bootstrap_credentials(path: Path, payload: str | None) -> None:
 
 
 def _stop(signum, frame) -> None:
-    # The existing worker catches KeyboardInterrupt and tears down its analysis
-    # process group. Install an explicit handler so container PID 1 handles TERM.
+    # Both workers catch KeyboardInterrupt and tear down their owned process
+    # groups. Install an explicit handler so container PID 1 handles TERM.
     raise KeyboardInterrupt
 
 
 def main(argv: list[str] | None = None) -> int:
     argv = list(sys.argv[1:] if argv is None else argv)
-    parser = factory_runtime.build_parser()
+    selector = argparse.ArgumentParser(add_help=False, allow_abbrev=False)
+    selector.add_argument("--evolve-config", help="trusted reviewed Evolve operator specification")
+    mode, runtime_argv = selector.parse_known_args(argv)
+    runtime = factory_runtime
+    if mode.evolve_config:
+        from . import evolve_runtime
+
+        runtime = evolve_runtime
+        runtime_argv.extend(["--config", mode.evolve_config])
+    parser = runtime.build_parser()
     parser.prog = "python -m oryveta_engine.factory_service"
-    parser.description = "Unattended Oryveta analysis worker with persistent session state"
-    arguments = parser.parse_args(argv)
+    parser.description = "Supervised project worker; --evolve-config PATH enables reviewed Evolve"
+    arguments = parser.parse_args(runtime_argv)
+    if mode.evolve_config and not arguments.work_root:
+        parser.error("--work-root is required for persistent private Evolve evidence")
     path = Path(arguments.credentials or DEFAULT_CREDENTIALS).absolute()
     payload = os.environ.pop(BOOTSTRAP_ENV, None)
     try:
@@ -122,8 +134,8 @@ def main(argv: list[str] | None = None) -> int:
                     tempfile.TemporaryDirectory(prefix="oryveta-service-"))
                 previous = signal.signal(signal.SIGTERM, _stop)
                 resources.callback(signal.signal, signal.SIGTERM, previous)
-                return factory_runtime.main([
-                    *argv, "--credentials", str(path), "--work-root", str(work_root)])
+                return runtime.main([
+                    *runtime_argv, "--credentials", str(path), "--work-root", str(work_root)])
     except KeyboardInterrupt:
         return 0
     except CredentialError as exception:

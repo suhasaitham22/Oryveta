@@ -52,8 +52,9 @@ Use a dedicated project and inspect its existing schema before applying changes:
 2. Apply `supabase/migrations/private_chats_and_explicit_sharing.sql` if the private-chat foundation is absent. Its initial policy creation is not a repeatable migration runner.
 3. Apply `supabase/migrations/projects_and_project_membership.sql` after those prerequisites. It is additive, preserves existing conversations and wraps table creation/RLS/grants in one transaction; execute the complete file rather than selected statements.
 4. Apply `supabase/migrations/durable_factory_runtime.sql`, followed by `supabase/migrations/retained_attribution_and_lease_clock.sql`. The latter repairs retained attribution during account deletion and runtime lease timing. Applying schema does not start a worker.
-5. Run all transactional RLS/lifecycle regressions on a controlled development/test database before rollout.
-6. Deploy the frontend only after the target schema exists. A missing migration is shown as an actionable error, never replaced with pretend data.
+5. For Reviewed Evolve, enable Storage and apply `supabase/migrations/reviewed_evolve_runtime.sql`. Its private bucket and record policies are required before workers upload artifacts. This source migration is not a production rollout.
+6. Run all transactional RLS/lifecycle regressions on a controlled development/test database before rollout.
+7. Deploy the frontend only after the target schema exists. A missing migration is shown as an actionable error, never replaced with pretend data.
 
 These SQL files follow the repository's manual migration convention; do not assume `supabase db push` automatically applies unnumbered files. `supabase/config.toml` is for isolated local verification, not a production auth configuration to push remotely.
 
@@ -61,7 +62,7 @@ For an installation that already has the first four SQL files, apply only `retai
 
 ## Real local auth and browser verification
 
-Supabase CLI 2.121.0 provides an experimental native runtime for macOS arm64 and supported Linux hosts; no Docker or cloud credentials are required. The script runs actual PostgreSQL/RLS, GoTrue, PostgREST and Mailpit. Test emails stay in Mailpit and are never delivered externally.
+Supabase CLI 2.121.0 provides an experimental native runtime for macOS arm64 and supported Linux hosts. The auth/schema checks use actual PostgreSQL/RLS, GoTrue, PostgREST, Storage and Mailpit without cloud credentials. Test emails stay local. Reviewed Evolve execution separately requires an explicitly configured Docker runner and self-hosted inference.
 
 ```sh
 npm --prefix apps/web/studio ci
@@ -91,4 +92,4 @@ The Oryveta GitHub OAuth App uses the exact callback `https://nydtmiseclkwauiepq
 
 The production security advisor reports authenticated-callable `SECURITY DEFINER` RPCs by design. These entrypoints are the controlled write boundary: anonymous execution is denied, search paths are fixed and each call checks its actor, resource role and, where applicable, worker identity and lease. Keep the warnings visible rather than granting direct table writes or changing to invoker mode to silence them. Leaked-password protection is also flagged; [Supabase requires Pro or above](https://supabase.com/docs/guides/auth/password-security#password-strength-and-leaked-password-protection), so it remains disabled under the no-paid-service requirement.
 
-The default hosted Supabase email service has restrictions and is not a general-purpose production mail provider. Before launch, verify delivery configuration, rate limits, recovery, MFA/SSO requirements, backup/restore and incident controls. Hosted factory execution, Slack integration and recursive learning remain separate roadmap milestones; the local repair CLI is not a step toward hosted identity, because connecting it would require a durable work contract, per-tenant isolation and an authorization model it does not have.
+The default hosted email service is not a general-purpose production mail provider. Verify delivery, rate limits, recovery, MFA/SSO, backup/restore and incident controls before launch. Reviewed Evolve uses an independently designated worker session under the existing project authority; it does not bridge hosted sessions into the local FastAPI identity. Operated hosting, enterprise identity governance, Slack integration and recursive harness improvement remain separate release gates.

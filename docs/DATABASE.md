@@ -4,13 +4,14 @@
 
 **PostgreSQL (Supabase) for hosted collaboration and durable work; SQLite for the local engine; private operator-owned files for local repair evidence.** Separate high-value identity/workspace/project/run metadata from high-volume trajectories, code, artifacts and datasets. Do not add a second hosted database or duplicate identity authority without a concrete requirement. **D1 is explicitly not part of this path** — it is listed below only as a reference for why the choice was rejected, not as a component.
 
-Three stores exist and they are not interchangeable:
+The existing stores remain distinct; Reviewed Evolve additionally uses private object storage:
 
 | Store | Authority over | Not used for |
 | --- | --- | --- |
 | Supabase Auth + PostgreSQL (hosted, deployed) | Hosted identity, workspaces, projects, grants, private conversations, durable work items/runs/leases/events | The local engine's identity; any repair-CLI evidence; large blobs |
 | SQLite (local self-hosted engine) | A **separate** local identity, local projects, analyses, jobs and events on one host | Hosted identity, multi-host writes, shared network filesystems |
 | Private filesystem (local repair/reverification CLI) | Operator-owned configuration, source/candidate archives, receipts, traces, patches and results | No automatic publication, queue submission or web serving; sanitized public samples are separate reviewed build assets |
+| Private Supabase Storage (`evolve-artifacts`, source extension) | Registered candidate/patch bytes and sanitized manifests, authorized through project/run metadata | Worker credentials, resolved private checks, public artifact URLs |
 
 The hosted Supabase identity and the local FastAPI/SQLite identity are deliberately distinct and are not bridged: a hosted session is never forwarded into the local engine, and a cloud project is not an executed local project.
 
@@ -25,6 +26,12 @@ Supabase Auth and PostgreSQL are the selected hosted collaboration boundary, and
 `supabase/migrations/durable_factory_runtime.sql` adds `work_items` (accepted work with its frozen source identity, input digest, attempt counters and cancellation record), `factory_runs` (one attempt each, with phase, checkpoint, resolved snapshot identity, bounded result and lease expiry), `factory_run_events` (append-only typed log, capped at 200 rows per run) and `project_workers` (per-project worker registrations). The fencing token is deliberately not among them: it lives in `private.factory_run_leases`, an unexposed schema on which `anon` and `authenticated` hold no privilege, so a user-facing read of a run cannot return a live lease. On the four public tables `authenticated` holds SELECT only, and all mutation is through the migration's SECURITY DEFINER RPCs. Every text column is an identifier, a short enumerated code or a bounded derived detail, and the two JSONB columns are structurally validated, so there is no free-text column into which a credential or host filesystem path could be written.
 
 Apply `retained_attribution_and_lease_clock.sql` after that runtime migration. Accepted project invitations/chat shares and cancelled work retain their state and timestamps when an attribution account is deleted; the actor foreign key may become null, but grants still require a matching live actor. Lease deadlines, expiry checks and reclaim decisions use `clock_timestamp()` after relevant locks. Event/audit timestamps retain transaction-time semantics. Workspace deletion with run history remains a supported cascade, while deleting a referenced worker registration on its own remains forbidden.
+
+`reviewed_evolve_runtime.sql` extends the same authority with kind `evolve`, operator-config pinning, human decisions, `evolve_stages`, `evolve_artifacts` and `evolve_lessons`. It does not create a second queue or identity. Apply it only after the preceding migrations and with Storage enabled; this extension is source, not a production migration claim.
+
+Stage records are immutable and source/configuration-bound. Artifacts are registered only after an authorized worker uploads their bytes into the insert-only private bucket. Objects without a registration are unreadable. Human decisions name the exact latest run and candidate digest and re-check project, creator and worker authority.
+
+Lessons carry project, source/configuration digests, origin and revocation state. Only human-activated successful-run lessons are eligible for exact-scope retrieval. Failure-report lessons are constrained to rejected/revoked states. Raw stage/failure evidence is available to authorized project readers but is not approved memory. A terminal diagnostic report cannot be converted back into normal stage progression.
 
 ## Per-worker state
 

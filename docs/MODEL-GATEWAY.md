@@ -72,7 +72,7 @@ The authenticated `POST /api/projects/{id}/ai-patch-preview` endpoint takes a cl
 
 ## What is not yet implemented
 
-This gateway API does not perform agent tool calling, repository modification or independent execution verification. Tool-calling, allowlisted multi-file edits and controller-owned behavioral verification exist only in the separate, operator-run local repair CLI, which is not reachable from this or any other endpoint. GPU isolation, provider-agnostic streaming, durable model-call idempotency, guaranteed server-side model cancellation, production usage billing and per-organization policy remain unimplemented. There is no hosted inference, no paid provider fallback and no model-call path on the deployed site.
+This text gateway does not edit repositories or execute checks. The standalone repair CLI and the new Reviewed Evolve worker use a separate pinned local model boundary for scoped native tools and schema-constrained Pydantic AI roles. The worker integrates through its own durable project/lease contract, never by forwarding a browser session through this gateway. GPU isolation, guaranteed server-side cancellation, durable model-call idempotency, usage billing and enterprise-wide policy remain separate requirements. There is no paid provider fallback or deployed hosted inference.
 
 ## Validation
 

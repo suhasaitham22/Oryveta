@@ -10,7 +10,7 @@ The initial public preview has a dedicated workflow in .github/workflows/preview
 
 Target lifecycle: New → Queued → Leased → Running → Verifying → Awaiting Approval → Completed/Failed/Canceled, with heartbeat, lease expiration, idempotency, retry counter and dead-letter records. Workers may crash/restart or lose network. Reconcile outputs and replay safe operations only; never blindly repeat deployments, emails or destructive data writes.
 
-Implemented today: the hosted durable-analysis path covers New/Queued/Leased/Running/Completed/Failed/Canceled with real heartbeats, lease fencing, bounded attempts and cancellation — but **not** Verifying or Awaiting Approval, because no hosted verifier or approval gate exists. Verification exists only in the operator-run local CLI below, which has no queue, no lease and no approval state. Keep the two models distinct when writing runbooks.
+Production analysis retains its existing lifecycle. The working-tree Reviewed Evolve extension adds protected verification and `awaiting_approval` to the same durable authority, releasing execution capacity before human approval. The standalone repair CLI still has no queue or approval state. Do not confuse source capability, local verification and production deployment.
 
 ## Durable analysis worker operations
 
@@ -77,6 +77,20 @@ For a code rollback, retain the **latest** credential volume. Restoring an old t
 ### Local versus production limits
 
 The production Supabase schema and Vercel UI have been verified with a one-off local analysis worker, in addition to the isolated local/CI checks. No always-on cloud worker is configured and there is no availability promise. The worker requires outbound access to Supabase and GitHub, with no inbound port. Its credential-free analyzer process reads imported source but does not execute it; this is not a hardened per-tenant sandbox.
+
+## Supervised Reviewed Evolve
+
+Apply `reviewed_evolve_runtime.sql` after the existing migration chain and enable private Storage. Provision/register a dedicated worker identity; do not reuse a browser session or hand an admin/service key to the worker. Preload the local tool model and execution image, review the operator specification outside any imported source, and keep credentials and persistent evidence private.
+
+The service command is documented in [IMPLEMENTATION.md](IMPLEMENTATION.md#reviewed-evolve-worker). For a Linux VM, `deploy/oryveta-evolve.service` is a **user** unit for an unprivileged worker account. Install the application environment at `/opt/oryveta/venv`, configuration at `~/.config/oryveta/evolve.json`, and its independently provisioned credential at the user state directory's `oryveta/credentials.json`. The unit uses a private state directory, bounded restarts, a termination deadline and no public listener. An administrator must configure user-service lingering if the worker should survive logout.
+
+The worker account needs its own approved local Docker context, preferably rootless, and access to the explicitly pinned image. Never expose the Docker socket or worker credentials to repository checks. Set `OLLAMA_NO_CLOUD=1` on the **Ollama service itself**, bind it to the configured private local origin, and pre-provision weights; setting the variable only on the worker cannot reconfigure a separately running server.
+
+On macOS, place the work root inside a directory actually shared with the Docker VM. A host path existing is not evidence that the daemon can mount it. Validate that mount before admission. Keep worker/session state separate per process; scale with distinct worker identities rather than copies of one rotating refresh token.
+
+Observe queue age, durable phase/event progress, last heartbeat and terminal failures. Fencing stops the owned stage process; disconnected inference requests do not prove the server immediately stopped GPU work. Restarted attempts use pinned inputs and bounded attempt counters, not replay of old external actions. Never waive checks or widen budgets to make a model appear successful.
+
+Approved lessons are scoped guidance, not policy. Failed-run lessons stay diagnostic; cancelled, expired or revoked work records learning unavailability when no authorized model execution occurred. Private worker evidence and orphaned Storage objects need an explicit retention/deletion policy before public operation. No generic cross-tenant runner, hosted SLO, automatic provisioning or production rollout is implied by this unit.
 
 ## Local repair and re-verification operations
 

@@ -98,6 +98,8 @@ Start New retains deterministic starter creation and ZIP export. Evolve retains 
 
 Persisted queued/running/succeeded/failed/canceled states, event records, stale/disconnected behavior, user-opened details and the single elapsed label remain real engine data. A selected old run is not confused with the latest project findings. Hosted coding, automatic patches and deployments remain unavailable. Any capability sentence on any surface names its edition — hosted, self-hosted or planned; an unqualified capability claim is a defect, not a style choice.
 
+The working-tree Reviewed Evolve panel is separate from the read-only import flow above. It shows durable stages, actual AI verdicts, protected check outcomes, private artifact downloads, exact-candidate admin decisions and lesson provenance. It never labels a model opinion as a passing behavioral check or an approved archive as deployed. Long digests must wrap without widening grid tracks; narrow artifact rows must wrap their buttons rather than reduce labels to a column of single characters.
+
 ## Browser evidence
 
 The following media records the 2026-10-29 compiled implementation, not customer usage or the later pricing release:

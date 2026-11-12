@@ -1,6 +1,6 @@
 # Pricing and launch plan
 
-**Status: proposal.** Two plans are published. No plan can be bought today: there is no billing, no metering and no checkout. Billing, hosted agent runs and the Team-only features below are **not implemented**, so the Team price is labelled as proposed everywhere it appears. Every number in [Hypothetical unit economics](#hypothetical-unit-economics) is arithmetic on invented inputs — not a quote, a forecast or an observed bill. Incremental authorized spend for this plan is **$0**.
+**Status: proposal.** No plan can be bought: billing, metering and checkout are absent. The new project-scoped Reviewed Evolve workflow is included in the open-source code; it does not activate a paid plan or deploy hosted compute. Team's workspace-wide administration and commercial operations remain proposals. Unit-economics numbers below are hypothetical arithmetic, not quotes or observed bills. Incremental authorized cloud spend remains **$0**.
 
 ## Buyer and job
 
@@ -45,14 +45,16 @@ Two plans only. No speculative enterprise tier, no annual toggle, no "most popul
 
 Covered today: the hosted workspace (sign-in, saved briefs, projects with explicit roles and invitations, separately shared private conversations, Demo Studio storyboard export); the self-hosted engine (template starters, authorized ZIP / public-snapshot import, read-only file-linked candidate findings); and the local tools (the verified repair CLI and the local Ollama model gateway).
 
+Reviewed Evolve source additionally includes project-scoped run/review history, exact-candidate human decisions and approved lesson retrieval when the operator provisions the migration, private Storage, worker, model and runner. These capabilities are part of Community software. They are not an operated hosted service or an enterprise availability promise.
+
 ### Team — proposed, $49 USD per workspace per month, up to 5 builders
 
 **Not available. Not billable. Nothing here is live.** Published as the intended commercial shape so the price is reviewable before it is charged.
 
-Proposed contents, each of which must be built first:
+Proposed Team contents must be qualified separately from the project-scoped workflow already included in Community:
 
-- Shared agent-run history across the workspace (runs, receipts, patches, check outcomes) instead of private per-operator directories.
-- A review workflow over candidate patches: assignment, accept/reject with reason, and the exact verified source revision.
+- Workspace-wide agent-run reporting across projects.
+- Review assignment and team administration beyond the existing project-admin candidate decision.
 - Budget administration: per-workspace limits, visible usage, and owner-set stop-rules.
 
 Still **bring-your-own-compute**: $49 would cover the control plane, not inference or sandbox capacity.
@@ -71,7 +73,8 @@ Public surface: a dedicated `/pricing` page renders both plan cards from one sha
 | Local verified repair CLI (own compute) | Available, Apache-2.0 | Same, unchanged |
 | Hosted capacity | Shared free-tier allowances; quotas and pausing apply; no availability commitment | Would require compliant commercial hosting first |
 | Hosted inference / included compute | None | None |
-| Shared run history, review workflow, budget admin | Not built | Not built — the reason the plan is not sellable |
+| Project-scoped reviewed runs and lessons | Included in source; operator-provisioned compute | Same, unchanged |
+| Workspace-wide reporting, assignment, budget admin | Not built | Proposed, not sellable |
 | Billing, metering, quota enforcement | None | None |
 
 ## What must be true before commercial use or charging

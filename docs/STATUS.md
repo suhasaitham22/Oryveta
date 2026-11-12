@@ -2,7 +2,7 @@
 
 ## Current capability and release map
 
-**Source snapshot: 2026-11-04.** This map describes the current checkout, including the changes under [PR #48](https://github.com/suhasaitham22/Oryveta/pull/48). A review preview is not production, and merged `main` can be ahead of a successful deployment. The dated sections below preserve the evidence behind deployment and execution claims.
+**Source verification: 2026-11-12.** The source now includes Reviewed Evolve; no production rollout or cloud provisioning was performed for this change. The application does not publish code to GitHub. Production collaboration/analysis evidence and earlier review candidates retain their dated records below. A local passing run is not an enterprise availability or isolation guarantee.
 
 | Surface | Implemented boundary | Not implied |
 | --- | --- | --- |
@@ -11,8 +11,35 @@
 | Public design and pricing | Evidence-led Home, Pricing, labelled synthetic example downloads and a free-preview entry, verified in the review preview | Billing, customer traction, YC affiliation or a commercial launch |
 | Local FastAPI/SQLite engine | Separate identity, deterministic starters and bounded read-only source analysis | A bridge that forwards hosted sessions into local tools |
 | Local coding CLI | Model-driven scoped repair, interruption checkpoints and private candidate export; model-free re-verification of an explicitly supplied candidate | Resume/replay, automatic approval, GitHub publication, remote attestation or multi-tenant production isolation |
+| Reviewed Evolve | Source implementation with durable project work, Pydantic AI roles, independent reviews, protected checks, private artifacts, exact-candidate human decisions and scoped lessons; exercised locally below | Operated cloud hosting, private GitHub App publication, automatic deployment or general model-quality qualification |
 
 The goal is verifiable maintenance changes for small teams first, then the broader Start New/Evolve factory. Community software is $0; hosted preview capacity and proposed Team pricing remain governed by [PRICING.md](PRICING.md). Consented real-repository outcomes, repeat use, review effort and willingness to pay—not additional website polish—are the next qualification evidence.
+
+## Reviewed Evolve — local integration verification, 2026-11-12
+
+Implemented on the existing PostgreSQL work/run/lease authority, with a supervised worker and the project UI. Read-only agent roles use Pydantic AI 2.67.0 and local schema-constrained Ollama responses. Native file tools remain confined to the code editor; the operator's check expectations, grants and execution policy stay outside model control. No competing scheduler or paid model fallback was added.
+
+Exercised evidence:
+
+- **863 Python tests passed; 87.59% branch-inclusive coverage**, against the unchanged 84% gate, on Python 3.12/macOS with real Linux/arm64 Docker checks where configured. The Python 3.11/3.13 CI matrix was not run locally.
+- All five SQL authorization/lifecycle suites passed against isolated native Supabase with Auth, PostgREST and Storage. The forward migration also applied repeatedly. Existing analysis behavior remained covered alongside Evolve stage-order, source/configuration, artifact, approval and diagnostic-memory guards.
+- Ruff, Bandit, compilation, editable installation/dependency consistency, Studio contract checks and both hosted/self-hosted builds passed. The optional Three.js chunk-size advisory remains visible.
+- The real browser/worker smoke completed with `qwen3-coder:30b` as executor and `qwen3:8b` as reviewer. It submitted work in Chromium, closed the browser, killed a worker after requirements, reclaimed the same source as a new attempt, completed all seven reviewed stages, downloaded hash-matching private artifacts, and approved the exact candidate through the browser.
+- All **eight** operator-owned behavior checks passed on a disposable public Click snapshot. This was an explicitly requested `memoryview` extension to `click.utils.make_str`, not a claim of an upstream bug, a PR or a customer result. Source commit: `e38188e9e205005d5af5f9e59df51904c984586a`.
+- Final run: `62ec954c-e07c-460c-b534-52ec89b095d1`; candidate archive SHA-256: `94190b67616e6c412fc2382ae036c03b47e1063241a5e1e798a93570660cb733`. Five candidate lessons were recorded with complete indexed decisions; human activation/revocation and exact-scope retrieval boundaries were exercised.
+- Concurrent duplicate submission, conflicting input, wrong-digest approval, worker self-approval, viewer/outsider denial, late completion after cancellation, and live cancellation/revocation passed. Revoking a worker cancels its attempt and requeues still-eligible work for another authorized worker; cancelling a work item is a separate action.
+- Desktop and expanded-review layouts at **390px and 320px** passed the no-horizontal-overflow check. Real layout inspection exposed and corrected intrinsic grid growth from long event digests and unreadably narrow artifact labels; content was not hidden to clear the check.
+- A separate real-auth continuous idle service held its credential-directory lock, rejected a second service sharing that session, persisted the rotated credential and stopped cleanly on SIGTERM. The supplied systemd user unit was not enabled on this macOS host.
+- PR preparation updated the existing Evolve storyboard to version 4 with reviewed execution, exact-candidate decisions and scoped lessons. Story contracts, both Studio builds and the real Chromium navigation/contextual-export smoke passed again. The storyboard remains an unverified narrative, not live execution footage.
+
+Review captures from the recorded local integration run: [desktop review and approval](media/reviewed-evolve-desktop.png) and [320px mobile controls](media/reviewed-evolve-mobile.png). These are crops of real UI captures using disposable local accounts and a public repository fixture, not production/customer screenshots. Raw operator configurations, credentials, source archives and execution traces are not attached.
+
+Qualification retained the failed attempts. Earlier model/adapter combinations produced missing native tool calls, invalid/incomplete structured output, rejected plans, failed checks or incomplete lesson decisions; none became approved candidates. The completed path uses an agentic tool model, native JSON schemas with their instructions actually delivered, complete zero-based lesson identifiers, and unchanged deterministic acceptance checks. These runs are integration/debugging evidence, not a controlled model comparison or an automated learning gain.
+
+Executor model digest: `06c1097efce0431c2045fe7b2e5108366e43bee1b4603a7aded8f21689e90bca`. Reviewer digest: `500a1f067a9f782620b40bee6f7b0c89e17ae61f686b92c24933e4ca4b2b8b41`. Private source, configuration and raw evidence remain operator-owned; only bounded, sanitized manifests and registered candidate/patch bytes are project-readable. Worker restart no longer applies the analysis scratch sweeper to retained Evolve evidence.
+
+Deployment still requires the new migration/private bucket, dedicated registered worker identities, approved local model/image/configuration, capacity limits and operational ownership. Strong isolation for arbitrary customer code, backup/restore qualification, billing, automatic customer-cloud provisioning and an operated availability commitment remain separate gates.
+
 
 ## Workspace and legacy lifecycle ordering — source candidate, 2026-11-09
 

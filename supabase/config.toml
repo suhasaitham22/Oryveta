@@ -44,7 +44,7 @@ enabled = true
 enabled = false
 
 [storage]
-enabled = false
+enabled = true
 
 [studio]
 enabled = false

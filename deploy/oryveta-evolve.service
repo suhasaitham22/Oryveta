@@ -1,0 +1,32 @@
+# Install as a systemd user service for a dedicated, unprivileged worker user.
+# Pre-provision the model, rootless Docker image/context, reviewed configuration,
+# and independently registered worker credentials. This unit never provisions them.
+[Unit]
+Description=Oryveta project-scoped reviewed Evolve worker
+After=network-online.target
+Wants=network-online.target
+StartLimitIntervalSec=300
+StartLimitBurst=3
+
+[Service]
+Type=simple
+WorkingDirectory=/opt/oryveta
+Environment=PYTHONUNBUFFERED=1
+Environment=OLLAMA_NO_CLOUD=1
+UMask=0077
+StateDirectory=oryveta
+ExecStart=/opt/oryveta/venv/bin/python -m oryveta_engine.factory_service --evolve-config %h/.config/oryveta/evolve.json --credentials %S/oryveta/credentials.json --work-root %S/oryveta/runs
+Restart=on-failure
+RestartPreventExitStatus=2
+RestartSec=15
+TimeoutStopSec=30
+KillMode=mixed
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=read-only
+ReadWritePaths=%S/oryveta
+RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6
+
+[Install]
+WantedBy=default.target

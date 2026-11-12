@@ -56,15 +56,15 @@
   {
     "id": "evolve",
     "title": "Evolve",
-    "description": "Change goal → source snapshot analysis → findings to review",
-    "version": 3,
+    "description": "Change goal → source inspection → reviewed repair → human decision → scoped lessons",
+    "version": 4,
     "state": "storyboard",
     "scenes": [
       {
         "eyebrow": "01 / CHOOSE THE SCOPE",
         "headline": "Start with the change you want to understand.",
         "body": "Describe a billing service's current behavior, desired improvement and regressions to avoid. On the local studio, import an authorized ZIP snapshot for analysis.",
-        "receipt": "Hosted Evolve exports a brief only. Local ZIP import reads source without executing it or requesting repository credentials."
+        "receipt": "The hosted journey prepares a brief. Reviewed execution requires a configured installation, registered worker and operator-reviewed model and runner specification."
       },
       {
         "eyebrow": "02 / INSPECT THE RECORDED WORK",
@@ -77,6 +77,24 @@
         "headline": "Explain the change you want to make.",
         "body": "Use Demo Studio to write the user actions and results you want to show. Export the Evolve script with its brief, then return to the same requirements. The script does not apply a patch or verify the change.",
         "receipt": "A contextual unverified storyboard, not a verified patch or automatically generated PR. Rendering requires the separate Remotion pipeline."
+      },
+      {
+        "eyebrow": "04 / RUN REVIEWED EVOLVE",
+        "headline": "Let durable work survive the browser.",
+        "body": "On a configured installation, submit a change from its project. A separately authorized worker pins the public source, plans and edits within exact file grants, obtains stage reviews and runs controller-owned checks in fresh network-disabled containers.",
+        "receipt": "The source implementation was exercised with local Supabase, self-hosted models and Docker. This scene is a storyboard, not live execution footage, a cloud deployment or an availability promise."
+      },
+      {
+        "eyebrow": "05 / DECIDE ON THE EXACT CANDIDATE",
+        "headline": "Review the evidence before approving.",
+        "body": "Inspect requirements, the plan, the patch, independent verification and the process audit. Download private candidate artifacts and have a project administrator approve or reject the exact archive digest.",
+        "receipt": "A passing AI review cannot waive a failed required check. Human approval accepts a review candidate; it does not merge code, open a GitHub PR or deploy an application."
+      },
+      {
+        "eyebrow": "06 / KEEP SCOPED LESSONS",
+        "headline": "Reuse reviewed observations, not new authority.",
+        "body": "Inspect extracted lessons and their independent decisions. Human approval can activate supported lessons only for the same project, source and operator configuration. Administrators can revoke them; failed-run lessons remain diagnostic.",
+        "receipt": "No cross-customer training, self-modifying policy or automatic claim of improved quality. Missing model capacity or authority is explicit unavailability, never an invented lesson."
       }
     ]
   },

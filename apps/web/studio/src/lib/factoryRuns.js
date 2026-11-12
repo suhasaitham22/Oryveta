@@ -17,9 +17,13 @@ function data(result) {
   throw error;
 }
 
+/* Repository analyses only. The same durable tables carry reviewed Evolve work,
+   which has its own kind and its own panel; listing it here would present it as
+   an analysis. */
 export async function listAnalysisWork(projectId, signal) {
   return data(await supabase.from("work_items").select(WORK_FIELDS)
-    .eq("project_id", projectId).order("created_at", { ascending: false })
+    .eq("project_id", projectId).eq("kind", "repository_analysis")
+    .order("created_at", { ascending: false })
     .limit(10).abortSignal(signal)) || [];
 }
 

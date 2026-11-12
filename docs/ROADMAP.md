@@ -18,7 +18,9 @@ One platform for personal users and teams: a polished web/mobile experience and 
 
 Retain React/shadcn, Python/FastAPI and Supabase/PostgreSQL. Keep one hosted identity and explicit workspace/project/session authorization. Local SQLite is a development mode, not a distributed tenant database. Use one run/event contract across web, mobile and Slack. Deterministic code owns permissions, state transitions, resource limits and publication; models propose actions inside that boundary.
 
-Use open-source Deep Agents/LangGraph primitives where they fit, rather than adopting Open SWE's required managed deployment wholesale. The Matt Pocock factory skill is a planning reference, not executable infrastructure. No framework rewrite, duplicate tracker/database or generic agent meta-framework is required.
+Use Pydantic AI for typed, read-only agent roles and keep durable execution in the existing PostgreSQL worker contract. Alternative graph/workflow libraries remain options only for measured needs; do not combine competing schedulers or adopt a mandatory managed platform. Free initial deployment is a capacity choice, not a separate architecture or an enterprise availability promise.
+
+The current working tree adds project-scoped Reviewed Evolve: durable stages and reviews, protected repair/reverification, process audit, exact-candidate human approval and scoped successful/diagnostic lessons. It is not a production rollout, GitHub publisher, full Start New factory or operated enterprise service. Future scale should add worker capacity and optional dedicated customer deployments without changing the work/artifact authorization contract.
 
 ## Planned PRs and proof gates
 
@@ -45,6 +47,8 @@ Use open-source Deep Agents/LangGraph primitives where they fit, rather than ado
 | 19 — Operated launch and scale | Supervision, fair queues, quotas, recovery, operational ownership and measured capacity | Soak and injected crash/network/expiry/revocation/reboot/restore; agreed SLO/RPO/RTO demonstrated; no false SLA/compliance claims | Relevant completed flows |
 
 Each PR must add an exercised capability and may be split further for reviewability. Security and verification start with the first execution; the release and enterprise milestones do not defer baseline isolation or approval. Basic supervision starts in PR 2. Collect learning evidence early, but activate learning only after outcomes are trustworthy. Detailed modernization and on-call contracts are in [PRODUCT.md](PRODUCT.md) and [OPERATIONS.md](OPERATIONS.md).
+
+The next two paragraphs preserve the earlier local-only snapshot; the Reviewed Evolve worker above is the subsequent source extension, not a claim that every milestone is complete.
 
 The 2026-11-02 local CLI delivers the fixed model/tool/execution/verifier subset of Stage 3, with a real synthetic repair and retained success/failure traces. The open review candidate adds durable checkpoints to that loop: progress, usage, pending reservations and per-edit unverified patch digests are persisted, so an interrupted controller leaves an accurate receipt. That is interruption accounting and diagnosis — it is **not** automatic resume or replay, and it is source under review rather than a merged or deployed capability. Stage 3 therefore still lacks durable hosted integration, automatic resume, a decision protocol beyond `no_progress`, and target-repository qualification for the Python cohort. Those gates precede expanding into hosted coding; a local passing receipt is not an always-on service.
 

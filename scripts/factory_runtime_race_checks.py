@@ -93,14 +93,14 @@ ROOT = Path(__file__).resolve().parents[1]
 
 # Explicit order, never a glob: durable_factory_runtime.sql builds on the
 # project membership helpers, and an alphabetical sweep would load it first.
-# retained_attribution_and_lease_clock.sql comes last because it re-owns
-# constraints and functions the three files before it create.
+# Later migrations extend these contracts; keep their forward application order.
 SQL_FILES = (
     "supabase/schema.sql",
     "supabase/migrations/private_chats_and_explicit_sharing.sql",
     "supabase/migrations/projects_and_project_membership.sql",
     "supabase/migrations/durable_factory_runtime.sql",
     "supabase/migrations/retained_attribution_and_lease_clock.sql",
+    "supabase/migrations/reviewed_evolve_runtime.sql",
 )
 
 INSTANCE = "00000000-0000-0000-0000-000000000000"

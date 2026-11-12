@@ -2,7 +2,7 @@
 
 ## Current public website
 
-The hosted frontend uses Supabase for identity, persisted project briefs, membership and private conversations, plus the durable analysis control plane below. Start New/Evolve **execution** remains unavailable online: a saved brief is not a generated application, and a submitted analysis only runs when an authorized worker process is started by an operator. No hosted endpoint performs model-driven code changes.
+Production currently serves collaboration and durable analysis, not the new reviewed coding workflow. The working tree adds the project-scoped **Reviewed Evolve** RPCs below; they require the new migration, private Storage bucket and an explicitly provisioned worker. Applying source or signing in does not start inference. No endpoint publishes code to GitHub or deploys it.
 
 ## Hosted project collaboration
 
@@ -22,9 +22,9 @@ Authenticated SELECT on `projects`, `project_memberships`, `project_invitations`
 
 Existing private-chat endpoints keep their separate viewer/editor sharing contract. `chats.project_id` is an optional creation-time association, not a permission grant. Null workspace is permitted for a project-only guest; a non-null workspace must be readable and match the project. Chat owner/workspace/project columns cannot be reassigned by the client.
 
-## Hosted durable work and events
+## Durable repository analysis
 
-Durable repository analysis uses the same configured Supabase project's `/rest/v1` API with the caller's authenticated token. Apply `supabase/schema.sql`, `supabase/migrations/private_chats_and_explicit_sharing.sql`, `supabase/migrations/projects_and_project_membership.sql`, `supabase/migrations/durable_factory_runtime.sql` and `supabase/migrations/retained_attribution_and_lease_clock.sql`, in that order. An installation already at the fourth file needs only the fifth repair. Reads are RLS-filtered SELECT; every state change goes through a narrow RPC. The only task kind is `repository_analysis`, operating on the project's frozen public GitHub source; arbitrary commands, host paths and private-repository grants are not expressible.
+Repository analysis uses the configured Supabase project's `/rest/v1` API with the caller's authenticated token. Apply the workspace, private-chat, project-membership, durable-runtime and retained-attribution migrations in the order in [IDENTITY-WORKSPACES.md](IDENTITY-WORKSPACES.md). These RPCs accept only `repository_analysis`, operating on the project's frozen public GitHub source; they cannot claim, heartbeat or complete an Evolve attempt.
 
 | RPC | Parameters | Authorization | Returned columns |
 | --- | --- | --- | --- |
@@ -48,13 +48,38 @@ Read surface, all RLS-filtered to current project readers and to the project's o
 - `GET /rest/v1/factory_run_events` — `id`, `run_id`, `work_item_id`, `project_id`, `kind`, `phase`, `detail`, `created_at`. `id` is a monotonic identity column, so a client can page the log forward; `detail` is derived server side from validated arguments and is at most 200 characters.
 - `GET /rest/v1/project_workers` — `id`, `project_id`, `worker_user_id`, `label`, `enabled`, `registered_by`, `created_at`, `revoked_at`, `revoked_by`. Visible only to project admins and to the worker identity itself, so a worker can confirm its own scope.
 
-Enumerations are complete and checked in the schema. Work item `status`: `queued`, `running`, `succeeded`, `failed`, `cancelled`. Run `status`: `running`, `succeeded`, `failed`, `cancelled`. Run `phase`: `claimed`, `fetching_source`, `analyzing`, `recording_result`, `done`. Event `kind`: `claimed`, `source_resolved`, `phase_changed`, `checkpoint`, `succeeded`, `failed`, `cancelled`, `lease_expired`, `retry_scheduled`, `attempts_exhausted`.
+For analysis, work status is `queued`, `running`, `succeeded`, `failed` or `cancelled`; run status is `running`, `succeeded`, `failed` or `cancelled`. Analysis phases are `claimed`, `fetching_source`, `analyzing`, `recording_result`, `done`. The Evolve extension adds the states and events described below without allowing analysis RPCs to bypass its reviews.
 
 Bounds a client can rely on: `p_lease_seconds` is 15–900 seconds and defaults to 300; `max_attempts` defaults to 2 and is constrained to 1–5, with `attempts <= max_attempts`; a checkpoint is a flat JSON object of at most 16 snake_case keys with scalar values, at most 4,096 bytes; a result is a JSON object of only `summary` and `findings`, at most 262,144 bytes (256 KB) with at most 400 findings whose fields are limited to `path`, `line`, `category`, `severity`, `title`, `recommendation`, `confidence`; each run's event log stops at 200 rows, so a looping worker cannot grow it without bound. `error_code` on both work items and runs matches `^[a-z][a-z0-9_]{2,47}$`. Attempt exhaustion is an explicit terminal state, not a silently idle row: the work item reaches `status = 'failed'` with `attempts = max_attempts`, keeps the *last attempt's actual cause* in `error_code` (for example `invalid_repository` or `lease_expired`), and the final run carries an `attempts_exhausted` event; each attempt's own cause stays on its `factory_runs.error_code`. An idempotency key is 8–120 characters of `A-Z a-z 0-9 . _ : -` and is scoped to one project, one submitting account and that key, so two accounts cannot collide and a key cannot cross a project boundary. `input_digest` is the SHA-256 of the task kind plus the frozen source URL.
 
 Progress events stop at 180 per run, reserving capacity for terminal/retry outcomes. Registration, work-item, run and lease locks use a consistent order. The first resolved repository/commit is pinned for subsequent attempts. Lease deadlines and expiry decisions use the wall clock after relevant locks, not the transaction-start timestamp. Ten real multi-session PostgreSQL cases exercise cancellation/completion, revocation/claim, concurrent pinning, idempotency and a lock wait longer than the requested lease.
 
-Browsers cannot mutate run state. Only `submit_repository_analysis`, `cancel_work_item`, `register_project_worker` and `revoke_project_worker` are reachable from a human session; the four worker RPCs refuse an undesignated identity. The fencing token is not readable through this API at any privilege a client can hold: it lives in `private.factory_run_leases`, which is not an exposed PostgREST schema and on which `authenticated` holds no privilege, so no run read and no forgotten policy can return a live lease token. `factory_runs.lease_expires_at` is liveness information only. On the four public tables the `authenticated` role holds SELECT only and `anon` holds nothing, so a missing write policy fails closed instead of exposing a write.
+Browsers cannot write these tables directly. For analysis, human sessions use submission, cancellation and worker-registration RPCs; worker transitions require a designated, registered identity. The fencing token remains in unexposed `private.factory_run_leases`; public lease timestamps are liveness information, not authority. Authenticated table grants are SELECT-only and anonymous access is absent.
+
+## Reviewed Evolve — source, not production rollout
+
+Apply `supabase/migrations/reviewed_evolve_runtime.sql` **after** `retained_attribution_and_lease_clock.sql`, with Supabase Storage enabled. Existing human and machine identity rules remain authoritative. All calls below are `/rest/v1/rpc/<name>`.
+
+| RPC | Parameters | Authority / outcome |
+| --- | --- | --- |
+| `submit_evolve_work` | `p_project_id`, `p_goal`, optional `p_idempotency_key` | Engineer or above; freezes the public source URL and nonblank goal, at most 4,000 characters; returns `id` and `replayed` |
+| `claim_evolve_work` | `p_project_id`, optional `p_lease_seconds` | Registered worker; zero or one claim with the existing source/lease fields plus `goal` |
+| `heartbeat_evolve_run` | `p_run_id`, `p_lease_token`, optional `p_phase`, source reference/commit/digest, `p_lease_seconds` | Current worker; returns `lease_valid`, `reason`, `lease_expires_at` |
+| `record_evolve_stage` | `p_run_id`, `p_lease_token`, `p_stage`, `p_payload` | Current worker; immutable, ordered stage record; exact duplicates replay, conflicting replacements fail |
+| `register_evolve_artifact` | `p_run_id`, `p_lease_token`, `p_kind`, `p_sha256`, `p_bytes` | Current worker; registers an existing owned Storage object at its canonical digest path |
+| `record_evolve_failure_report` | `p_run_id`, `p_lease_token`, `p_report` | Current worker; immutable terminal diagnostic branch, before failing the attempt; cannot advance normal work |
+| `finish_evolve_run` | `p_run_id`, `p_lease_token` | Requires the complete passing chain and exact registered candidate; releases the lease and enters `awaiting_approval` |
+| `fail_evolve_run` | `p_run_id`, `p_lease_token`, `p_error_code` | Records failure behind the lease; preserves diagnostics; semantic refusals are terminal, other failures use bounded attempts |
+| `decide_evolve_work` | `p_work_item_id`, `p_run_id`, `p_candidate_sha256`, `p_approve` | Owner/admin; exact latest candidate plus current creator/worker authority; approval means `succeeded`, **not published** |
+| `revoke_evolve_lesson` | `p_lesson_id` | Owner/admin; removes the lesson from approved retrieval |
+
+Stages are `requirements`, `plan`, `implementation`, `verification`, `audit`, `learning`, `learning_review`. Each payload binds source, operator configuration and artifact digests to a typed artifact and an independent review. A `pass` cannot carry a blocking finding. Rework/escalation remains visible but cannot authorize the next stage. Configuration is pinned across attempts. The Python field contracts are in `evolve_contract.py`; SQL independently validates shapes, references and transition authority.
+
+`evolve_stages` and `evolve_artifacts` are readable only under current project/worker grants. `evolve_lessons` adds `origin`, source/configuration digests and revocation state. Workers retrieve only approved lessons matching the exact project, source and configuration; admins can inspect unapproved diagnostic rows. Raw stage/failure evidence remains project-readable and is not an authorization to reuse its lessons.
+
+Artifact bucket `evolve-artifacts` is private and insert-only. Paths are `<run_id>/<kind>/<sha256>`; kinds are `candidate`, `patch`, `receipt`, `trace`. Candidate archives are at most 12 MiB; other artifacts at most 1 MiB. Only registered objects are readable through authenticated Storage downloads. No public URL, permanent signed URL, host path or protected expected output is published.
+
+Failure evidence lives in `factory_runs.result.failure_report`: actual check outcomes, failure phase/code, and reviewed diagnostic lessons or explicit unavailability. Diagnostic lessons cannot become approved memory. Forced interruption/revocation can instead record `result.learning_unavailable`; it does not claim a model ran. Shared cancellation and worker revocation fence running and awaiting-approval Evolve work.
 
 ## Current GitHub API implementation (local/self-hosted; not deployed on the hosted site)
 
@@ -91,7 +116,7 @@ The published FastAPI source supports health/config, GitHub identity OAuth callb
 - The model proposes a **complete replacement file**; Oryveta checks the unchanged baseline again and returns a unified diff, SHA-256 digests, Python syntax check where applicable, usage and `review_required` status. The original file is never written.
 - Rejects unsafe paths, symlinks, stale content, invalid Python output and unavailable local models. No commands, tests, GitHub writes or deployments run. See [EVOLVE-PATCH-PREVIEW.md](EVOLVE-PATCH-PREVIEW.md).
 
-**This endpoint is not the coding CLI.** It is a read-only, one-file, syntax-only suggestion with no execution and no behavioral verification. The separate operator-run `python -m oryveta_engine.coding_runtime` performs multi-turn model-driven edits across an allowlisted file set with controller-owned check execution in isolated containers, and it has **no HTTP surface at all**: it cannot be invoked by an authenticated user, a project, a hosted worker or any route on either deployment. Nothing in this API reads or writes its evidence directories. See [IMPLEMENTATION.md](IMPLEMENTATION.md#local-verified-repair-cli).
+**This FastAPI endpoint is not the coding worker.** It remains a read-only, one-file suggestion with no behavioral verification. The standalone coding CLI still has no HTTP endpoint. The separate Reviewed Evolve worker reuses its protected repair/reverification library through the durable Supabase contract above; it never forwards a browser session to the local engine or serves private evidence directories.
 
 ## Target versioned HTTP resources
 
