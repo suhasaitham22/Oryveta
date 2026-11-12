@@ -1,10 +1,10 @@
-"""Digest-pinned local Ollama tool-calling boundary for the fixed repair loop.
+"""Digest-pinned local Ollama inference for scoped tools and typed role outputs.
 
 The model is a bounded suggestion source, never an authority: it never selects
 the endpoint, the served model, the runner image, a command or an expected
 value. This adapter speaks to exactly one operator-approved loopback Ollama
-origin using native ``/api/chat`` tool calling, refuses cloud-backed or replaced
-models, and rejects any reply it cannot fully account for.
+origin using native ``/api/chat`` tool calls or an exclusive JSON-schema format,
+refuses cloud-backed or replaced models, and rejects unaccountable replies.
 
 A loopback origin alone is not proof of local inference, because an Ollama
 server can proxy cloud models. Verification therefore also requires a
@@ -71,7 +71,8 @@ MESSAGE_FIELDS: dict[str, tuple[frozenset[str], frozenset[str]]] = {
 REPLY_FIELDS = frozenset({"role", "content", "tool_calls", "thinking", "images"})
 
 
-def prompt_bound(messages: list[dict[str, Any]], tools: list[dict[str, Any]]) -> int:
+def prompt_bound(messages: list[dict[str, Any]], tools: list[dict[str, Any]], *,
+                 output_schema: dict[str, Any] | None = None) -> int:
     """Conservative admission bound, not an exact tokenizer measurement.
 
     One UTF-8 byte of the serialized native request cannot encode more than one
@@ -83,6 +84,8 @@ def prompt_bound(messages: list[dict[str, Any]], tools: list[dict[str, Any]]) ->
     try:
         size = (len(canonical_json(messages).encode("utf-8"))
                 + len(canonical_json(tools).encode("utf-8")))
+        if output_schema is not None:
+            size += len(canonical_json(output_schema).encode("utf-8"))
     except (TypeError, ValueError, RecursionError):
         raise CodingError("invalid_request", "request payload is not representable JSON") from None
     return size + FRAMING_TOKENS
@@ -253,7 +256,8 @@ class LocalToolModel:
                               "local model verification exceeded its deadline") from None
 
     async def turn(self, messages: list[dict[str, Any]], tools: list[dict[str, Any]], *,
-                   max_output_tokens: int, timeout_seconds: float) -> ModelReply:
+                   max_output_tokens: int, timeout_seconds: float,
+                   output_schema: dict[str, Any] | None = None) -> ModelReply:
         """Run one bounded native tool-calling turn against the pinned model.
 
         The deadline covers the whole turn, including the digest checks taken
@@ -262,6 +266,10 @@ class LocalToolModel:
         """
         messages = _validate_messages(messages)
         tool_names = _validate_tools(tools)
+        if output_schema is not None and (
+            not isinstance(output_schema, dict) or output_schema.get("type") != "object" or tools
+        ):
+            raise CodingError("invalid_request", "structured output requires an object schema and no tools")
         if (type(max_output_tokens) is not int
                 or not 1 <= max_output_tokens <= self.spec.output_tokens):
             raise CodingError("invalid_request",
@@ -269,14 +277,14 @@ class LocalToolModel:
         if (type(timeout_seconds) not in {int, float} or not math.isfinite(timeout_seconds)
                 or not 1 <= timeout_seconds <= MAX_TURN_SECONDS):
             raise CodingError("invalid_request", "a turn deadline must be 1 to 600 seconds")
-        bound = prompt_bound(messages, tools)
+        bound = prompt_bound(messages, tools, output_schema=output_schema)
         if bound + max_output_tokens > self.spec.context_tokens:
             raise CodingError("invalid_request",
                               "the prompt reservation and output limit exceed the model context")
         try:
             return await asyncio.wait_for(
                 self._turn(messages, tools, tool_names, bound, max_output_tokens,
-                           float(timeout_seconds)),
+                           float(timeout_seconds), output_schema),
                 timeout=timeout_seconds)
         except asyncio.TimeoutError:
             raise CodingError("model_timeout",
@@ -284,7 +292,8 @@ class LocalToolModel:
 
     async def _turn(self, messages: list[dict[str, Any]], tools: list[dict[str, Any]],
                     tool_names: frozenset[str], bound: int, max_output_tokens: int,
-                    timeout_seconds: float) -> ModelReply:
+                    timeout_seconds: float,
+                    output_schema: dict[str, Any] | None = None) -> ModelReply:
         payload: dict[str, Any] = {
             "model": self.spec.name, "messages": messages, "stream": False, "think": False,
             "options": {"temperature": 0, "num_ctx": self.spec.context_tokens,
@@ -292,6 +301,8 @@ class LocalToolModel:
         }
         if tools:
             payload["tools"] = tools
+        if output_schema is not None:
+            payload["format"] = output_schema
         async with self._client(timeout_seconds) as client:
             await self._pinned_entry(client)
             body = await self._request(client, "POST", "/api/chat", payload)

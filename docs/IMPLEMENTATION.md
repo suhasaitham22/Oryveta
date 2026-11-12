@@ -1,6 +1,6 @@
-# Functional MVP implementation — code map and verified boundaries
+# Implementation — code map and verified boundaries
 
-Status: **The React/Supabase collaboration and durable-analysis control plane are deployed.** Production analysis was verified with a one-off local worker; always-on worker hosting remains pending. The separate FastAPI/SQLite engine is not deployed to Vercel and keeps its own local identity. The operator-run local repair CLI additionally performs model-driven edits with controller-owned verification, and model-free re-verification of a supplied candidate — from an operator's shell only, never from an endpoint. This page distinguishes deterministic starters and read-only analysis from autonomous software engineering. Dated evidence lives in [STATUS.md](STATUS.md); this page is the code map and the operator contract.
+Production collaboration and durable analysis are deployed; an operated cloud coding service is not. This working tree adds a supervised, project-authorized Reviewed Evolve workflow using Pydantic AI, protected repair/reverification, stage reviews, process audit, human approval and scoped lessons. It requires the new SQL migration, private Storage and operator-provisioned inference/runner compute. The standalone FastAPI/SQLite engine retains its separate identity. Dated verification evidence belongs in [STATUS.md](STATUS.md).
 
 ## Local architecture
 
@@ -19,6 +19,7 @@ Status: **The React/Supabase collaboration and durable-analysis control plane ar
 | `engine/oryveta_engine/factory_service.py` | Unattended service entry point: one-time secret bootstrap, exclusive session lock, persistent rotated credentials, mounted-volume privilege drop and SIGTERM handling |
 | `engine/oryveta_engine/analysis_child.py` | Child-process entry point that runs `analyze_repository` over a prepared snapshot and writes the JSON result atomically |
 | `engine/oryveta_engine/coding_{config,contract,model,tools,sandbox,runtime}.py` | Separate operator-run repair CLI: versioned operator specification, pinned local tool model, scoped edits, bounded Docker check execution, review-only evidence, candidate ZIP export and model-free candidate re-verification |
+| `engine/oryveta_engine/evolve_{contract,agents,child,runtime,storage,lessons}.py` | Typed read-only roles, supervised durable Evolve execution, protected checks, reviews, exact-candidate approval handoff, private artifacts and scoped learning |
 | `apps/web/` | Legacy standalone Soft Modern local UI served at `/`; hosted React Studio builds to `apps/web/studio/dist`, while the self-hosted React Studio uses the separate `apps/web/studio/dist-local` build at `/studio/`. Extensionless `/studio/*` page routes receive the app shell; dotted assets are served only through an explicit per-file allowlist, and reserved API-like paths are not. Missing local builds return `503` without replacing the legacy path |
 | `preview/` | Archived standalone static prototype, retained for history; it must never be Vercel's project root and is not published on any environment |
 | `apps/web/vercel.json` | Hosted build settings (`cd studio` install/build, output `studio/dist`), the SPA fallback rewrite that excludes assets and dotted paths, and the restrictive security headers including the `connect-src` policy |
@@ -27,6 +28,8 @@ Status: **The React/Supabase collaboration and durable-analysis control plane ar
 | `supabase/schema.sql` | Owner-initiated workspaces, membership trigger and per-row authorization policies |
 | `supabase/migrations/durable_factory_runtime.sql` | Work items, fenced runs, typed run events, per-project worker registrations and the unexposed lease table |
 | `supabase/migrations/retained_attribution_and_lease_clock.sql` | Forward repair for retained actor deletion and lease deadlines/expiry after lock waits; apply after the durable-runtime migration |
+| `supabase/migrations/reviewed_evolve_runtime.sql` | Evolve stages, reviews, diagnostic records, private artifact policy, human decisions and lessons on the existing work/run authority |
+| `deploy/oryveta-evolve.service` | Systemd user-service definition for a separately provisioned worker identity, model and rootless Docker runtime |
 | `tests/` | API, ownership, CSRF, OAuth state, archive safety, worker and scaffold tests |
 | `Dockerfile`, `compose.yaml` | Single-host API and worker containers with local-only port binding |
 
@@ -99,11 +102,34 @@ The first attempt resolves the default branch. GitHub's ZIP comment supplies the
 
 Persisted output is bounded on both sides: the schema allows 256 KB and 400 findings; the worker retains at most 200 and exposes truncation explicitly. Normal completion removes the snapshot. A hard-killed worker leaves its directory for the next `--work-root` startup sweep, which removes only marked directories belonging to dead processes. The child receives the original worker PID, refuses an already-orphaned start, monitors parent loss and carries its own deadline. These guards do not simulate recovery from losing the host.
 
-For container/hosted startup without manually staging the first token file, use `python -m oryveta_engine.factory_service`. It uses the same flags and worker, with `/data/worker/credentials.json` as the default credential path and a temporary analysis directory by default. Its first-start secret, persistent volume, single-session lock and bounded supervisor setup are documented in [OPERATIONS.md](OPERATIONS.md#unattended-service-startup). It adds no model inference, repository grants or paid services.
+`python -m oryveta_engine.factory_service` supplies one-time secret bootstrap, the persistent rotating-session file, an exclusive session lock and SIGTERM handling. Without `--evolve-config` it runs analysis. With that flag it runs Reviewed Evolve and requires a persistent private `--work-root`. It provisions neither identity nor compute; see [OPERATIONS.md](OPERATIONS.md).
+
+## Reviewed Evolve worker
+
+The React project detail submits a public-source change goal to the canonical work queue. The worker resolves and pins the snapshot, obtains requirements and a plan with independent reviews, executes a bounded repair, reviews the complete diff, independently re-verifies the exported candidate, audits the process and extracts/reviews lessons. PostgreSQL admits each stage and requires an owner/admin decision on the exact candidate archive digest.
+
+The operator supplies the existing JSON specification described below: exact read/write paths, immutable local model and Docker image identities, fixed development/acceptance checks and resource limits. The submitted goal is not a way to choose commands, loosen scope or replace expected values. Approved requirements, plans and applicable lessons reach the executor as bounded task context, not additional authority.
+
+```sh
+python -m oryveta_engine.factory_service \
+  --evolve-config /path/to/reviewed-operator.json \
+  --credentials /path/to/private-worker.json \
+  --work-root /path/to/private-persistent-runs
+```
+
+Credential provisioning and registration are unchanged from the analysis worker. `--project` can select its registered project. `--once` processes at most one claim; otherwise the service continues until stopped or bounded control failures require operator intervention. `--review-config` optionally pins a separate local reviewer model. All roles share the attempt's token/time budget; role-call and rework ceilings are explicit CLI settings. No model is downloaded or substituted automatically.
+
+Read-only roles use Pydantic AI `NativeOutput` with Ollama's JSON-schema response format; both the schema and framework validation feedback reach the model. The existing native tool interface remains the code editor's only capability. Model digest checks, response bounds and controller-owned expected values are retained. A diff too large to review completely is refused, not clipped into an apparent pass.
+
+The worker's Auth session stays in the supervisor; stage children receive only a minimal interpreter/Docker environment. Repository checks run in fresh network-disabled containers, not on the host. Private resolved configurations and raw model/check traces stay on the worker. Registered candidate/patch bytes and sanitized receipt/trace manifests go to private Storage under current project authorization.
+
+Execution ends at `awaiting_approval`, releasing the lease while the human is absent. Approval changes the work to `succeeded` and activates only reviewed lessons for that exact source/configuration scope; it does not commit, merge or deploy. Retries restart pinned inputs as new attempts rather than replaying uncertain tool effects. Failure diagnostics retain check outcomes and bounded reviewed lessons where possible; missing authority, model or budget is explicit unavailability.
+
+Reproducible real-service verification is `scripts/evolve_runtime_smoke.py --help`. It requires isolated local Supabase, a provisioned local tool-capable model and image, and a new private output directory. `--ui-origin` drives an already-built local Studio; `--crash-restart` additionally exercises worker interruption and live cancellation/revocation. It changes only disposable copies of a public repository, never the upstream repository.
 
 ## Local verified repair CLI
 
-This is a separate operator-run command, not a web endpoint, Supabase worker mode or unattended service. It has two modes in one module:
+The standalone CLI remains an operator-run command with no HTTP endpoint. The reviewed worker above reuses these library functions under its own durable authorization contract. The CLI has two modes:
 
 - **Repair** (default): accepts a source ZIP, lets a pinned local model edit only explicitly allowed existing files in a disposable copy, independently executes the operator's checks, and returns a patch plus a candidate archive for review.
 - **Re-verification** (`--candidate-zip`): accepts the same source ZIP plus a candidate ZIP and re-derives the verdict with **no model contact at all**.
@@ -244,12 +270,12 @@ The public site separately includes a sanitized **synthetic** repair example in 
 
 1. The Vercel UI uses Supabase for collaboration and durable analysis. It is not connected to the separate FastAPI/SQLite engine, and no always-on cloud worker is configured.
 2. SQLite and file workspaces are single-host and not adequate as-is for multi-tenant consultancy deployment.
-3. Web/API source imports remain read-only snapshots. The separate local repair CLI — including its candidate export and model-free re-verification — is not integrated into those imports, the hosted Evolve flow, any project, any endpoint or any worker. Connecting it would require a durable work contract, per-tenant isolation and an authorization model it does not have.
+3. Legacy ZIP imports remain read-only. Reviewed Evolve is a separate public-GitHub-snapshot workflow in source, requiring migration and provisioned worker/model/runner resources before rollout. Private GitHub App access is not implemented.
 4. The worker does not run in a hardened per-tenant container or microVM and has no managed always-on hosting.
 5. Production GitHub OAuth, project/private-session schema and controlled multi-user browser authorization are verified. General external email delivery, enterprise identity governance and recovery remain separate requirements.
 6. Repository access still requires a separate GitHub App. Production workers also require explicit host/credential provisioning, rate limits, secret handling, audit and backup/restore. The production security advisor still reports the intentional authenticated-only `SECURITY DEFINER` RPC pattern and disabled leaked-password protection (Supabase Pro or above, so unavailable under the no-paid-service requirement); those findings are accepted and documented, and the advisor output is not claimed to be clean.
-7. Custom application generation, hosted Evolve fixes, automatic PRs, hosted worker execution, Slack/mobile delivery and the self-improving harness remain planned. The selected path extends Python rather than requiring a Rust/Hono rewrite. Candidate archives over the importer's 12 MiB compressed / 32 MiB expanded / 1,800-file bounds cannot use the re-verification path at all.
+7. Custom application generation, automatic PRs, an operated hosted coding service, Slack/mobile delivery and self-modifying harness promotion remain planned. Reviewed Evolve and its scoped diagnostic memory are not those capabilities. The existing 12 MiB compressed / 32 MiB expanded / 1,800-entry archive limits remain enforced.
 
 ## Release discipline
 
-CI passing and code review are necessary, but not sufficient, for production-grade consultancy security. Do not deploy this MVP publicly until threat-model, authorization, operational and integration gates in [AUTH-SECURITY.md](AUTH-SECURITY.md) and [OPERATIONS.md](OPERATIONS.md) are met.
+CI passing and code review are necessary, but not sufficient, for production-grade consultancy security. Do not deploy this execution pathway publicly until the threat-model, authorization, operational and integration gates in [AUTH-SECURITY.md](AUTH-SECURITY.md) and [OPERATIONS.md](OPERATIONS.md) are met.

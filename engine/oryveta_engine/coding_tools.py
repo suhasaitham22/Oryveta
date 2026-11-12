@@ -25,7 +25,7 @@ TOOL_SCHEMAS = [
             "path": {"type": "string"}, "start_line": {"type": "integer"},
             "line_count": {"type": "integer"}}, "required": ["path"], "additionalProperties": False}}},
     {"type": "function", "function": {
-        "name": "replace_text", "description": "Replace one unique exact text occurrence in an editable file. Supply the SHA-256 from read_file. Preserve unrelated behavior.",
+        "name": "replace_text", "description": "Replace one unique exact text occurrence in an editable file. Every call must include all four arguments: path, expected_sha256 from read_file, old text, and new text. Preserve unrelated behavior.",
         "parameters": {"type": "object", "properties": {
             "path": {"type": "string"}, "expected_sha256": {"type": "string"},
             "old": {"type": "string"}, "new": {"type": "string"}},

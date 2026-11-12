@@ -28,6 +28,17 @@ Local captured email is not external mailbox delivery, GitHub consent or a produ
 
 `scripts/collaboration_race_smoke.py` adds real-service browser regressions for slow and out-of-order responses. It defers delivery of actual HTTP responses rather than mocking successes, covering identity-scoped chat details, collection refresh order, pending mutation acknowledgements, navigation lifetimes and the newest bounded message window. Its fixture cleanup fails loudly instead of claiming success when temporary data remains. The auth-integration workflow runs it after schema setup.
 
+## Reviewed Evolve gates
+
+The new SQL suite exercises admission, immutable review/artifact records, source/configuration pinning, analysis/Evolve route separation, stale leases, exact-candidate decisions, revoked access and non-activatable failure lessons. The normal schema loader applies `reviewed_evolve_runtime.sql` after the existing migrations and enables local Storage.
+
+Python regressions exercise real Pydantic AI parsing/validation with deterministic transport responses, actual protected Docker checks, immutable artifact recovery, scoped lesson retrieval and real supervised child termination. These establish protocol and behavior boundaries, not live-model quality. Keep schema instructions and validation feedback on the real adapter path; never replace invalid model output with a fabricated review.
+
+`scripts/evolve_runtime_smoke.py` separately exercises real local Auth/PostgREST/Storage, a pinned self-hosted model and Docker. Its browser mode must submit, survive browser closure, display the persisted evidence, verify downloaded artifact hashes and approve the exact candidate. Its interruption mode must retain the source pin across attempts and stop fenced execution. Record failed live-model attempts alongside successes; do not weaken acceptance checks to qualify a model.
+
+Run Docker isolation tests without a simultaneous external smoke sharing the same daemon: older cleanup assertions inspect the global Oryveta container namespace. New tests must inspect only resources they own. On a VM, verify its actual shared mount rather than assuming all host temporary directories are visible.
+
+
 ## Local coding-loop verification
 
 CI explicitly provisions a local Python execution image and runs the coding-runtime/sandbox cases on every Python matrix version. These tests use real containers for behavioral acceptance, denied network/host writes, resource limits and teardown; scripted models make proposal/denial cases deterministic. They do not establish model coding quality.

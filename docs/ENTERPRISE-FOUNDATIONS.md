@@ -19,21 +19,21 @@ flowchart LR
   U[Browser: Start New / Evolve] --> API[Auth + Control API - deployed]
   API --> DB[(Grants / durable work / leases / audit - deployed)]
   DB -.-> W[Leased worker - operator-started, not hosted]
-  W -.-> P[Policy + budgets - planned for the hosted path]
-  P -.-> AI[Model provider adapter - local only]
-  AI -.-> SB[Isolated execution - local CLI only]
-  SB -.-> V[Independent verifier - local CLI only]
-  V -.-> R[Proof receipts - local private files only]
+  W -.-> P[Operator policy and bounded budgets]
+  P -.-> AI[Pinned self-hosted models and typed roles]
+  AI -.-> SB[Disposable source and protected checks]
+  SB -.-> V[Independent verification and reviews]
+  V -.-> R[Private registered artifacts and human decision]
   R -.-> API
 ```
 
-Solid edges are deployed and continuously available. Dotted edges run only when a person starts them locally, and the local CLI reports to no control plane.
+Solid edges identify deployed service boundaries, not uptime guarantees. Dotted edges describe operator-provisioned execution: Reviewed Evolve source now reports to the control plane, but no operated cloud coding deployment or enterprise isolation claim follows from that.
 
 **Implemented and deployed:** Supabase Auth identity, PostgreSQL RLS project/session grants, narrow write RPCs, durable work items with fenced leases, bounded attempts, checkpoints, cancellation, worker revocation and typed run events. Production analysis has been completed only by an operator-started one-off local worker.
 
 **Implemented self-hosted or local only:** the single-host SQLite job admission/cancellation/lease path, local heuristic source analysis, read-only Evolve patch previews, the opt-in local Ollama text adapter with SQLite per-user token reservations, and the operator-run repair/reverification CLI with its versioned specification, scoped file allowlists, bounded container check execution, controller-owned verification and durable private receipts.
 
-**Not implemented:** hosted coding/modernization agents, hosted autonomous Evolve fixes, any always-on worker, hardened per-tenant isolation for untrusted customer code, the knowledge graph, operational on-call automation, GitHub App publication, recursive learning, enterprise identity governance, billing and operational guarantees. Local Docker check isolation is **not** the hardened sandbox the gates table below requires. Project/session roles have real-service verification; that is not comprehensive enterprise governance.
+**Still unimplemented or unqualified for production:** operated hosted coding/modernization, automated customer-cloud provisioning, hardened per-tenant execution for arbitrary code, a general knowledge graph, on-call automation, GitHub App publication, self-modifying learning, enterprise identity governance, billing and operational guarantees. Reviewed Evolve's supervised worker and scoped lesson registry exist in source; local Docker checks and project/session RLS are not comprehensive enterprise assurance.
 
 ## Enterprise AI release gates
 

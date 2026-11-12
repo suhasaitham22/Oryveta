@@ -66,6 +66,7 @@ def apply_sql(connection: dict) -> None:
         "supabase/migrations/projects_and_project_membership.sql",
         "supabase/migrations/durable_factory_runtime.sql",
         "supabase/migrations/retained_attribution_and_lease_clock.sql",
+        "supabase/migrations/reviewed_evolve_runtime.sql",
     )]
     files.extend(sorted((ROOT / "supabase/tests").glob("*.sql")))
     for path in files:

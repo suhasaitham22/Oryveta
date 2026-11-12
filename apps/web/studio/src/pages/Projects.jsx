@@ -17,9 +17,11 @@ import { Textarea } from "@/components/ui/textarea";
 import * as projectsApi from "@/lib/projects.js";
 import { useWorkspaceState } from "@/lib/WorkspaceState.jsx";
 import ProjectAnalysis from "@/components/ProjectAnalysis.jsx";
+import ProjectEvolve from "@/components/ProjectEvolve.jsx";
 
-/* PostgreSQL authorizes project metadata, membership and bounded analysis.
-   UI role checks only shape controls; an analysis never executes repository code. */
+/* PostgreSQL authorizes project metadata, membership, bounded analysis and reviewed
+   Evolve work. UI role checks only shape controls; an analysis never executes
+   repository code, and only a human approval settles an Evolve candidate. */
 const roleLabels = {
   owner: "Owner",
   admin: "Admin",
@@ -508,6 +510,7 @@ export default function Projects({ user, preview, onExit }) {
             )}
           </form>
           {active && <ProjectAnalysis key={active.id} project={active} role={role} />}
+          {active && <ProjectEvolve key={`evolve:${active.id}`} project={active} role={role} />}
           {active && (
             <section
               className="surface-panel"

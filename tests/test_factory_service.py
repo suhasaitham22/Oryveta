@@ -131,3 +131,12 @@ def test_invalid_bootstrap_cli_fails_without_exposing_the_secret(tmp_path):
     assert "readable JSON" in result.stderr
     assert "private-bootstrap-secret" not in result.stdout + result.stderr
     assert not (tmp_path / "credentials.json").exists()
+
+
+def test_evolve_refuses_ephemeral_evidence_before_bootstrapping(tmp_path, seed):
+    credentials = tmp_path / "credentials.json"
+    result = service_process(credentials, seed, "--once",
+                             "--evolve-config", str(tmp_path / "operator.json"))
+    assert result.returncode == 2
+    assert not credentials.exists()
+    assert "initial-refresh-must-stay-private" not in result.stdout + result.stderr

@@ -16,9 +16,9 @@ Keep three replaceable planes: **control**, **intelligence**, and **execution**.
 
 **Durable analysis control plane (deployed; worker hosting pending):** production Supabase stores project-authorized work items, leases, bounded attempts, checkpoints, cancellation and pinned sources. Browser submission, a real public-repository analysis and result download were verified with a separately authenticated one-off local worker. The database is deployed, but no always-on cloud worker is configured; continuous execution still requires an authorized host and worker registration.
 
-**Local model-driven repair and model-free reverification (operator-run CLI only):** `python -m oryveta_engine.coding_runtime` performs model-driven edits of an operator-selected ZIP inside a disposable copy, under a versioned operator specification, exact file allowlists, a pinned local Ollama model and bounded Docker check execution, and emits a review candidate plus private evidence. The same command re-verifies a supplied candidate archive without any model contact. Two distinct boundaries matter here and are frequently conflated: **model-driven file edits** happen only in the local disposable workspace, while **check execution** happens in fresh, networkless, non-root containers that the model cannot configure. This is local defense in depth, not multi-tenant production isolation, and it is not hosted, queued or autonomous. See [IMPLEMENTATION.md](IMPLEMENTATION.md#local-verified-repair-cli).
+**Protected repair library and standalone CLI:** `coding_runtime` retains operator-selected ZIP repair and model-free candidate re-verification. Edits occur in a disposable local copy; checks run in fresh networkless, non-root containers under fixed operator policy. The new Reviewed Evolve worker reuses these functions rather than introducing a second execution engine.
 
-There is no hosted coding service, no hosted autonomous Evolve fix, no sandboxed execution of arbitrary customer code and no unattended coding agent.
+**Reviewed Evolve (working-tree source):** Pydantic AI provides typed, read-only planning/reviewer/audit/learning roles over pinned local Ollama inference. The existing PostgreSQL work/run/lease system admits stages, records reviews, registers private Storage artifacts and holds exact-candidate human approval. Failed checks and rejected reviews cannot be promoted; failure learning is diagnostic and unavailable inference is explicit. This is not an operated hosted coding service or proven isolation for arbitrary customer workloads.
 
 ## Planned production control plane
 
@@ -30,15 +30,15 @@ There is no hosted coding service, no hosted autonomous Evolve fix, no sandboxed
 
 ## Planned execution plane
 
-The operator-run local CLI already supplies a disposable workspace, scoped tool capabilities, bounded isolated check execution and controller-owned verification for one fixed single-agent repair policy. What remains planned is making that path *hosted and durable*: run/checkpoint state persisted outside the runner by the control plane, compute released while awaiting a person, per-tenant isolation strong enough for untrusted customer code, and admission from the durable work contract rather than an operator's shell. No Rust supervisor, Hono API or additional queue platform is required for this delivery path; introduce another service only for a measured constraint. Worktrees alone are not isolation for untrusted customer code, and a shared-kernel Docker container is not a per-tenant boundary.
+Reviewed Evolve now joins durable project admission to the bounded repair/verifier library and releases its execution lease while awaiting a person. Production hosting, stronger isolation for arbitrary customer code, automated customer-cloud provisioning, fair admission at scale and availability/recovery qualification remain deployment gates. Start with supervised workers and one state authority; add services only for measured constraints. A shared-kernel Docker container is not a tenant boundary.
 
 ## Planned intelligence plane
 
-Planned, with one exception: the pinned local Ollama tool-model adapter used by the operator-run repair CLI and the text-only local gateway both exist. Still planned are the Python research harness beyond small scikit-learn baselines; scikit-learn/AutoGluon/CatBoost/LightGBM/XGBoost/Optuna for ML benchmarks; Tree-sitter/language tools for code structure; llama.cpp/vLLM and customer-configured provider adapters; a policy engine, versioned context retrieval and memory. Model inference always runs on compute the user supplies; no paid provider or hosted inference key is enabled.
+Implemented source includes the pinned local Ollama adapter, Pydantic AI schema-constrained roles and exact-source/configuration lesson retrieval. Adaptive routing, a general knowledge graph, model training and self-modifying harness promotion remain planned. Native tool calls remain limited to the bounded code editor; reviewers have no action tools. Model inference uses operator-provisioned compute, with no paid provider fallback.
 
 ## Target data flows
 
-Both flows are the factory target, not current behavior. Today Start New stops at a brief plus a deterministic starter. Evolve stops at authorized snapshot intake plus read-only analysis in the product; its only change-producing path is the separate operator-run local CLI, which is not reachable from a brief, a project or any endpoint.
+Start New still stops at a brief and deterministic starter. Read-only analysis remains available separately. Reviewed Evolve source now connects an authorized project goal to durable stages, a bounded candidate, independent checks/reviews, human approval and scoped learning. Its result is an approved archive, not a GitHub PR or deployment; those remain part of the target flows below.
 
 Start New (target): authenticated brief → persisted specification/plan → approved task DAG → sandbox workspace → code/test/build → evidence artifacts → reviewable source/PR → user-approved deployment.
 
@@ -46,7 +46,7 @@ Evolve (target): authorized repo snapshot → architecture map + static/runtime 
 
 ## Architecture diagram
 
-The diagram is the **target** topology. Deployed today: the browser, the control API/auth/workspace and the control SQL, with durable work items and leases in that same PostgreSQL authority rather than a separate queue platform. The worker supervisor runs only when an operator starts it locally. The isolated workspace, independent verification and receipts exist only inside the separate local CLI and do not report to the control plane.
+This shows source components and their deployment boundaries. Production has collaboration and durable analysis. The Reviewed Evolve connections require the new migration, Storage and a provisioned worker; no production coding rollout is claimed.
 
 ```mermaid
 flowchart TD
@@ -54,11 +54,11 @@ flowchart TD
     C --> D[(Control SQL: grants, work items, leases, events - deployed)]
     D --> R[Python worker supervisor - operator-started, not hosted]
     R --> P[Read-only analysis child - implemented]
-    R -.-> H[Python engineering / experiment harness - planned]
-    H -.-> S[Isolated workspace + bounded check containers - local CLI only]
-    S -.-> V[Controller-owned verification - local CLI only]
-    V -.-> A[Private local evidence receipts - local CLI only]
-    A -.-> D
+    R --> H[Pydantic AI Evolve stages - source]
+    H --> S[Disposable source and bounded check containers]
+    S --> V[Controller verification and independent reviews]
+    V --> A[Private registered artifacts and human decision]
+    A --> D
 ```
 
 ## Key boundaries
