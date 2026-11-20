@@ -9,7 +9,7 @@ dependencies = [
     "httpx>=0.27,<1",
     "scikit-learn>=1.4,<2",
     "pydantic>=2.13,<3",
-    "pydantic-ai-slim==2.67.0",
+    "pydantic-ai-slim==2.69.0",
 ]
 
 [project.optional-dependencies]
